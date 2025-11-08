@@ -11,13 +11,22 @@
 
 ### 全体進捗
 
-- [ ] Phase 1: 環境構築・基盤準備（1日目）
-- [ ] Phase 2: データベースセットアップ（1日目）
-- [ ] Phase 3: 認証機能実装（2日目）
-- [ ] Phase 4: API実装 - プロジェクト管理（2-3日目）
-- [ ] Phase 5: API実装 - 設定・売上（3-4日目）
-- [ ] Phase 6: ChatKit統合（5-6日目）
-- [ ] Phase 7: テスト・デプロイ（7日目）
+- [x] Phase 1: 環境構築・基盤準備（1日目）✅ 完了
+- [x] Phase 2: データベースセットアップ（1日目）✅ 完了
+- [ ] Phase 3: Desktop UI基盤構築（2-4日目）← **優先実装**
+- [ ] Phase 4: 認証機能実装（5日目）
+- [ ] Phase 5: API実装 - プロジェクト管理（6-7日目）
+- [ ] Phase 6: API実装 - 設定・売上（8-9日目）
+- [ ] Phase 7: Agent Builder + ChatKit統合（10-11日目）
+- [ ] Phase 8: テスト・デプロイ（12日目）
+
+**実装優先順位の考え方**
+1. **UI構築優先**: Desktop OS風UIを先に実装し、ユーザー体験の基盤を構築
+2. **段階的機能追加**: UI完成後に認証→API→ChatKit統合の順で機能を追加
+3. **AIエージェント対応**: すべてのAPIはAIエージェントから呼び出し可能な設計とする
+4. **最終統合**: API完成後にAgent Builderでワークフロー構築→ChatKit統合の順
+
+**見積もり総日数**: 12-15日（Desktop UI実装を含む）
 
 ---
 
@@ -30,17 +39,17 @@
 
 #### 1.1 依存パッケージのインストール
 
-- [ ] Supabase関連パッケージのインストール
+- [x] Supabase関連パッケージのインストール ✅
 ```bash
-npm install @supabase/supabase-js @supabase/auth-helpers-nextjs
+npm install @supabase/supabase-js @supabase/ssr
 ```
 
-- [ ] ChatKit関連パッケージのインストール
+- [x] ChatKit関連パッケージのインストール ✅
 ```bash
-npm install @openai/chatkit-react @openai/chatkit-js
+npm install @openai/chatkit-react openai
 ```
 
-- [ ] その他必要なパッケージ
+- [x] その他必要なパッケージ ✅
 ```bash
 npm install date-fns zod
 npm install -D @types/node
@@ -48,7 +57,7 @@ npm install -D @types/node
 
 #### 1.2 環境変数の設定
 
-- [ ] `.env.local`ファイル作成
+- [x] `.env.local`ファイル作成 ✅
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
@@ -62,8 +71,8 @@ OPENAI_API_KEY=your-openai-api-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-- [ ] `.env.example`ファイル作成（テンプレート）
-- [ ] `.gitignore`に`.env.local`追加確認
+- [x] `.env.example`ファイル作成（テンプレート）✅
+- [x] `.gitignore`に`.env.local`追加確認 ✅
 
 #### 1.3 プロジェクト構造の作成
 
@@ -146,10 +155,12 @@ export const createClient = () => {
 
 ### 完了条件
 
-- [x] すべての依存パッケージがインストールされている
-- [x] 環境変数が正しく設定されている
-- [x] プロジェクト構造が作成されている
-- [x] `npm run dev`でエラーなく起動できる
+- [x] すべての依存パッケージがインストールされている ✅
+- [x] 環境変数が正しく設定されている ✅
+- [ ] プロジェクト構造が作成されている（次タスク）
+- [x] `npm run dev`でエラーなく起動できる ✅
+
+**Phase 1 実装状況**: セットアップ準備完了、実装コードは次フェーズ
 
 ---
 
@@ -162,14 +173,14 @@ Supabaseプロジェクトの作成とデータベーススキーマの構築
 
 #### 2.1 Supabaseプロジェクトの作成
 
-- [ ] Supabase（https://supabase.com）でプロジェクト作成
-- [ ] プロジェクトURL、API Keyを取得
-- [ ] `.env.local`に環境変数を設定
+- [x] Supabase（https://supabase.com）でプロジェクト作成 ✅
+- [x] プロジェクトURL、API Keyを取得 ✅
+- [x] `.env.local`に環境変数を設定 ✅
 
 #### 2.2 データベーススキーマの作成
 
 - [ ] Supabase Dashboard > SQL Editorを開く
-- [ ] `database-schema.md`のSQLを順番に実行
+- [ ] `database-schema.md`のSQLを順番に実行（実装時に実施）
 
 **実行順序**:
 1. [ ] `update_updated_at_column()`関数の作成
@@ -209,14 +220,201 @@ export async function testConnection() {
 
 ### 完了条件
 
-- [x] Supabaseプロジェクトが作成されている
-- [x] すべてのテーブルが作成されている
-- [x] RLSポリシーが正しく設定されている
-- [x] Supabaseへの接続が確認できている
+- [x] Supabaseプロジェクトが作成されている ✅
+- [ ] すべてのテーブルが作成されている（実装時に実施）
+- [ ] RLSポリシーが正しく設定されている（実装時に実施）
+- [ ] Supabaseへの接続が確認できている（実装時に実施）
+
+**Phase 2 実装状況**: Supabaseプロジェクト作成済み、スキーマ構築は実装時に実施
 
 ---
 
-## Phase 3: 認証機能実装 🔐
+## Phase 3: Desktop UI基盤構築 🖥️
+
+### 目標
+Desktop OS風UIの実装（Window管理、AppIcon、ChatPanel、4分割モード）
+
+### 参照ドキュメント
+- `docs/desktop-ui-design.md` - 完全な設計仕様
+
+### タスク
+
+#### 3.1 必要なパッケージのインストール
+
+- [ ] Window管理・UI関連パッケージ
+```bash
+npm install react-rnd @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
+npm install react-resizable-panels
+npm install react-icons
+```
+
+#### 3.2 Zustand状態管理の拡張
+
+- [ ] `store/desktopStore.ts` - Desktop UI状態管理
+```typescript
+interface App {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  component: React.ComponentType;
+  position: { x: number; y: number };
+  gridIndex: number;
+}
+
+interface Window {
+  id: string;
+  appId: string;
+  title: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  isMinimized: boolean;
+  zIndex: number;
+}
+
+interface DesktopState {
+  // Apps
+  apps: App[];
+  addApp: (app: App) => void;
+  updateAppPosition: (id: string, position: { x: number; y: number }) => void;
+  reorderApps: (oldIndex: number, newIndex: number) => void;
+
+  // Windows
+  windows: Window[];
+  openWindow: (appId: string) => void;
+  closeWindow: (windowId: string) => void;
+  minimizeWindow: (windowId: string) => void;
+  updateWindowPosition: (id: string, position: { x: number; y: number }) => void;
+  updateWindowSize: (id: string, size: { width: number; height: number }) => void;
+  bringToFront: (windowId: string) => void;
+
+  // Chat Panel
+  isChatOpen: boolean;
+  chatWidth: number;
+  toggleChat: () => void;
+  setChatWidth: (width: number) => void;
+
+  // Quad Mode
+  isQuadMode: boolean;
+  quadScreens: QuadScreenConfig;
+  toggleQuadMode: () => void;
+  setQuadScreen: (position: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight', appId: string) => void;
+}
+```
+
+#### 3.3 デスクトップレイアウトコンポーネント
+
+- [ ] `components/desktop/DesktopLayout.tsx` - メインレイアウト
+```typescript
+// Header（64px固定）
+// Desktop Area（アイコングリッド + ウィンドウエリア）
+// Chat Panel（右側、リサイズ可能 300-600px）
+```
+
+#### 3.4 AppIconグリッド実装
+
+- [ ] `components/desktop/AppIconGrid.tsx`
+```typescript
+// @dnd-kit/sortableでドラッグ＆ドロップ
+// 80x80pxアイコン
+// グリッドレイアウト（8列自動調整）
+// ダブルクリックでウィンドウ起動
+```
+
+#### 3.5 Window管理システム実装
+
+- [ ] `components/desktop/WindowManager.tsx`
+```typescript
+// react-rndでドラッグ＆リサイズ
+// Z-index管理（クリックで最前面）
+// 最大3-4ウィンドウ（超過時はタブ化）
+// 最小化・最大化・閉じる
+```
+
+- [ ] `components/desktop/Window.tsx` - 個別ウィンドウ
+```typescript
+// タイトルバー（ドラッグハンドル）
+// 制御ボタン（最小化・最大化・閉じる）
+// リサイズハンドル
+// コンテンツエリア
+```
+
+#### 3.6 ChatPanel実装
+
+- [ ] `components/desktop/ChatPanel.tsx`
+```typescript
+// react-resizable-panelsでリサイズ
+// トグルボタン（開閉）
+// 幅をlocalStorageに保存
+// アニメーション付きスライド表示
+```
+
+#### 3.7 4分割モード実装
+
+- [ ] `components/desktop/QuadMode.tsx`
+```typescript
+// オーバーレイレイヤー（z-index: 1000）
+// 2x2グリッドレイアウト
+// 各スクリーンにApp割り当て
+// 終了ボタンでデスクトップに戻る
+```
+
+#### 3.8 初期アプリ登録
+
+- [ ] デフォルトアプリの定義
+```typescript
+const defaultApps: App[] = [
+  {
+    id: 'dashboard',
+    name: 'Dashboard',
+    icon: <RiDashboardLine size={32} />,
+    component: DashboardApp,
+    position: { x: 0, y: 0 },
+    gridIndex: 0,
+  },
+  {
+    id: 'projects',
+    name: 'Projects',
+    icon: <RiFolderLine size={32} />,
+    component: ProjectsApp,
+    position: { x: 0, y: 0 },
+    gridIndex: 1,
+  },
+  {
+    id: 'settings',
+    name: 'Settings',
+    icon: <RiSettingsLine size={32} />,
+    component: SettingsApp,
+    position: { x: 0, y: 0 },
+    gridIndex: 2,
+  },
+  {
+    id: 'revenues',
+    name: 'Revenues',
+    icon: <RiMoneyDollarCircleLine size={32} />,
+    component: RevenuesApp,
+    position: { x: 0, y: 0 },
+    gridIndex: 3,
+  },
+];
+```
+
+### 完了条件
+
+- [ ] デスクトップレイアウトが表示される
+- [ ] アプリアイコンがグリッド表示される
+- [ ] アイコンをドラッグ＆ドロップで並び替えできる
+- [ ] アイコンダブルクリックでウィンドウが開く
+- [ ] ウィンドウをドラッグ＆リサイズできる
+- [ ] ウィンドウの最小化・最大化・閉じるが動作する
+- [ ] ChatPanelが開閉・リサイズできる
+- [ ] 4分割モードが動作する
+- [ ] 状態がlocalStorageに保存される
+
+**Phase 3 実装期間**: 2-4日
+
+---
+
+## Phase 4: 認証機能実装 🔐
 
 ### 目標
 Supabase Authを使った認証機能の実装
@@ -297,7 +495,7 @@ interface AuthState {
 
 ---
 
-## Phase 4: API実装 - プロジェクト管理 📦
+## Phase 5: API実装 - プロジェクト管理 📦
 
 ### 目標
 プロジェクト管理のCRUD API実装
@@ -400,7 +598,7 @@ export function handleAPIError(error: any) {
 }
 ```
 
-### 完了条件
+### 完了条件（AIエージェント統合対応）
 
 - [x] プロジェクト一覧が取得できる
 - [x] プロジェクトが作成できる
@@ -408,10 +606,11 @@ export function handleAPIError(error: any) {
 - [x] プロジェクトが更新できる
 - [x] プロジェクトが削除できる
 - [x] すべてのAPIでRLSが正しく動作する
+- [ ] **AIエージェント統合**: Agent BuilderでAPIをツールとして登録
 
 ---
 
-## Phase 5: API実装 - 設定・売上 ⚙️💰
+## Phase 6: API実装 - 設定・売上 ⚙️💰
 
 ### 目標
 設定管理・売上確認APIの実装
@@ -459,69 +658,131 @@ export function handleAPIError(error: any) {
 - [ ] 月別グループ化実装
 - [ ] プロジェクト別グループ化実装
 
-### 完了条件
+### 完了条件（AIエージェント統合対応）
 
 - [x] ユーザー設定の取得・更新ができる
 - [x] アプリ設定の取得・更新ができる
 - [x] 売上の全CRUD操作ができる
 - [x] 売上集計が正しく計算される
+- [ ] **AIエージェント統合**: Agent BuilderでAPIをツールとして登録
 
 ---
 
-## Phase 6: ChatKit統合 💬
+## Phase 7: Agent Builder + ChatKit統合 💬
 
 ### 目標
-ChatKitの統合とチャットUIの実装
+ChatKitの統合とチャットUIの実装（※ Phase 4-5のAPI実装完了後に実施）
+
+### 前提条件
+- ✅ Phase 5: プロジェクト管理API実装完了
+- ✅ Phase 6: 設定・売上API実装完了
+- ✅ Agent Builderでワークフロー作成
+- ✅ Agent BuilderでAPIツール登録
+- ✅ `CHATKIT_WORKFLOW_ID`環境変数設定
 
 ### タスク
 
-#### 6.1 ChatKitセッションAPI
+#### 6.1 Agent Builderワークフロー構築
+
+- [ ] OpenAI Platform > Agent Builderでエージェント作成
+- [ ] システムプロンプト設定
+```
+あなたは新時代SaaSの操作をサポートするアシスタントです。
+ユーザーがプロジェクト管理、設定変更、売上確認を行えるよう支援してください。
+
+利用可能なAPI:
+- プロジェクト管理: 作成、一覧取得、詳細取得、更新、削除
+- 設定管理: ユーザー設定、アプリ設定の取得・更新
+- 売上確認: 登録、一覧取得、集計、更新、削除
+
+日本語で親しみやすく、わかりやすく回答してください。
+```
+
+- [ ] APIツールの登録
+  - [ ] `/api/projects` (GET/POST)
+  - [ ] `/api/projects/[id]` (GET/PATCH/DELETE)
+  - [ ] `/api/settings/user` (GET/PATCH)
+  - [ ] `/api/settings/app` (GET/PATCH)
+  - [ ] `/api/revenues` (GET/POST)
+  - [ ] `/api/revenues/[id]` (GET/PATCH/DELETE)
+  - [ ] `/api/revenues/summary` (GET)
+
+- [ ] ワークフローをPublish
+- [ ] Workflow IDを取得して`.env.local`に設定
+
+#### 6.2 ChatKitセッションAPI
 
 - [ ] `app/api/create-session/route.ts` - POSTハンドラー
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
+import { requireAuth } from '@/lib/auth/server';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // 認証チェック
+    const user = await requireAuth();
 
-    // OpenAI ChatKit APIにセッション作成リクエスト
-    // ※ 実装は公式ドキュメント参照
+    // ChatKitセッション作成
+    const session = await openai.chatkit.sessions.create({
+      workflow_id: process.env.CHATKIT_WORKFLOW_ID!,
+      external_user_id: user.id,
+    });
 
     return NextResponse.json({
-      data: {
-        sessionId: 'session-id',
-        token: 'session-token',
-        expiresAt: new Date(Date.now() + 3600000).toISOString()
-      }
+      client_secret: session.client_secret,
     });
   } catch (error) {
     return handleAPIError(error);
   }
 }
 ```
+- [ ] OpenAI Platform > Settings > ChatKit > Domain Allowlistに追加
+  - `localhost:3000`
+  - `*.vercel.app`
+  - 本番ドメイン
 
-#### 6.2 ChatKitコンポーネントの作成
+#### 6.3 ChatKitコンポーネントの作成
 
 - [ ] `components/chat/ChatInterface.tsx`
 ```typescript
 'use client';
 
+import { useChatKit } from '@openai/chatkit-react';
 import { ChatKit } from '@openai/chatkit-react';
+import { useEffect, useState } from 'react';
 
 export function ChatInterface() {
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  useEffect(() => {
+    // セッション作成
+    fetch('/api/create-session', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => setClientSecret(data.client_secret));
+  }, []);
+
+  const { control } = useChatKit({
+    api: {
+      clientToken: clientSecret || '',
+    },
+  });
+
+  if (!clientSecret) return <div>Loading...</div>;
+
   return (
-    <div className="h-screen">
-      <ChatKit
-        sessionEndpoint="/api/create-session"
-        // その他の設定
-      />
+    <div className="h-full">
+      <ChatKit control={control} className="h-full" />
     </div>
   );
 }
 ```
 
-#### 6.3 メインページへの統合
+#### 6.4 メインページへの統合
 
 - [ ] `app/page.tsx`を更新
 ```typescript
@@ -536,23 +797,7 @@ export default function Home() {
 }
 ```
 
-#### 6.4 チャットコマンド解釈ロジック
-
-- [ ] `lib/chat/command-parser.ts`
-```typescript
-export function parseCommand(message: string) {
-  // 「プロジェクト一覧」→ { type: 'list_projects' }
-  // 「今月の売上」→ { type: 'revenue_summary', period: 'this_month' }
-  // など
-}
-```
-
-#### 6.5 AIレスポンス生成
-
-- [ ] OpenAI APIとの連携実装
-- [ ] コマンドに応じた適切なレスポンス生成
-
-#### 6.6 ChatKitカスタマイズ
+#### 6.5 ChatKitカスタマイズ
 
 - [ ] スタイルのカスタマイズ（Tailwind CSS）
 - [ ] 日本語対応の確認
@@ -560,14 +805,16 @@ export function parseCommand(message: string) {
 
 ### 完了条件
 
-- [x] ChatKitが正しく表示される
-- [x] チャットでメッセージ送受信ができる
-- [x] 基本的なコマンド解釈が動作する
-- [x] AIレスポンスが返ってくる
+- [ ] Agent Builderでワークフロー構築完了
+- [ ] すべてのAPIがAgent Builderにツールとして登録されている
+- [ ] ChatKitが正しく表示される
+- [ ] チャットでメッセージ送受信ができる
+- [ ] AIがAPIを呼び出して操作を実行できる
+- [ ] AIレスポンスが適切に返ってくる
 
 ---
 
-## Phase 7: テスト・デプロイ 🚀
+## Phase 8: テスト・デプロイ 🚀
 
 ### 目標
 動作確認、バグ修正、Vercelへのデプロイ
