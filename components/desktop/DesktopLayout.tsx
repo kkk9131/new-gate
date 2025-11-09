@@ -56,11 +56,8 @@ export function DesktopLayout() {
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (typeof window === 'undefined') return;
+    document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
   return (

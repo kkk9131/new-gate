@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useMemo } from 'react';
 import { useDesktopStore, WindowState } from '@/store/desktopStore';
 import type { SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import {
@@ -16,34 +17,17 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Rnd } from 'react-rnd';
 import { AppIcon } from './AppIcon';
-import { DashboardApp } from '@/components/apps/DashboardApp';
-import { ProjectsApp } from '@/components/apps/ProjectsApp';
-import { SettingsApp } from '@/components/apps/SettingsApp';
-import { RevenueApp } from '@/components/apps/RevenueApp';
-import { StoreApp } from '@/components/apps/StoreApp';
-import { AgentApp } from '@/components/apps/AgentApp';
-import { AnalyticsApp } from '@/components/apps/AnalyticsApp';
-import { CalendarApp } from '@/components/apps/CalendarApp';
+import { BaseWindow } from './BaseWindow';
+import { appComponents } from './appRegistry';
 
-// アプリコンポーネントのマッピング
-const appComponents: Record<string, React.ComponentType> = {
-  dashboard: DashboardApp,
-  projects: ProjectsApp,
-  settings: SettingsApp,
-  revenue: RevenueApp,
-  store: StoreApp,
-  agent: AgentApp,
-  analytics: AnalyticsApp,
-  calendar: CalendarApp,
-};
+const SPLIT_WINDOW_MIN_WIDTH = 300;
+const SPLIT_WINDOW_MIN_HEIGHT = 200;
 
 export function SplitMode() {
   const splitMode = useDesktopStore((state) => state.splitMode);
   const apps = useDesktopStore((state) => state.apps);
   const reorderApps = useDesktopStore((state) => state.reorderApps);
-  const setSplitMode = useDesktopStore((state) => state.setSplitMode);
 
   // ドラッグ&ドロップのセンサー設定
   const sensors = useSensors(
@@ -256,92 +240,36 @@ function ScreenWindow({
   updateWindowPosition,
   updateWindowSize,
 }: ScreenWindowProps) {
-  // 最小化されている場合は表示しない
+  const AppComponent = useMemo(() => appComponents[window.appId], [window.appId]);
+
+  const handleClose = useCallback(() => closeWindow(screenId, window.id), [closeWindow, screenId, window.id]);
+  const handleMinimize = useCallback(() => minimizeWindow(screenId, window.id), [minimizeWindow, screenId, window.id]);
+  const handleMaximize = useCallback(() => maximizeWindow(screenId, window.id), [maximizeWindow, screenId, window.id]);
+  const handleFocus = useCallback(() => bringToFront(screenId, window.id), [bringToFront, screenId, window.id]);
+  const handlePositionChange = useCallback((position: { x: number; y: number }) => {
+    updateWindowPosition(screenId, window.id, position);
+  }, [screenId, updateWindowPosition, window.id]);
+  const handleResize = useCallback((size: { width: number; height: number }, position: { x: number; y: number }) => {
+    updateWindowSize(screenId, window.id, size);
+    updateWindowPosition(screenId, window.id, position);
+  }, [screenId, updateWindowPosition, updateWindowSize, window.id]);
+
   if (window.isMinimized) return null;
 
-  const AppComponent = appComponents[window.appId];
-
   return (
-    <Rnd
-      size={
-        window.isMaximized
-          ? { width: '100%', height: '100%' }
-          : { width: window.size.width, height: window.size.height }
-      }
-      position={
-        window.isMaximized
-          ? { x: 0, y: 0 }
-          : { x: window.position.x, y: window.position.y }
-      }
-      onDragStop={(e: any, d: any) => {
-        if (!window.isMaximized) {
-          updateWindowPosition(screenId, window.id, { x: d.x, y: d.y });
-        }
-      }}
-      onResizeStop={(e: any, direction: any, ref: any, delta: any, position: any) => {
-        if (!window.isMaximized) {
-          // parseIntが失敗した場合は現在のサイズを保持
-          const width = parseInt(ref.style.width) || window.size.width;
-          const height = parseInt(ref.style.height) || window.size.height;
-
-          updateWindowSize(screenId, window.id, { width, height });
-          updateWindowPosition(screenId, window.id, position);
-        }
-      }}
-      minWidth={300}
-      minHeight={200}
-      bounds="parent"
-      dragHandleClassName="window-drag-handle"
-      style={{ zIndex: window.zIndex }}
-      onMouseDown={() => bringToFront(screenId, window.id)}
-      enableResizing={!window.isMaximized}
-      disableDragging={window.isMaximized}
-    >
-      <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden">
-        {/* タイトルバー */}
-        <div className="window-drag-handle flex items-center justify-between px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white cursor-move select-none">
-          <h3 className="font-semibold text-sm">{window.title}</h3>
-
-          {/* 制御ボタン */}
-          <div className="flex items-center gap-1">
-            {/* 最小化ボタン */}
-            <button
-              onClick={() => minimizeWindow(screenId, window.id)}
-              className="w-6 h-6 flex items-center justify-center hover:bg-white/20 rounded transition-colors"
-              aria-label="最小化"
-            >
-              <span className="text-xs">_</span>
-            </button>
-
-            {/* 最大化/元に戻すボタン */}
-            <button
-              onClick={() => maximizeWindow(screenId, window.id)}
-              className="w-6 h-6 flex items-center justify-center hover:bg-white/20 rounded transition-colors"
-              aria-label={window.isMaximized ? '元に戻す' : '最大化'}
-            >
-              <span className="text-xs">□</span>
-            </button>
-
-            {/* 閉じるボタン */}
-            <button
-              onClick={() => closeWindow(screenId, window.id)}
-              className="w-6 h-6 flex items-center justify-center hover:bg-red-500 rounded transition-colors"
-              aria-label="閉じる"
-            >
-              <span className="text-xs">×</span>
-            </button>
-          </div>
-        </div>
-
-        {/* コンテンツエリア */}
-        <div className="flex-1 overflow-auto">
-          {AppComponent ? <AppComponent /> : (
-            <div className="p-4 text-center text-gray-600 dark:text-gray-400">
-              アプリが見つかりません: {window.appId}
-            </div>
-          )}
-        </div>
-      </div>
-    </Rnd>
+    <BaseWindow
+      window={window}
+      AppComponent={AppComponent}
+      onClose={handleClose}
+      onMinimize={handleMinimize}
+      onMaximize={handleMaximize}
+      onFocus={handleFocus}
+      onPositionChange={handlePositionChange}
+      onResize={handleResize}
+      minWidth={SPLIT_WINDOW_MIN_WIDTH}
+      minHeight={SPLIT_WINDOW_MIN_HEIGHT}
+      titleBarClassName="window-drag-handle flex items-center justify-between px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white cursor-move select-none text-sm"
+      bodyClassName="flex-1 overflow-auto"
+    />
   );
 }

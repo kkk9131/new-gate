@@ -119,6 +119,17 @@ const defaultApps: App[] = [
   },
 ];
 
+const normalizeZIndexesIfNeeded = (windows: WindowState[]) => {
+  const maxZ = windows.reduce((max, w) => Math.max(max, w.zIndex), 0);
+  if (maxZ <= 1000) {
+    return windows;
+  }
+
+  const sorted = [...windows].sort((a, b) => a.zIndex - b.zIndex);
+  const orderMap = new Map(sorted.map((w, index) => [w.id, index + 1]));
+  return windows.map((w) => ({ ...w, zIndex: orderMap.get(w.id) ?? w.zIndex }));
+};
+
 // Zustandストアの作成（localStorage永続化対応）
 export const useDesktopStore = create<DesktopState>()(
   persist(
@@ -139,19 +150,8 @@ export const useDesktopStore = create<DesktopState>()(
       },
 
       // ダークモード切り替え
-      toggleDarkMode: () =>
-        set((state) => {
-          const newMode = !state.isDarkMode;
-          // HTMLのクラスを切り替え（Tailwindのdark:用）
-          if (typeof window !== 'undefined') {
-            if (newMode) {
-              document.documentElement.classList.add('dark');
-            } else {
-              document.documentElement.classList.remove('dark');
-            }
-          }
-          return { isDarkMode: newMode };
-        }),
+  toggleDarkMode: () =>
+    set((state) => ({ isDarkMode: !state.isDarkMode })),
 
       // Dock表示切り替え
       setDockVisible: (visible) =>
@@ -186,10 +186,12 @@ export const useDesktopStore = create<DesktopState>()(
           if (existingWindow) {
             const maxZ = Math.max(...state.windows.map((w) => w.zIndex), 0);
             return {
-              windows: state.windows.map((w) =>
-                w.id === existingWindow.id
-                  ? { ...w, zIndex: maxZ + 1, isMinimized: false }
-                  : w
+              windows: normalizeZIndexesIfNeeded(
+                state.windows.map((w) =>
+                  w.id === existingWindow.id
+                    ? { ...w, zIndex: maxZ + 1, isMinimized: false }
+                    : w
+                )
               ),
             };
           }
@@ -212,7 +214,8 @@ export const useDesktopStore = create<DesktopState>()(
             zIndex: maxZ + 1,
           };
 
-          return { windows: [...state.windows, newWindow] };
+          const windows = [...state.windows, newWindow];
+          return { windows: normalizeZIndexesIfNeeded(windows) };
         }),
 
       // ウィンドウを閉じる
@@ -248,11 +251,10 @@ export const useDesktopStore = create<DesktopState>()(
           // zIndexが既に最大なら何もしない（不要な再レンダリング防止）
           if (targetWindow.zIndex === maxZ) return state;
 
-          return {
-            windows: state.windows.map((w) =>
-              w.id === windowId ? { ...w, zIndex: maxZ + 1 } : w
-            ),
-          };
+          const updatedWindows = state.windows.map((w) =>
+            w.id === windowId ? { ...w, zIndex: maxZ + 1 } : w
+          );
+          return { windows: normalizeZIndexesIfNeeded(updatedWindows) };
         }),
 
       // ウィンドウ位置を更新
@@ -294,10 +296,12 @@ export const useDesktopStore = create<DesktopState>()(
             return {
               splitScreenWindows: {
                 ...state.splitScreenWindows,
-                [screenId]: screenWindows.map((w) =>
-                  w.id === existingWindow.id
-                    ? { ...w, zIndex: maxZ + 1, isMinimized: false }
-                    : w
+                [screenId]: normalizeZIndexesIfNeeded(
+                  screenWindows.map((w) =>
+                    w.id === existingWindow.id
+                      ? { ...w, zIndex: maxZ + 1, isMinimized: false }
+                      : w
+                  )
                 ),
               },
             };
@@ -321,10 +325,11 @@ export const useDesktopStore = create<DesktopState>()(
             zIndex: maxZ + 1,
           };
 
+          const windows = [...screenWindows, newWindow];
           return {
             splitScreenWindows: {
               ...state.splitScreenWindows,
-              [screenId]: [...screenWindows, newWindow],
+              [screenId]: normalizeZIndexesIfNeeded(windows),
             },
           };
         }),
@@ -372,12 +377,13 @@ export const useDesktopStore = create<DesktopState>()(
           // zIndexが既に最大なら何もしない（不要な再レンダリング防止）
           if (targetWindow.zIndex === maxZ) return state;
 
+          const updatedScreenWindows = screenWindows.map((w) =>
+            w.id === windowId ? { ...w, zIndex: maxZ + 1 } : w
+          );
           return {
             splitScreenWindows: {
               ...state.splitScreenWindows,
-              [screenId]: screenWindows.map((w) =>
-                w.id === windowId ? { ...w, zIndex: maxZ + 1 } : w
-              ),
+              [screenId]: normalizeZIndexesIfNeeded(updatedScreenWindows),
             },
           };
         }),
@@ -406,6 +412,11 @@ export const useDesktopStore = create<DesktopState>()(
     }),
     {
       name: 'desktop-storage-v2', // localStorageのキー名（バージョンアップで強制初期化）
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('状態の復元に失敗しました:', error);
+        }
+      },
     }
   )
 );
