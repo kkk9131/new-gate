@@ -54,7 +54,7 @@ export function SplitMode() {
   // 2分割レイアウト
   if (splitMode === 2) {
     return (
-      <div className="fixed inset-0 z-[100] bg-gray-50 dark:bg-gray-900 flex">
+      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-gray-50 dark:bg-gray-900 flex">
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
@@ -74,7 +74,7 @@ export function SplitMode() {
         {/* 終了ボタン */}
         <button
           onClick={() => setSplitMode(1)}
-          className="fixed top-4 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
+          className="fixed top-20 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
           aria-label="分割モード終了"
         >
           <RiCloseLine className="w-6 h-6" />
@@ -86,7 +86,7 @@ export function SplitMode() {
   // 3分割レイアウト（左50% + 右上25% + 右下25%）
   if (splitMode === 3) {
     return (
-      <div className="fixed inset-0 z-[100] bg-gray-50 dark:bg-gray-900 flex">
+      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-gray-50 dark:bg-gray-900 flex">
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
@@ -117,7 +117,7 @@ export function SplitMode() {
         {/* 終了ボタン */}
         <button
           onClick={() => setSplitMode(1)}
-          className="fixed top-4 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
+          className="fixed top-20 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
           aria-label="分割モード終了"
         >
           <RiCloseLine className="w-6 h-6" />
@@ -129,7 +129,7 @@ export function SplitMode() {
   // 4分割レイアウト（2x2グリッド）
   if (splitMode === 4) {
     return (
-      <div className="fixed inset-0 z-[100] bg-gray-50 dark:bg-gray-900 grid grid-cols-2 grid-rows-2">
+      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-gray-50 dark:bg-gray-900 grid grid-cols-2 grid-rows-2">
         {/* 左上画面 */}
         <SplitScreen
           screenId="topLeft"
@@ -165,7 +165,7 @@ export function SplitMode() {
         {/* 終了ボタン */}
         <button
           onClick={() => setSplitMode(1)}
-          className="fixed top-4 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
+          className="fixed top-20 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
           aria-label="分割モード終了"
         >
           <RiCloseLine className="w-6 h-6" />
