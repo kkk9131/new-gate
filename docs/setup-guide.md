@@ -1,8 +1,8 @@
-# セットアップガイド
+# セットアップガイド（プラグインベースプラットフォーム版）
 
 ## 📋 実装開始前の準備
 
-このガイドに従って、開発環境をセットアップしてください。
+このガイドに従って、プラグインベースSaaSプラットフォームの開発環境をセットアップしてください。
 
 ---
 
@@ -71,33 +71,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 2. projects テーブル
-CREATE TABLE projects ( ... );
+-- 2. MVPテーブル（4つ）
+-- projects, user_settings, app_settings, revenues
 
--- 3. projects のインデックス・トリガー・RLS
-CREATE INDEX ...
-CREATE TRIGGER ...
-ALTER TABLE ...
+-- 3. プラグインシステムテーブル（4つ）
+-- store_plugins, plugin_installations, plugin_permissions, plugin_reviews
 
--- 4. user_settings テーブル
-CREATE TABLE user_settings ( ... );
+-- 4. エージェントシステムテーブル（3つ）
+-- agent_tasks, agent_executions, agent_step_logs
 
--- 5-7. 同様に app_settings, revenues テーブルを作成
+-- 5. 各テーブルのインデックス・トリガー・RLS設定
 
--- 8. 自動設定作成関数・トリガー
+-- 6. 自動設定作成関数・トリガー
 CREATE OR REPLACE FUNCTION create_user_settings() ...
 CREATE TRIGGER on_auth_user_created ...
 
--- 9. ビュー作成
+-- 7. ビュー作成
 CREATE OR REPLACE VIEW project_revenue_summary AS ...
 CREATE OR REPLACE VIEW monthly_revenue_summary AS ...
 ```
 
 3. 各SQL実行後「Success」を確認
 
-### 1.4 認証設定（オプション）
+### 1.4 認証設定
 
-後で実装する場合は以下を設定：
 1. 「Authentication」→「Providers」
 2. 「Email」を有効化
 3. 必要に応じて他のプロバイダー（Google等）を有効化
@@ -110,7 +107,7 @@ CREATE OR REPLACE VIEW monthly_revenue_summary AS ...
 
 1. https://platform.openai.com/api-keys にアクセス
 2. 「Create new secret key」をクリック
-3. 名前を入力（例: `new-gate-mvp`）
+3. 名前を入力（例: `new-gate-platform`）
 4. APIキーをコピーして保存（二度と表示されません）
    ```
    sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -135,12 +132,29 @@ CREATE OR REPLACE VIEW monthly_revenue_summary AS ...
    Name: 新時代SaaSアシスタント
 
    Instructions (システムプロンプト):
-   あなたは新時代SaaSの操作をサポートするアシスタントです。
-   ユーザーがプロジェクト管理、設定変更、売上確認を行えるよう支援してください。
+   あなたは新時代SaaSプラットフォームのアシスタントです。
+   ユーザーの指示に応じて以下の操作を実行してください：
+
+   1. アプリ起動: 「〇〇を開いて」→ アプリウィンドウを開く
+   2. データ操作: 「〇〇を作成して」→ API呼び出し
+   3. エージェントタスク: 「〇〇を実行して」→ タスク作成
+   4. プラグイン管理: 「〇〇プラグインをインストール」→ ストア操作
+
+   利用可能なアプリ:
+   - プロジェクト管理 (Projects)
+   - 設定 (Settings)
+   - 売上確認 (Revenue)
+   - プラグインストア (Store)
+   - エージェント (Agent)
 
    日本語で親しみやすく、わかりやすく回答してください。
 
-   Tools: （必要に応じて後で追加）
+   Tools: （後で追加）
+   - get_projects
+   - create_project
+   - get_revenues
+   - install_plugin
+   - create_agent_task
    ```
 
 4. 「Publish」をクリック
@@ -175,7 +189,7 @@ cp .env.example .env.local
 `.env.local`を開いて、以下を入力：
 
 ```env
-# Supabase
+# Supabase（データベース）
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -250,41 +264,113 @@ npm run dev
 
 ---
 
-## 🐙 Step 5: Gitセットアップ
+## 🏗️ Step 5: プラットフォーム構造の準備
 
-### 5.1 現在の状態確認
+### 5.1 フォルダ構造作成
+
+```bash
+# プラグイン関連
+mkdir -p components/plugins
+mkdir -p lib/plugins
+mkdir -p app/api/store
+mkdir -p app/api/plugins
+
+# エージェント関連
+mkdir -p components/agent
+mkdir -p lib/agent
+mkdir -p app/api/agent
+
+# デスクトップUI関連
+mkdir -p components/desktop
+mkdir -p components/chat
+
+# ストア関連
+mkdir -p store
+```
+
+### 5.2 基本設定ファイル作成
+
+**Zustand Store (`store/useDesktopStore.ts`)**:
+```typescript
+import { create } from 'zustand';
+
+interface DesktopStore {
+  // 開いているウィンドウ
+  openWindows: Array<{
+    id: string;
+    appId: string;
+    title: string;
+  }>;
+
+  // アプリを開く
+  openApp: (appId: string) => void;
+
+  // ウィンドウを閉じる
+  closeWindow: (windowId: string) => void;
+}
+
+export const useDesktopStore = create<DesktopStore>((set) => ({
+  openWindows: [],
+
+  openApp: (appId) => {
+    set((state) => ({
+      openWindows: [
+        ...state.openWindows,
+        {
+          id: `window-${Date.now()}`,
+          appId,
+          title: appId,
+        },
+      ],
+    }));
+  },
+
+  closeWindow: (windowId) => {
+    set((state) => ({
+      openWindows: state.openWindows.filter((w) => w.id !== windowId),
+    }));
+  },
+}));
+```
+
+---
+
+## 🐙 Step 6: Gitセットアップ
+
+### 6.1 現在の状態確認
 
 ```bash
 git status
 ```
 
-### 5.2 変更をコミット
+### 6.2 変更をコミット
 
 ```bash
 # 新しいブランチを作成
-git checkout -b feature/setup-environment
+git checkout -b feature/setup-platform-environment
 
 # 変更をステージング
 git add .
 
 # コミット
-git commit -m "🔧 開発環境のセットアップ完了や
+git commit -m "🔧 プラグインプラットフォーム開発環境のセットアップ完了や
 
-- Supabase設定追加
-- OpenAI ChatKit設定追加
+- Supabase設定追加（MVP + プラグイン + エージェント）
+- OpenAI ChatKit設定追加（右側固定レイアウト）
 - 環境変数テンプレート作成
 - 依存パッケージインストール
+- プラットフォーム構造準備
 - ドキュメント整備完了"
 
 # リモートにプッシュ
-git push origin feature/setup-environment
+git push origin feature/setup-platform-environment
 ```
 
 ---
 
-## 🚀 Step 6: Vercel連携準備
+## 🚀 Step 7: Vercel連携準備
 
-### 6.1 Vercelプロジェクト作成
+### 7.1 Vercelプロジェクト作成
 
 1. https://vercel.com にアクセス
 2. 「New Project」をクリック
@@ -292,7 +378,7 @@ git push origin feature/setup-environment
 4. プロジェクト名を入力
 5. **まだデプロイしない**（環境変数設定後）
 
-### 6.2 環境変数設定（Vercel）
+### 7.2 環境変数設定（Vercel）
 
 1. Vercel Dashboard → Settings → Environment Variables
 2. 以下を**Production**環境に追加：
@@ -315,15 +401,22 @@ git push origin feature/setup-environment
 
 すべて完了したらチェック：
 
+### 基本セットアップ
 - [ ] Supabaseプロジェクト作成完了
-- [ ] データベーステーブル作成完了
+- [ ] データベーステーブル作成完了（MVP + プラグイン + エージェント）
 - [ ] OpenAI API Key取得完了
 - [ ] Agent Builder ワークフロー作成完了
 - [ ] ChatKit Domain Allowlist 設定完了
+
+### 開発環境
 - [ ] `.env.local` 作成・設定完了
 - [ ] 依存パッケージインストール完了
 - [ ] `npm run dev` でエラーなく起動
 - [ ] `.gitignore` 確認完了
+
+### プラットフォーム構造
+- [ ] フォルダ構造作成完了
+- [ ] 基本Store設定完了
 - [ ] Git コミット完了
 - [ ] Vercel連携準備完了
 
@@ -333,9 +426,20 @@ git push origin feature/setup-environment
 
 セットアップ完了後、実装を開始：
 
-1. `docs/tasks.md` を開く
-2. **Phase 1: 環境構築・基盤準備** から順番に実装
-3. チェックリストにチェックを入れながら進める
+### Phase 1: MVP実装（12-15日）
+1. `docs/tasks.md` の Phase 1-8 を順番に実装
+2. デスクトップUI + チャット右側固定
+3. Projects, Settings, Revenue アプリ
+
+### Phase 2: プラグインシステム（8-10日）
+1. `docs/tasks.md` の Phase 9-10 を実装
+2. プラグインストア構築
+3. 開発者向けSDK・CLI
+
+### Phase 3: エージェントシステム（5-7日）
+1. `docs/tasks.md` の Phase 11 を実装
+2. ワークフローエンジン
+3. タスクスケジューラー
 
 ---
 
@@ -374,11 +478,31 @@ rm -rf node_modules package-lock.json
 npm install
 ```
 
+### ChatKit表示エラー
+
+**確認事項**:
+- ✅ Domain Allowlistに`localhost:3000`を追加したか
+- ✅ `CHATKIT_WORKFLOW_ID`が正しいか
+- ✅ OpenAI組織の認証が完了しているか
+
 ---
 
 ## 📚 関連ドキュメント
 
-- [MVP要件定義書](./mvp-requirements.md)
-- [データベーススキーマ設計](./database-schema.md)
+### プラットフォーム設計
+- [プラットフォーム要件定義](./platform-requirements.md)
+- [プラグインアーキテクチャ](./plugin-architecture.md)
+- [エージェントシステム設計](./agent-system-design.md)
+- [デスクトップUI設計](./desktop-ui-design.md)
+
+### 実装ガイド
 - [ChatKit実装ガイド](./chatkit-implementation.md)
+- [開発者ガイド](./developer-guide.md)
+- [Core API仕様](./core-api-spec.md)
+
+### データベース・API
+- [データベーススキーマ](./database-schema.md)
+- [API設計書](./api-design.md)
+
+### タスク管理
 - [実装タスクリスト](./tasks.md)

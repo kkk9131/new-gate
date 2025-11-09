@@ -773,8 +773,593 @@ export function handleAPIError(error: any) {
 
 ---
 
+## 🔌 プラグインストアAPI（Phase 2）
+
+### 17. プラグイン一覧取得
+
+#### エンドポイント
+```
+GET /api/store/plugins
+```
+
+#### クエリパラメータ
+
+| パラメータ | 型 | 必須 | デフォルト | 説明 |
+|-----------|-----|------|-----------|------|
+| category | string | NO | - | カテゴリフィルター |
+| search | string | NO | - | 検索キーワード |
+| sortBy | string | NO | popular | ソート（popular/rating/recent） |
+| limit | number | NO | 20 | 取得件数 |
+| offset | number | NO | 0 | オフセット |
+
+#### リクエスト例
+```http
+GET /api/store/plugins?category=business&sortBy=popular&limit=20
+Authorization: Bearer <token>
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": [
+    {
+      "id": "plugin-uuid",
+      "pluginId": "com.platform.revenue",
+      "name": "売上管理プラグイン",
+      "description": "売上データを管理",
+      "iconUrl": "https://...",
+      "category": "business",
+      "latestVersion": "1.0.0",
+      "averageRating": 4.5,
+      "reviewCount": 120,
+      "downloadCount": 5000,
+      "price": 0,
+      "isFree": true,
+      "isOfficial": true,
+      "authorName": "Platform Team"
+    }
+  ]
+}
+```
+
+---
+
+### 18. プラグイン詳細取得
+
+#### エンドポイント
+```
+GET /api/store/plugins/[pluginId]
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": {
+    "id": "plugin-uuid",
+    "pluginId": "com.platform.revenue",
+    "name": "売上管理プラグイン",
+    "description": "売上データを管理",
+    "longDescription": "詳細な説明...",
+    "iconUrl": "https://...",
+    "screenshots": ["https://...", "https://..."],
+    "category": "business",
+    "tags": ["売上", "会計"],
+    "latestVersion": "1.0.0",
+    "minPlatformVersion": "1.0.0",
+    "averageRating": 4.5,
+    "reviewCount": 120,
+    "downloadCount": 5000,
+    "installCount": 3000,
+    "price": 0,
+    "isFree": true,
+    "isOfficial": true,
+    "authorId": "author-uuid",
+    "authorName": "Platform Team",
+    "publishedAt": "2025-01-01T00:00:00Z",
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": "2025-01-15T00:00:00Z"
+  }
+}
+```
+
+---
+
+### 19. プラグインインストール
+
+#### エンドポイント
+```
+POST /api/store/plugins/[pluginId]/install
+```
+
+#### リクエストボディ
+```json
+{
+  "version": "1.0.0"  // オプション（デフォルト: latest）
+}
+```
+
+#### レスポンス例（201 Created）
+```json
+{
+  "data": {
+    "id": "installation-uuid",
+    "userId": "user-uuid",
+    "pluginId": "com.platform.revenue",
+    "installedVersion": "1.0.0",
+    "isActive": true,
+    "installedAt": "2025-01-20T10:00:00Z"
+  }
+}
+```
+
+---
+
+### 20. プラグインアンインストール
+
+#### エンドポイント
+```
+DELETE /api/store/plugins/[pluginId]/install
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": {
+    "message": "プラグインをアンインストールしました",
+    "pluginId": "com.platform.revenue"
+  }
+}
+```
+
+---
+
+### 21. インストール済みプラグイン一覧
+
+#### エンドポイント
+```
+GET /api/plugins/installed
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": [
+    {
+      "id": "installation-uuid",
+      "pluginId": "com.platform.revenue",
+      "installedVersion": "1.0.0",
+      "isActive": true,
+      "isAutoUpdate": false,
+      "installedAt": "2025-01-20T10:00:00Z",
+      "lastUsedAt": "2025-01-25T15:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 22. プラグイン有効化/無効化
+
+#### エンドポイント
+```
+PATCH /api/plugins/[pluginId]/status
+```
+
+#### リクエストボディ
+```json
+{
+  "isActive": false
+}
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": {
+    "pluginId": "com.platform.revenue",
+    "isActive": false,
+    "updatedAt": "2025-01-26T09:00:00Z"
+  }
+}
+```
+
+---
+
+### 23. プラグインレビュー投稿
+
+#### エンドポイント
+```
+POST /api/store/plugins/[pluginId]/reviews
+```
+
+#### リクエストボディ
+```json
+{
+  "rating": 5,
+  "title": "とても使いやすい",
+  "comment": "売上管理が簡単になりました"
+}
+```
+
+#### バリデーション
+
+| フィールド | ルール |
+|-----------|--------|
+| rating | 必須、1-5の整数 |
+| title | オプション、最大255文字 |
+| comment | オプション |
+
+#### レスポンス例（201 Created）
+```json
+{
+  "data": {
+    "id": "review-uuid",
+    "pluginId": "com.platform.revenue",
+    "userId": "user-uuid",
+    "rating": 5,
+    "title": "とても使いやすい",
+    "comment": "売上管理が簡単になりました",
+    "helpfulCount": 0,
+    "createdAt": "2025-01-26T10:00:00Z"
+  }
+}
+```
+
+---
+
+### 24. プラグインレビュー一覧取得
+
+#### エンドポイント
+```
+GET /api/store/plugins/[pluginId]/reviews
+```
+
+#### クエリパラメータ
+
+| パラメータ | 型 | 必須 | デフォルト | 説明 |
+|-----------|-----|------|-----------|------|
+| sortBy | string | NO | recent | ソート（recent/helpful/rating） |
+| limit | number | NO | 10 | 取得件数 |
+| offset | number | NO | 0 | オフセット |
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": [
+    {
+      "id": "review-uuid",
+      "pluginId": "com.platform.revenue",
+      "userId": "user-uuid",
+      "rating": 5,
+      "title": "とても使いやすい",
+      "comment": "売上管理が簡単になりました",
+      "helpfulCount": 15,
+      "createdAt": "2025-01-26T10:00:00Z",
+      "updatedAt": "2025-01-26T10:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## 🤖 エージェントシステムAPI（Phase 3）
+
+### 25. エージェントタスク一覧取得
+
+#### エンドポイント
+```
+GET /api/agents/tasks
+```
+
+#### クエリパラメータ
+
+| パラメータ | 型 | 必須 | デフォルト | 説明 |
+|-----------|-----|------|-----------|------|
+| isActive | boolean | NO | - | 有効フラグでフィルター |
+| limit | number | NO | 50 | 取得件数 |
+| offset | number | NO | 0 | オフセット |
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": [
+    {
+      "id": "task-uuid",
+      "userId": "user-uuid",
+      "name": "月次売上レポート自動生成",
+      "description": "毎月1日に先月の売上レポートを生成してメール送信",
+      "workflow": {
+        "steps": [
+          {
+            "id": "fetch-revenues",
+            "action": "plugin.call",
+            "plugin": "com.platform.revenue",
+            "method": "getRevenues",
+            "params": {
+              "startDate": "{{ lastMonth.start }}",
+              "endDate": "{{ lastMonth.end }}"
+            },
+            "output": "revenues"
+          }
+        ]
+      },
+      "schedule": {
+        "cron": "0 9 1 * *",
+        "timezone": "Asia/Tokyo"
+      },
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 26. エージェントタスク作成
+
+#### エンドポイント
+```
+POST /api/agents/tasks
+```
+
+#### リクエストボディ
+```json
+{
+  "name": "データバックアップ",
+  "description": "毎週日曜日にデータをバックアップ",
+  "workflow": {
+    "steps": [
+      {
+        "id": "backup",
+        "action": "plugin.call",
+        "plugin": "com.platform.backup",
+        "method": "createBackup",
+        "output": "backupUrl"
+      }
+    ]
+  },
+  "schedule": {
+    "cron": "0 2 * * 0",
+    "timezone": "Asia/Tokyo"
+  },
+  "isActive": true
+}
+```
+
+#### レスポンス例（201 Created）
+```json
+{
+  "data": {
+    "id": "task-uuid",
+    "userId": "user-uuid",
+    "name": "データバックアップ",
+    "description": "毎週日曜日にデータをバックアップ",
+    "workflow": { ... },
+    "schedule": {
+      "cron": "0 2 * * 0",
+      "timezone": "Asia/Tokyo"
+    },
+    "isActive": true,
+    "createdAt": "2025-01-26T12:00:00Z",
+    "updatedAt": "2025-01-26T12:00:00Z"
+  }
+}
+```
+
+---
+
+### 27. エージェントタスク詳細取得
+
+#### エンドポイント
+```
+GET /api/agents/tasks/[taskId]
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": {
+    "id": "task-uuid",
+    "userId": "user-uuid",
+    "name": "月次売上レポート自動生成",
+    "description": "毎月1日に先月の売上レポートを生成してメール送信",
+    "workflow": { ... },
+    "schedule": {
+      "cron": "0 9 1 * *",
+      "timezone": "Asia/Tokyo"
+    },
+    "isActive": true,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+---
+
+### 28. エージェントタスク更新
+
+#### エンドポイント
+```
+PATCH /api/agents/tasks/[taskId]
+```
+
+#### リクエストボディ（部分更新）
+```json
+{
+  "name": "月次売上レポート自動生成（更新版）",
+  "isActive": false
+}
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": {
+    "id": "task-uuid",
+    "userId": "user-uuid",
+    "name": "月次売上レポート自動生成（更新版）",
+    "description": "毎月1日に先月の売上レポートを生成してメール送信",
+    "workflow": { ... },
+    "schedule": { ... },
+    "isActive": false,
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": "2025-01-26T14:00:00Z"
+  }
+}
+```
+
+---
+
+### 29. エージェントタスク削除
+
+#### エンドポイント
+```
+DELETE /api/agents/tasks/[taskId]
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": {
+    "message": "タスクを削除しました",
+    "id": "task-uuid"
+  }
+}
+```
+
+---
+
+### 30. エージェントタスク手動実行
+
+#### エンドポイント
+```
+POST /api/agents/tasks/[taskId]/execute
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": {
+    "executionId": "execution-uuid",
+    "taskId": "task-uuid",
+    "status": "running",
+    "startedAt": "2025-01-26T15:00:00Z"
+  }
+}
+```
+
+---
+
+### 31. エージェント実行履歴取得
+
+#### エンドポイント
+```
+GET /api/agents/tasks/[taskId]/executions
+```
+
+#### クエリパラメータ
+
+| パラメータ | 型 | 必須 | デフォルト | 説明 |
+|-----------|-----|------|-----------|------|
+| status | string | NO | - | ステータスフィルター（running/success/failed） |
+| limit | number | NO | 10 | 取得件数 |
+| offset | number | NO | 0 | オフセット |
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": [
+    {
+      "id": "execution-uuid",
+      "taskId": "task-uuid",
+      "status": "success",
+      "startedAt": "2025-01-01T09:00:00Z",
+      "completedAt": "2025-01-01T09:03:15Z",
+      "executionTimeMs": 195000,
+      "results": {
+        "total": 5000000,
+        "pdfUrl": "https://..."
+      },
+      "errorMessage": null
+    }
+  ]
+}
+```
+
+---
+
+### 32. エージェント実行詳細取得
+
+#### エンドポイント
+```
+GET /api/agents/executions/[executionId]
+```
+
+#### レスポンス例（200 OK）
+```json
+{
+  "data": {
+    "id": "execution-uuid",
+    "taskId": "task-uuid",
+    "status": "success",
+    "startedAt": "2025-01-01T09:00:00Z",
+    "completedAt": "2025-01-01T09:03:15Z",
+    "executionTimeMs": 195000,
+    "results": {
+      "total": 5000000,
+      "pdfUrl": "https://..."
+    },
+    "errorMessage": null,
+    "stepLogs": [
+      {
+        "id": "log-uuid",
+        "stepId": "fetch-revenues",
+        "status": "success",
+        "startedAt": "2025-01-01T09:00:00Z",
+        "completedAt": "2025-01-01T09:01:00Z",
+        "executionTimeMs": 60000,
+        "output": {
+          "revenues": [ ... ]
+        }
+      },
+      {
+        "id": "log-uuid-2",
+        "stepId": "aggregate-data",
+        "status": "success",
+        "startedAt": "2025-01-01T09:01:00Z",
+        "completedAt": "2025-01-01T09:01:05Z",
+        "executionTimeMs": 5000,
+        "output": {
+          "total": 5000000
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
 ## 📚 関連ドキュメント
 
+### プラットフォーム関連
+- [プラットフォーム要件定義書](./platform-requirements.md)
 - [MVP要件定義書](./mvp-requirements.md)
+
+### プラグインシステム関連
+- [プラグインアーキテクチャ](./plugin-architecture.md)
+- [プラグインストア設計](./plugin-store-design.md)
+- [開発者ガイド](./developer-guide.md)
+- [Core API仕様](./core-api-spec.md)
+
+### エージェントシステム関連
+- [エージェントシステム設計](./agent-system-design.md)
+
+### 実装関連
 - [データベーススキーマ設計](./database-schema.md)
 - [実装タスクリスト](./tasks.md)

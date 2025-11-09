@@ -10,10 +10,22 @@
 
 ## 🗄️ テーブル一覧
 
+### コア機能（MVP Phase 1）
 1. **projects** - プロジェクト管理
 2. **user_settings** - ユーザー設定
 3. **app_settings** - アプリケーション設定
 4. **revenues** - 売上データ
+
+### プラグインシステム（Phase 2）
+5. **store_plugins** - ストア掲載プラグイン情報
+6. **plugin_installations** - ユーザーのプラグインインストール状況
+7. **plugin_permissions** - プラグイン権限管理
+8. **plugin_reviews** - プラグインレビュー
+
+### エージェントシステム（Phase 3）
+9. **agent_tasks** - エージェントタスク定義
+10. **agent_executions** - タスク実行履歴
+11. **agent_step_logs** - ステップ実行ログ
 
 ---
 
@@ -477,8 +489,588 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 ---
 
+## プラグインシステム（Phase 2）
+
+### 5. store_plugins（ストア掲載プラグイン情報）
+
+ストアで公開されているプラグインの情報を管理するテーブル。
+
+```sql
+CREATE TABLE store_plugins (
+  -- 主キー
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- 基本情報
+  plugin_id VARCHAR(255) NOT NULL UNIQUE,  -- com.example.plugin
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  long_description TEXT,
+  icon_url TEXT,
+  screenshots TEXT[],
+
+  -- 開発者情報
+  author_id UUID REFERENCES auth.users(id),
+  author_name VARCHAR(255),
+  author_email VARCHAR(255),
+
+  -- カテゴリ・タグ
+  category VARCHAR(50),
+  tags TEXT[],
+
+  -- バージョン管理
+  latest_version VARCHAR(20),
+  min_platform_version VARCHAR(20),
+
+  -- 統計情報
+  download_count INT DEFAULT 0,
+  install_count INT DEFAULT 0,
+  average_rating DECIMAL(3, 2) DEFAULT 0.0,
+  review_count INT DEFAULT 0,
+
+  -- 価格
+  price DECIMAL(10, 2) DEFAULT 0.0,
+  is_free BOOLEAN DEFAULT TRUE,
+
+  -- ステータス
+  is_published BOOLEAN DEFAULT FALSE,
+  is_featured BOOLEAN DEFAULT FALSE,
+  is_official BOOLEAN DEFAULT FALSE,
+
+  -- タイムスタンプ
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- インデックス
+CREATE INDEX idx_store_plugins_plugin_id ON store_plugins(plugin_id);
+CREATE INDEX idx_store_plugins_category ON store_plugins(category);
+CREATE INDEX idx_store_plugins_author_id ON store_plugins(author_id);
+CREATE INDEX idx_store_plugins_published ON store_plugins(is_published, published_at DESC);
+
+-- 更新日時の自動更新トリガー
+CREATE TRIGGER update_store_plugins_updated_at
+  BEFORE UPDATE ON store_plugins
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Row Level Security (RLS)
+ALTER TABLE store_plugins ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: 公開されたプラグインは全員が参照可能
+CREATE POLICY "Everyone can view published plugins"
+  ON store_plugins FOR SELECT
+  USING (is_published = TRUE);
+
+-- ポリシー: 開発者は自分のプラグインを参照可能
+CREATE POLICY "Authors can view their own plugins"
+  ON store_plugins FOR SELECT
+  USING (auth.uid() = author_id);
+
+-- ポリシー: 開発者は自分のプラグインを作成可能
+CREATE POLICY "Authors can create their own plugins"
+  ON store_plugins FOR INSERT
+  WITH CHECK (auth.uid() = author_id);
+
+-- ポリシー: 開発者は自分のプラグインを更新可能
+CREATE POLICY "Authors can update their own plugins"
+  ON store_plugins FOR UPDATE
+  USING (auth.uid() = author_id);
+```
+
+#### カラム説明
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | UUID | NO | gen_random_uuid() | プラグインID（主キー） |
+| plugin_id | VARCHAR(255) | NO | - | プラグイン識別子（com.example.plugin） |
+| name | VARCHAR(255) | NO | - | プラグイン名 |
+| description | TEXT | YES | NULL | 短い説明 |
+| long_description | TEXT | YES | NULL | 詳細説明 |
+| icon_url | TEXT | YES | NULL | アイコンURL |
+| screenshots | TEXT[] | YES | NULL | スクリーンショットURL配列 |
+| author_id | UUID | YES | NULL | 開発者ID（外部キー） |
+| author_name | VARCHAR(255) | YES | NULL | 開発者名 |
+| author_email | VARCHAR(255) | YES | NULL | 開発者メールアドレス |
+| category | VARCHAR(50) | YES | NULL | カテゴリ |
+| tags | TEXT[] | YES | NULL | タグ配列 |
+| latest_version | VARCHAR(20) | YES | NULL | 最新バージョン |
+| min_platform_version | VARCHAR(20) | YES | NULL | 最低プラットフォームバージョン |
+| download_count | INT | NO | 0 | ダウンロード数 |
+| install_count | INT | NO | 0 | インストール数 |
+| average_rating | DECIMAL(3,2) | NO | 0.0 | 平均評価 |
+| review_count | INT | NO | 0 | レビュー数 |
+| price | DECIMAL(10,2) | NO | 0.0 | 価格 |
+| is_free | BOOLEAN | NO | TRUE | 無料フラグ |
+| is_published | BOOLEAN | NO | FALSE | 公開フラグ |
+| is_featured | BOOLEAN | NO | FALSE | おすすめフラグ |
+| is_official | BOOLEAN | NO | FALSE | 公式プラグインフラグ |
+| published_at | TIMESTAMPTZ | YES | NULL | 公開日時 |
+| created_at | TIMESTAMPTZ | NO | NOW() | 作成日時 |
+| updated_at | TIMESTAMPTZ | NO | NOW() | 更新日時 |
+
+---
+
+### 6. plugin_installations（プラグインインストール状況）
+
+ユーザーがインストールしたプラグインの状態を管理するテーブル。
+
+```sql
+CREATE TABLE plugin_installations (
+  -- 主キー
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- 関連情報
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  plugin_id VARCHAR(255) NOT NULL,
+
+  -- インストール情報
+  installed_version VARCHAR(20) NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  is_auto_update BOOLEAN NOT NULL DEFAULT FALSE,
+
+  -- 設定情報（プラグインごとの設定をJSON形式で保存）
+  settings JSONB DEFAULT '{}',
+
+  -- タイムスタンプ
+  installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  -- ユニーク制約: 1ユーザーは同じプラグインを1つだけインストール可能
+  UNIQUE(user_id, plugin_id)
+);
+
+-- インデックス
+CREATE INDEX idx_plugin_installations_user_id ON plugin_installations(user_id);
+CREATE INDEX idx_plugin_installations_plugin_id ON plugin_installations(plugin_id);
+CREATE INDEX idx_plugin_installations_active ON plugin_installations(user_id, is_active);
+
+-- 更新日時の自動更新トリガー
+CREATE TRIGGER update_plugin_installations_updated_at
+  BEFORE UPDATE ON plugin_installations
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Row Level Security (RLS)
+ALTER TABLE plugin_installations ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: ユーザーは自分のインストール状況のみ参照可能
+CREATE POLICY "Users can view their own installations"
+  ON plugin_installations FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分のプラグインをインストール可能
+CREATE POLICY "Users can install plugins"
+  ON plugin_installations FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分のインストール状況を更新可能
+CREATE POLICY "Users can update their own installations"
+  ON plugin_installations FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分のプラグインをアンインストール可能
+CREATE POLICY "Users can uninstall their plugins"
+  ON plugin_installations FOR DELETE
+  USING (auth.uid() = user_id);
+```
+
+#### カラム説明
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | UUID | NO | gen_random_uuid() | インストールID（主キー） |
+| user_id | UUID | NO | - | ユーザーID（外部キー） |
+| plugin_id | VARCHAR(255) | NO | - | プラグイン識別子 |
+| installed_version | VARCHAR(20) | NO | - | インストールされたバージョン |
+| is_active | BOOLEAN | NO | TRUE | 有効フラグ |
+| is_auto_update | BOOLEAN | NO | FALSE | 自動更新フラグ |
+| settings | JSONB | YES | '{}' | プラグイン固有の設定 |
+| installed_at | TIMESTAMPTZ | NO | NOW() | インストール日時 |
+| last_used_at | TIMESTAMPTZ | YES | NULL | 最終使用日時 |
+| updated_at | TIMESTAMPTZ | NO | NOW() | 更新日時 |
+
+---
+
+### 7. plugin_permissions（プラグイン権限管理）
+
+プラグインが要求・付与された権限を管理するテーブル。
+
+```sql
+CREATE TABLE plugin_permissions (
+  -- 主キー
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- 関連情報
+  plugin_id VARCHAR(255) NOT NULL,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+
+  -- 権限情報
+  permission VARCHAR(100) NOT NULL,  -- storage.read, storage.write, ui.notification等
+  is_granted BOOLEAN NOT NULL DEFAULT FALSE,
+  granted_at TIMESTAMPTZ,
+
+  -- タイムスタンプ
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  -- ユニーク制約: 同じユーザー・プラグイン・権限の組み合わせは1つのみ
+  UNIQUE(user_id, plugin_id, permission)
+);
+
+-- インデックス
+CREATE INDEX idx_plugin_permissions_user_plugin ON plugin_permissions(user_id, plugin_id);
+CREATE INDEX idx_plugin_permissions_granted ON plugin_permissions(user_id, plugin_id, is_granted);
+
+-- 更新日時の自動更新トリガー
+CREATE TRIGGER update_plugin_permissions_updated_at
+  BEFORE UPDATE ON plugin_permissions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Row Level Security (RLS)
+ALTER TABLE plugin_permissions ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: ユーザーは自分の権限設定のみ参照可能
+CREATE POLICY "Users can view their own permissions"
+  ON plugin_permissions FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分の権限設定を作成可能
+CREATE POLICY "Users can create their own permissions"
+  ON plugin_permissions FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分の権限設定を更新可能
+CREATE POLICY "Users can update their own permissions"
+  ON plugin_permissions FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分の権限設定を削除可能
+CREATE POLICY "Users can delete their own permissions"
+  ON plugin_permissions FOR DELETE
+  USING (auth.uid() = user_id);
+```
+
+#### カラム説明
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | UUID | NO | gen_random_uuid() | 権限ID（主キー） |
+| plugin_id | VARCHAR(255) | NO | - | プラグイン識別子 |
+| user_id | UUID | NO | - | ユーザーID（外部キー） |
+| permission | VARCHAR(100) | NO | - | 権限名（storage.read等） |
+| is_granted | BOOLEAN | NO | FALSE | 付与フラグ |
+| granted_at | TIMESTAMPTZ | YES | NULL | 付与日時 |
+| created_at | TIMESTAMPTZ | NO | NOW() | 作成日時 |
+| updated_at | TIMESTAMPTZ | NO | NOW() | 更新日時 |
+
+---
+
+### 8. plugin_reviews（プラグインレビュー）
+
+ユーザーがプラグインに投稿したレビューを管理するテーブル。
+
+```sql
+CREATE TABLE plugin_reviews (
+  -- 主キー
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- 関連情報
+  plugin_id VARCHAR(255) NOT NULL,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+
+  -- レビュー内容
+  rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  title VARCHAR(255),
+  comment TEXT,
+
+  -- 役に立った数
+  helpful_count INT DEFAULT 0,
+
+  -- タイムスタンプ
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  -- ユニーク制約: 1ユーザー1プラグインにつき1レビュー
+  UNIQUE(plugin_id, user_id)
+);
+
+-- インデックス
+CREATE INDEX idx_plugin_reviews_plugin_id ON plugin_reviews(plugin_id);
+CREATE INDEX idx_plugin_reviews_user_id ON plugin_reviews(user_id);
+CREATE INDEX idx_plugin_reviews_rating ON plugin_reviews(plugin_id, rating DESC);
+CREATE INDEX idx_plugin_reviews_created ON plugin_reviews(created_at DESC);
+
+-- 更新日時の自動更新トリガー
+CREATE TRIGGER update_plugin_reviews_updated_at
+  BEFORE UPDATE ON plugin_reviews
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Row Level Security (RLS)
+ALTER TABLE plugin_reviews ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: 全員がレビューを参照可能
+CREATE POLICY "Everyone can view reviews"
+  ON plugin_reviews FOR SELECT
+  USING (TRUE);
+
+-- ポリシー: ユーザーは自分のレビューを作成可能
+CREATE POLICY "Users can create their own reviews"
+  ON plugin_reviews FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分のレビューを更新可能
+CREATE POLICY "Users can update their own reviews"
+  ON plugin_reviews FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分のレビューを削除可能
+CREATE POLICY "Users can delete their own reviews"
+  ON plugin_reviews FOR DELETE
+  USING (auth.uid() = user_id);
+```
+
+#### カラム説明
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | UUID | NO | gen_random_uuid() | レビューID（主キー） |
+| plugin_id | VARCHAR(255) | NO | - | プラグイン識別子 |
+| user_id | UUID | NO | - | ユーザーID（外部キー） |
+| rating | INT | NO | - | 評価（1-5） |
+| title | VARCHAR(255) | YES | NULL | レビュータイトル |
+| comment | TEXT | YES | NULL | レビュー本文 |
+| helpful_count | INT | NO | 0 | 役に立った数 |
+| created_at | TIMESTAMPTZ | NO | NOW() | 作成日時 |
+| updated_at | TIMESTAMPTZ | NO | NOW() | 更新日時 |
+
+---
+
+## エージェントシステム（Phase 3）
+
+### 9. agent_tasks（エージェントタスク定義）
+
+AIエージェントが実行するタスクの定義を管理するテーブル。
+
+```sql
+CREATE TABLE agent_tasks (
+  -- 主キー
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- ユーザー情報
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+
+  -- タスク情報
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+
+  -- ワークフロー定義（YAML/JSON形式）
+  workflow JSONB NOT NULL,
+
+  -- スケジュール設定（cron形式とタイムゾーン）
+  schedule JSONB,  -- { cron: "0 9 1 * *", timezone: "Asia/Tokyo" }
+
+  -- ステータス
+  is_active BOOLEAN DEFAULT TRUE,
+
+  -- タイムスタンプ
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- インデックス
+CREATE INDEX idx_agent_tasks_user_id ON agent_tasks(user_id);
+CREATE INDEX idx_agent_tasks_active ON agent_tasks(user_id, is_active);
+
+-- 更新日時の自動更新トリガー
+CREATE TRIGGER update_agent_tasks_updated_at
+  BEFORE UPDATE ON agent_tasks
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Row Level Security (RLS)
+ALTER TABLE agent_tasks ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: ユーザーは自分のタスクのみ参照可能
+CREATE POLICY "Users can view their own tasks"
+  ON agent_tasks FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分のタスクを作成可能
+CREATE POLICY "Users can create their own tasks"
+  ON agent_tasks FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分のタスクを更新可能
+CREATE POLICY "Users can update their own tasks"
+  ON agent_tasks FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- ポリシー: ユーザーは自分のタスクを削除可能
+CREATE POLICY "Users can delete their own tasks"
+  ON agent_tasks FOR DELETE
+  USING (auth.uid() = user_id);
+```
+
+#### カラム説明
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | UUID | NO | gen_random_uuid() | タスクID（主キー） |
+| user_id | UUID | NO | - | ユーザーID（外部キー） |
+| name | VARCHAR(255) | NO | - | タスク名 |
+| description | TEXT | YES | NULL | タスク説明 |
+| workflow | JSONB | NO | - | ワークフロー定義 |
+| schedule | JSONB | YES | NULL | スケジュール設定 |
+| is_active | BOOLEAN | NO | TRUE | 有効フラグ |
+| created_at | TIMESTAMPTZ | NO | NOW() | 作成日時 |
+| updated_at | TIMESTAMPTZ | NO | NOW() | 更新日時 |
+
+---
+
+### 10. agent_executions（タスク実行履歴）
+
+エージェントタスクの実行履歴を管理するテーブル。
+
+```sql
+CREATE TABLE agent_executions (
+  -- 主キー
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- タスク情報
+  task_id UUID NOT NULL REFERENCES agent_tasks(id) ON DELETE CASCADE,
+
+  -- 実行ステータス
+  status VARCHAR(20) NOT NULL,  -- running, success, failed
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+
+  -- 実行結果
+  results JSONB,
+  error_message TEXT,
+
+  -- パフォーマンス情報
+  execution_time_ms INT
+);
+
+-- インデックス
+CREATE INDEX idx_agent_executions_task_id ON agent_executions(task_id);
+CREATE INDEX idx_agent_executions_status ON agent_executions(status);
+CREATE INDEX idx_agent_executions_started ON agent_executions(started_at DESC);
+
+-- Row Level Security (RLS)
+ALTER TABLE agent_executions ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: ユーザーは自分のタスクの実行履歴のみ参照可能
+CREATE POLICY "Users can view their own task executions"
+  ON agent_executions FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM agent_tasks
+      WHERE agent_tasks.id = agent_executions.task_id
+      AND agent_tasks.user_id = auth.uid()
+    )
+  );
+```
+
+#### カラム説明
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | UUID | NO | gen_random_uuid() | 実行ID（主キー） |
+| task_id | UUID | NO | - | タスクID（外部キー） |
+| status | VARCHAR(20) | NO | - | ステータス（running/success/failed） |
+| started_at | TIMESTAMPTZ | NO | NOW() | 開始日時 |
+| completed_at | TIMESTAMPTZ | YES | NULL | 完了日時 |
+| results | JSONB | YES | NULL | 実行結果 |
+| error_message | TEXT | YES | NULL | エラーメッセージ |
+| execution_time_ms | INT | YES | NULL | 実行時間（ミリ秒） |
+
+---
+
+### 11. agent_step_logs（ステップ実行ログ）
+
+エージェントタスクの各ステップの実行ログを管理するテーブル。
+
+```sql
+CREATE TABLE agent_step_logs (
+  -- 主キー
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- 実行情報
+  execution_id UUID NOT NULL REFERENCES agent_executions(id) ON DELETE CASCADE,
+
+  -- ステップ情報
+  step_id VARCHAR(255) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+
+  -- 入出力データ
+  input JSONB,
+  output JSONB,
+  error_message TEXT,
+
+  -- タイムスタンプ
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  execution_time_ms INT
+);
+
+-- インデックス
+CREATE INDEX idx_agent_step_logs_execution_id ON agent_step_logs(execution_id);
+CREATE INDEX idx_agent_step_logs_step_id ON agent_step_logs(execution_id, step_id);
+CREATE INDEX idx_agent_step_logs_status ON agent_step_logs(status);
+
+-- Row Level Security (RLS)
+ALTER TABLE agent_step_logs ENABLE ROW LEVEL SECURITY;
+
+-- ポリシー: ユーザーは自分のタスクのステップログのみ参照可能
+CREATE POLICY "Users can view their own step logs"
+  ON agent_step_logs FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM agent_executions
+      JOIN agent_tasks ON agent_tasks.id = agent_executions.task_id
+      WHERE agent_executions.id = agent_step_logs.execution_id
+      AND agent_tasks.user_id = auth.uid()
+    )
+  );
+```
+
+#### カラム説明
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|-----|------|-----------|------|
+| id | UUID | NO | gen_random_uuid() | ログID（主キー） |
+| execution_id | UUID | NO | - | 実行ID（外部キー） |
+| step_id | VARCHAR(255) | NO | - | ステップ識別子 |
+| status | VARCHAR(20) | NO | - | ステータス |
+| input | JSONB | YES | NULL | 入力データ |
+| output | JSONB | YES | NULL | 出力データ |
+| error_message | TEXT | YES | NULL | エラーメッセージ |
+| started_at | TIMESTAMPTZ | NO | NOW() | 開始日時 |
+| completed_at | TIMESTAMPTZ | YES | NULL | 完了日時 |
+| execution_time_ms | INT | YES | NULL | 実行時間（ミリ秒） |
+
+---
+
 ## 📚 関連ドキュメント
 
+### プラットフォーム関連
+- [プラットフォーム要件定義書](./platform-requirements.md)
 - [MVP要件定義書](./mvp-requirements.md)
+
+### プラグインシステム関連
+- [プラグインアーキテクチャ](./plugin-architecture.md)
+- [プラグインストア設計](./plugin-store-design.md)
+- [開発者ガイド](./developer-guide.md)
+- [Core API仕様](./core-api-spec.md)
+
+### エージェントシステム関連
+- [エージェントシステム設計](./agent-system-design.md)
+
+### 実装関連
 - [API設計書](./api-design.md)
 - [実装タスクリスト](./tasks.md)
