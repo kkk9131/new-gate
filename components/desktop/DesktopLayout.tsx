@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -30,6 +30,7 @@ export function DesktopLayout() {
   const toggleDarkMode = useDesktopStore((state) => state.toggleDarkMode);
   const splitMode = useDesktopStore((state) => state.splitMode);
   const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
+  const desktopDndId = useId();
 
   // ドラッグ&ドロップのセンサー設定
   const sensors = useSensors(
@@ -118,7 +119,7 @@ export function DesktopLayout() {
       {/* デスクトップエリア */}
       <main className="h-[calc(100vh-4rem)] overflow-auto p-8 relative">
         <DndContext
-          id="desktop-main"
+          id={desktopDndId}
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}

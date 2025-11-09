@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 
 // アプリの型定義
 export interface App {
@@ -130,24 +130,53 @@ const normalizeZIndexesIfNeeded = (windows: WindowState[]) => {
   return windows.map((w) => ({ ...w, zIndex: orderMap.get(w.id) ?? w.zIndex }));
 };
 
+type DesktopDataSlice = Pick<DesktopState, 'apps' | 'isDarkMode' | 'isDockVisible' | 'windows' | 'splitMode' | 'splitScreenWindows'>;
+
+const createSplitScreenWindows = (): DesktopDataSlice['splitScreenWindows'] => ({
+  left: [],
+  right: [],
+  topLeft: [],
+  topRight: [],
+  bottomLeft: [],
+  bottomRight: [],
+});
+
+const cloneDefaultApps = () => defaultApps.map((app) => ({ ...app }));
+
+const createDesktopData = (): DesktopDataSlice => ({
+  apps: cloneDefaultApps(),
+  isDarkMode: false,
+  isDockVisible: false,
+  windows: [],
+  splitMode: 1,
+  splitScreenWindows: createSplitScreenWindows(),
+});
+
+type MemoryStorage = StateStorage & { clear: () => void };
+
+const createMemoryStorage = (): MemoryStorage => {
+  let storage: Record<string, string> = {};
+  return {
+    getItem: (name) => storage[name] ?? null,
+    setItem: (name, value) => {
+      storage[name] = value;
+    },
+    removeItem: (name) => {
+      delete storage[name];
+    },
+    clear: () => {
+      storage = {};
+    },
+  };
+};
+
+const memoryStorage = createMemoryStorage();
+
 // Zustandストアの作成（localStorage永続化対応）
 export const useDesktopStore = create<DesktopState>()(
   persist(
-    (set) => ({
-      // 初期状態
-      apps: defaultApps,
-      isDarkMode: false,
-      isDockVisible: false,
-      windows: [],
-      splitMode: 1,
-      splitScreenWindows: {
-        left: [],
-        right: [],
-        topLeft: [],
-        topRight: [],
-        bottomLeft: [],
-        bottomRight: [],
-      },
+    (set, get) => ({
+      ...createDesktopData(),
 
       // ダークモード切り替え
   toggleDarkMode: () =>
@@ -412,6 +441,7 @@ export const useDesktopStore = create<DesktopState>()(
     }),
     {
       name: 'desktop-storage-v2', // localStorageのキー名（バージョンアップで強制初期化）
+      storage: createJSONStorage(() => (typeof window !== 'undefined' && window.localStorage ? window.localStorage : memoryStorage)),
       onRehydrateStorage: () => (state, error) => {
         if (error) {
           console.error('状態の復元に失敗しました:', error);
@@ -420,3 +450,13 @@ export const useDesktopStore = create<DesktopState>()(
     }
   )
 );
+
+export const resetDesktopStore = () => {
+  const initialData = createDesktopData();
+  useDesktopStore.setState((state) => ({
+    ...state,
+    ...initialData,
+  }));
+  useDesktopStore.persist?.clearStorage();
+  memoryStorage.clear();
+};
