@@ -391,7 +391,7 @@ export const useDesktopStore = create<DesktopState>()(
         })),
     }),
     {
-      name: 'desktop-storage', // localStorageのキー名
+      name: 'desktop-storage-v2', // localStorageのキー名（バージョンアップで強制初期化）
     }
   )
 );
