@@ -50,6 +50,13 @@ interface DesktopState {
   bringToFront: (windowId: string) => void;
   updateWindowPosition: (windowId: string, position: { x: number; y: number }) => void;
   updateWindowSize: (windowId: string, size: { width: number; height: number }) => void;
+
+  // 分割モード（1: 通常, 2: 2分割, 3: 3分割, 4: 4分割）
+  splitMode: 1 | 2 | 3 | 4;
+  splitScreens: Record<string, string | null>; // スクリーン位置 → アプリID
+  toggleSplitMode: () => void;
+  setSplitMode: (mode: 1 | 2 | 3 | 4) => void;
+  setSplitScreen: (position: string, appId: string | null) => void;
 }
 
 // デフォルトのアプリ一覧
@@ -113,6 +120,15 @@ export const useDesktopStore = create<DesktopState>()(
       isDarkMode: false,
       isDockVisible: false,
       windows: [],
+      splitMode: 1,
+      splitScreens: {
+        left: null,
+        right: null,
+        topRight: null,
+        bottomRight: null,
+        topLeft: null,
+        bottomLeft: null,
+      },
 
       // ダークモード切り替え
       toggleDarkMode: () =>
@@ -238,6 +254,26 @@ export const useDesktopStore = create<DesktopState>()(
           windows: state.windows.map((w) =>
             w.id === windowId ? { ...w, size } : w
           ),
+        })),
+
+      // 分割モードを切り替え（1→2→3→4→1...）
+      toggleSplitMode: () =>
+        set((state) => {
+          const nextMode = state.splitMode === 4 ? 1 : (state.splitMode + 1) as 1 | 2 | 3 | 4;
+          return { splitMode: nextMode };
+        }),
+
+      // 分割モードを直接設定
+      setSplitMode: (mode) =>
+        set({ splitMode: mode }),
+
+      // 分割スクリーンにアプリを割り当て
+      setSplitScreen: (position, appId) =>
+        set((state) => ({
+          splitScreens: {
+            ...state.splitScreens,
+            [position]: appId,
+          },
         })),
     }),
     {

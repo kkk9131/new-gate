@@ -20,7 +20,8 @@ import { useDesktopStore } from '@/store/desktopStore';
 import { AppIcon } from './AppIcon';
 import { Dock } from './Dock';
 import { WindowManager } from './WindowManager';
-import { RiMoonLine, RiSunLine, RiSubtractLine } from 'react-icons/ri';
+import { SplitMode } from './SplitMode';
+import { RiMoonLine, RiSunLine, RiSubtractLine, RiLayout2Line, RiLayout3Line, RiLayout4Line, RiLayoutLine } from 'react-icons/ri';
 
 export function DesktopLayout() {
   const apps = useDesktopStore((state) => state.apps);
@@ -30,6 +31,8 @@ export function DesktopLayout() {
   const toggleDarkMode = useDesktopStore((state) => state.toggleDarkMode);
   const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
   const bringToFront = useDesktopStore((state) => state.bringToFront);
+  const splitMode = useDesktopStore((state) => state.splitMode);
+  const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
 
   // ドラッグ&ドロップのセンサー設定
   const sensors = useSensors(
@@ -105,25 +108,45 @@ export function DesktopLayout() {
           </div>
         </div>
 
-        {/* 右側：ダークモード切り替えボタン */}
-        <button
-          onClick={toggleDarkMode}
-          className="
-            p-2 rounded-xl
-            bg-gray-100 dark:bg-gray-700
-            hover:bg-gray-200 dark:hover:bg-gray-600
-            transition-colors duration-200
-            shadow-sm hover:shadow-md
-            flex-shrink-0
-          "
-          aria-label="ダークモード切り替え"
-        >
-          {isDarkMode ? (
-            <RiSunLine className="w-6 h-6 text-yellow-400" />
-          ) : (
-            <RiMoonLine className="w-6 h-6 text-gray-600" />
-          )}
-        </button>
+        {/* 右側：分割ボタン + ダークモード切り替えボタン */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* 分割モードボタン */}
+          <button
+            onClick={toggleSplitMode}
+            className="
+              p-2 rounded-xl
+              bg-gray-100 dark:bg-gray-700
+              hover:bg-gray-200 dark:hover:bg-gray-600
+              transition-colors duration-200
+              shadow-sm hover:shadow-md
+            "
+            aria-label="分割モード切り替え"
+          >
+            {splitMode === 1 && <RiLayoutLine className="w-6 h-6 text-gray-600 dark:text-gray-400" />}
+            {splitMode === 2 && <RiLayout2Line className="w-6 h-6 text-blue-600 dark:text-blue-400" />}
+            {splitMode === 3 && <RiLayout3Line className="w-6 h-6 text-green-600 dark:text-green-400" />}
+            {splitMode === 4 && <RiLayout4Line className="w-6 h-6 text-purple-600 dark:text-purple-400" />}
+          </button>
+
+          {/* ダークモード切り替えボタン */}
+          <button
+            onClick={toggleDarkMode}
+            className="
+              p-2 rounded-xl
+              bg-gray-100 dark:bg-gray-700
+              hover:bg-gray-200 dark:hover:bg-gray-600
+              transition-colors duration-200
+              shadow-sm hover:shadow-md
+            "
+            aria-label="ダークモード切り替え"
+          >
+            {isDarkMode ? (
+              <RiSunLine className="w-6 h-6 text-yellow-400" />
+            ) : (
+              <RiMoonLine className="w-6 h-6 text-gray-600" />
+            )}
+          </button>
+        </div>
       </header>
 
       {/* デスクトップエリア */}
@@ -155,6 +178,9 @@ export function DesktopLayout() {
 
       {/* Dock（下部） */}
       <Dock />
+
+      {/* 分割モード */}
+      <SplitMode />
     </div>
   );
 }
