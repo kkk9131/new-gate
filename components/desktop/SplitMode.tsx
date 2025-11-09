@@ -1,7 +1,6 @@
 'use client';
 
 import { useDesktopStore } from '@/store/desktopStore';
-import { RiCloseLine } from 'react-icons/ri';
 import {
   DndContext,
   closestCenter,
@@ -70,15 +69,6 @@ export function SplitMode() {
           handleDragEnd={handleDragEnd}
           className="w-1/2"
         />
-
-        {/* 終了ボタン */}
-        <button
-          onClick={() => setSplitMode(1)}
-          className="fixed top-20 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
-          aria-label="分割モード終了"
-        >
-          <RiCloseLine className="w-6 h-6" />
-        </button>
       </div>
     );
   }
@@ -113,15 +103,6 @@ export function SplitMode() {
             className="h-1/2"
           />
         </div>
-
-        {/* 終了ボタン */}
-        <button
-          onClick={() => setSplitMode(1)}
-          className="fixed top-20 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
-          aria-label="分割モード終了"
-        >
-          <RiCloseLine className="w-6 h-6" />
-        </button>
       </div>
     );
   }
@@ -161,15 +142,6 @@ export function SplitMode() {
           handleDragEnd={handleDragEnd}
           className=""
         />
-
-        {/* 終了ボタン */}
-        <button
-          onClick={() => setSplitMode(1)}
-          className="fixed top-20 right-4 p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-colors z-10"
-          aria-label="分割モード終了"
-        >
-          <RiCloseLine className="w-6 h-6" />
-        </button>
       </div>
     );
   }

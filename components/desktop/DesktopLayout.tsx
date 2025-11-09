@@ -122,10 +122,10 @@ export function DesktopLayout() {
             "
             aria-label="分割モード切り替え"
           >
-            {splitMode === 1 && <RiLayoutLine className="w-6 h-6 text-gray-600 dark:text-gray-400" />}
-            {splitMode === 2 && <RiLayout2Line className="w-6 h-6 text-blue-600 dark:text-blue-400" />}
-            {splitMode === 3 && <RiLayout3Line className="w-6 h-6 text-green-600 dark:text-green-400" />}
-            {splitMode === 4 && <RiLayout4Line className="w-6 h-6 text-purple-600 dark:text-purple-400" />}
+            {splitMode === 1 && <RiLayoutLine className="w-6 h-6 text-blue-500" />}
+            {splitMode === 2 && <RiLayout2Line className="w-6 h-6 text-blue-500" />}
+            {splitMode === 3 && <RiLayout3Line className="w-6 h-6 text-blue-500" />}
+            {splitMode === 4 && <RiLayout4Line className="w-6 h-6 text-blue-500" />}
           </button>
 
           {/* ダークモード切り替えボタン */}
