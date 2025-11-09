@@ -53,10 +53,18 @@ interface DesktopState {
 
   // 分割モード（1: 通常, 2: 2分割, 3: 3分割, 4: 4分割）
   splitMode: 1 | 2 | 3 | 4;
-  splitScreens: Record<string, string | null>; // スクリーン位置 → アプリID
+  splitScreenWindows: Record<string, WindowState[]>; // スクリーン位置 → ウィンドウ配列
   toggleSplitMode: () => void;
   setSplitMode: (mode: 1 | 2 | 3 | 4) => void;
-  setSplitScreen: (position: string, appId: string | null) => void;
+
+  // スクリーンごとのウィンドウ管理
+  openWindowInScreen: (screenId: string, appId: string) => void;
+  closeWindowInScreen: (screenId: string, windowId: string) => void;
+  minimizeWindowInScreen: (screenId: string, windowId: string) => void;
+  maximizeWindowInScreen: (screenId: string, windowId: string) => void;
+  bringToFrontInScreen: (screenId: string, windowId: string) => void;
+  updateWindowPositionInScreen: (screenId: string, windowId: string, position: { x: number; y: number }) => void;
+  updateWindowSizeInScreen: (screenId: string, windowId: string, size: { width: number; height: number }) => void;
 }
 
 // デフォルトのアプリ一覧
@@ -121,13 +129,13 @@ export const useDesktopStore = create<DesktopState>()(
       isDockVisible: false,
       windows: [],
       splitMode: 1,
-      splitScreens: {
-        left: null,
-        right: null,
-        topRight: null,
-        bottomRight: null,
-        topLeft: null,
-        bottomLeft: null,
+      splitScreenWindows: {
+        left: [],
+        right: [],
+        topLeft: [],
+        topRight: [],
+        bottomLeft: [],
+        bottomRight: [],
       },
 
       // ダークモード切り替え
@@ -267,12 +275,118 @@ export const useDesktopStore = create<DesktopState>()(
       setSplitMode: (mode) =>
         set({ splitMode: mode }),
 
-      // 分割スクリーンにアプリを割り当て
-      setSplitScreen: (position, appId) =>
+      // スクリーンごとのウィンドウを開く
+      openWindowInScreen: (screenId, appId) =>
+        set((state) => {
+          const screenWindows = state.splitScreenWindows[screenId] || [];
+
+          // 既に開いているウィンドウがあれば、最前面に
+          const existingWindow = screenWindows.find((w) => w.appId === appId);
+          if (existingWindow) {
+            const maxZ = Math.max(...screenWindows.map((w) => w.zIndex), 0);
+            return {
+              splitScreenWindows: {
+                ...state.splitScreenWindows,
+                [screenId]: screenWindows.map((w) =>
+                  w.id === existingWindow.id
+                    ? { ...w, zIndex: maxZ + 1, isMinimized: false }
+                    : w
+                ),
+              },
+            };
+          }
+
+          // 新しいウィンドウを作成
+          const app = state.apps.find((a) => a.id === appId);
+          if (!app) return state;
+
+          const windowId = `window-${screenId}-${appId}-${Date.now()}`;
+          const maxZ = Math.max(...screenWindows.map((w) => w.zIndex), 0);
+
+          const newWindow: WindowState = {
+            id: windowId,
+            appId,
+            title: app.name,
+            position: { x: 50 + screenWindows.length * 20, y: 50 + screenWindows.length * 20 },
+            size: { width: 600, height: 400 },
+            isMinimized: false,
+            isMaximized: false,
+            zIndex: maxZ + 1,
+          };
+
+          return {
+            splitScreenWindows: {
+              ...state.splitScreenWindows,
+              [screenId]: [...screenWindows, newWindow],
+            },
+          };
+        }),
+
+      // スクリーンごとのウィンドウを閉じる
+      closeWindowInScreen: (screenId, windowId) =>
         set((state) => ({
-          splitScreens: {
-            ...state.splitScreens,
-            [position]: appId,
+          splitScreenWindows: {
+            ...state.splitScreenWindows,
+            [screenId]: (state.splitScreenWindows[screenId] || []).filter((w) => w.id !== windowId),
+          },
+        })),
+
+      // スクリーンごとのウィンドウを最小化
+      minimizeWindowInScreen: (screenId, windowId) =>
+        set((state) => ({
+          splitScreenWindows: {
+            ...state.splitScreenWindows,
+            [screenId]: (state.splitScreenWindows[screenId] || []).map((w) =>
+              w.id === windowId ? { ...w, isMinimized: true } : w
+            ),
+          },
+        })),
+
+      // スクリーンごとのウィンドウを最大化/通常サイズに戻す
+      maximizeWindowInScreen: (screenId, windowId) =>
+        set((state) => ({
+          splitScreenWindows: {
+            ...state.splitScreenWindows,
+            [screenId]: (state.splitScreenWindows[screenId] || []).map((w) =>
+              w.id === windowId ? { ...w, isMaximized: !w.isMaximized } : w
+            ),
+          },
+        })),
+
+      // スクリーンごとのウィンドウを最前面に
+      bringToFrontInScreen: (screenId, windowId) =>
+        set((state) => {
+          const screenWindows = state.splitScreenWindows[screenId] || [];
+          const maxZ = Math.max(...screenWindows.map((w) => w.zIndex), 0);
+          return {
+            splitScreenWindows: {
+              ...state.splitScreenWindows,
+              [screenId]: screenWindows.map((w) =>
+                w.id === windowId ? { ...w, zIndex: maxZ + 1 } : w
+              ),
+            },
+          };
+        }),
+
+      // スクリーンごとのウィンドウ位置を更新
+      updateWindowPositionInScreen: (screenId, windowId, position) =>
+        set((state) => ({
+          splitScreenWindows: {
+            ...state.splitScreenWindows,
+            [screenId]: (state.splitScreenWindows[screenId] || []).map((w) =>
+              w.id === windowId ? { ...w, position } : w
+            ),
+          },
+        })),
+
+      // スクリーンごとのウィンドウサイズを更新
+      updateWindowSizeInScreen: (screenId, windowId, size) =>
+        set((state) => ({
+          splitScreenWindows: {
+            ...state.splitScreenWindows,
+            [screenId]: (state.splitScreenWindows[screenId] || []).map((w) =>
+              w.id === windowId ? { ...w, size } : w
+            ),
           },
         })),
     }),
