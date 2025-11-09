@@ -66,6 +66,14 @@ export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
     openWindow(id);
   };
 
+  // キーボード操作対応
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleDoubleClick();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -73,6 +81,10 @@ export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
       {...attributes}
       {...listeners}
       onDoubleClick={handleDoubleClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`${name}アプリを起動`}
       className="flex flex-col items-center justify-center p-4 cursor-pointer select-none group"
     >
       {/* アイコン */}

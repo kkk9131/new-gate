@@ -240,7 +240,14 @@ export const useDesktopStore = create<DesktopState>()(
       // ウィンドウを最前面に
       bringToFront: (windowId) =>
         set((state) => {
+          const targetWindow = state.windows.find((w) => w.id === windowId);
+          if (!targetWindow) return state;
+
           const maxZ = Math.max(...state.windows.map((w) => w.zIndex), 0);
+
+          // zIndexが既に最大なら何もしない（不要な再レンダリング防止）
+          if (targetWindow.zIndex === maxZ) return state;
+
           return {
             windows: state.windows.map((w) =>
               w.id === windowId ? { ...w, zIndex: maxZ + 1 } : w
@@ -357,7 +364,14 @@ export const useDesktopStore = create<DesktopState>()(
       bringToFrontInScreen: (screenId, windowId) =>
         set((state) => {
           const screenWindows = state.splitScreenWindows[screenId] || [];
+          const targetWindow = screenWindows.find((w) => w.id === windowId);
+          if (!targetWindow) return state;
+
           const maxZ = Math.max(...screenWindows.map((w) => w.zIndex), 0);
+
+          // zIndexが既に最大なら何もしない（不要な再レンダリング防止）
+          if (targetWindow.zIndex === maxZ) return state;
+
           return {
             splitScreenWindows: {
               ...state.splitScreenWindows,

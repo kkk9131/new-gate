@@ -1,6 +1,7 @@
 'use client';
 
-import { useDesktopStore } from '@/store/desktopStore';
+import { useDesktopStore, WindowState } from '@/store/desktopStore';
+import type { SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import {
   DndContext,
   closestCenter,
@@ -15,12 +16,34 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
+import { Rnd } from 'react-rnd';
 import { AppIcon } from './AppIcon';
+import { DashboardApp } from '@/components/apps/DashboardApp';
+import { ProjectsApp } from '@/components/apps/ProjectsApp';
+import { SettingsApp } from '@/components/apps/SettingsApp';
+import { RevenueApp } from '@/components/apps/RevenueApp';
+import { StoreApp } from '@/components/apps/StoreApp';
+import { AgentApp } from '@/components/apps/AgentApp';
+import { AnalyticsApp } from '@/components/apps/AnalyticsApp';
+import { CalendarApp } from '@/components/apps/CalendarApp';
+
+// アプリコンポーネントのマッピング
+const appComponents: Record<string, React.ComponentType> = {
+  dashboard: DashboardApp,
+  projects: ProjectsApp,
+  settings: SettingsApp,
+  revenue: RevenueApp,
+  store: StoreApp,
+  agent: AgentApp,
+  analytics: AnalyticsApp,
+  calendar: CalendarApp,
+};
 
 export function SplitMode() {
   const splitMode = useDesktopStore((state) => state.splitMode);
   const apps = useDesktopStore((state) => state.apps);
   const reorderApps = useDesktopStore((state) => state.reorderApps);
+  const setSplitMode = useDesktopStore((state) => state.setSplitMode);
 
   // ドラッグ&ドロップのセンサー設定
   const sensors = useSensors(
@@ -150,7 +173,7 @@ export function SplitMode() {
 // 個別スクリーンコンポーネント - 完全なデスクトップUI環境を提供
 interface SplitScreenProps {
   screenId: string;
-  sensors: any;
+  sensors: SensorDescriptor<SensorOptions>[];
   handleDragEnd: (event: DragEndEvent) => void;
   className?: string;
 }
@@ -213,7 +236,7 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
 
 // スクリーン専用ウィンドウコンポーネント（通常のWindowと同様だが、スクリーンIDを使う）
 interface ScreenWindowProps {
-  window: any;
+  window: WindowState;
   screenId: string;
   closeWindow: (screenId: string, windowId: string) => void;
   minimizeWindow: (screenId: string, windowId: string) => void;
@@ -233,22 +256,8 @@ function ScreenWindow({
   updateWindowPosition,
   updateWindowSize,
 }: ScreenWindowProps) {
-  const Rnd = require('react-rnd').Rnd;
-
   // 最小化されている場合は表示しない
   if (window.isMinimized) return null;
-
-  // アプリコンポーネントのマッピング
-  const appComponents: Record<string, React.ComponentType> = {
-    dashboard: require('@/components/apps/DashboardApp').DashboardApp,
-    projects: require('@/components/apps/ProjectsApp').ProjectsApp,
-    settings: require('@/components/apps/SettingsApp').SettingsApp,
-    revenue: require('@/components/apps/RevenueApp').RevenueApp,
-    store: require('@/components/apps/StoreApp').StoreApp,
-    agent: require('@/components/apps/AgentApp').AgentApp,
-    analytics: require('@/components/apps/AnalyticsApp').AnalyticsApp,
-    calendar: require('@/components/apps/CalendarApp').CalendarApp,
-  };
 
   const AppComponent = appComponents[window.appId];
 
@@ -271,10 +280,11 @@ function ScreenWindow({
       }}
       onResizeStop={(e: any, direction: any, ref: any, delta: any, position: any) => {
         if (!window.isMaximized) {
-          updateWindowSize(screenId, window.id, {
-            width: parseInt(ref.style.width),
-            height: parseInt(ref.style.height),
-          });
+          // parseIntが失敗した場合は現在のサイズを保持
+          const width = parseInt(ref.style.width) || window.size.width;
+          const height = parseInt(ref.style.height) || window.size.height;
+
+          updateWindowSize(screenId, window.id, { width, height });
           updateWindowPosition(screenId, window.id, position);
         }
       }}

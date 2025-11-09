@@ -65,10 +65,11 @@ export function Window({ window }: WindowProps) {
       }}
       onResizeStop={(e, direction, ref, delta, position) => {
         if (!window.isMaximized) {
-          updateWindowSize(window.id, {
-            width: parseInt(ref.style.width),
-            height: parseInt(ref.style.height),
-          });
+          // parseIntが失敗した場合は現在のサイズを保持
+          const width = parseInt(ref.style.width) || window.size.width;
+          const height = parseInt(ref.style.height) || window.size.height;
+
+          updateWindowSize(window.id, { width, height });
           updateWindowPosition(window.id, position);
         }
       }}
