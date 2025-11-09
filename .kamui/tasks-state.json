@@ -1,0 +1,25 @@
+[
+  {
+    "id": "task-1762671039372-d34476",
+    "name": "ClaudeCode1: 要件定義書を新たに追加して修正、更新、不必要なものを削除したい\n大まかには合っているが、僕が目指しているのはすごくユーザーに合わせたSaaSにできる柔軟なもの。\nデスクトップUIで、開発者プランを構築し、開発者たちがアプリとして機能を開発。そして別ページでストアのようなものを構築しユーザーが欲しい機能をダウンロード可能にしたい\nそして並列でエージェントによるタスク実行可能にして自動化できるもの。\nまずは既存の要件定義にある基本機能をAPIアプリ化してデフォを作成したい。\n\nこんな感じで考えているので、docsの見直しをお願いします",
+    "model": "Claude Code",
+    "status": "running",
+    "importance": "medium",
+    "urgency": "medium",
+    "createdAt": "2025-11-09T06:50:39.372Z",
+    "updatedAt": "2025-11-09T07:19:18.209Z",
+    "requiresTerminal": true,
+    "createWorktree": true,
+    "branchName": "task/task-1762671039372-d34476",
+    "baseBranch": "main",
+    "useTmux": true,
+    "aiCompetitionEntry": true,
+    "aiCompetitionResult": null,
+    "aiCompetitionGroupId": "comp-1762671037078-b28qihf1",
+    "aiCompetitionGroupName": "要件定義書を新たに追加して修正、更新、不必要なものを削除したい\n大まかには合っているが、僕が目指しているのはすごくユーザーに合わせたSaaSにできる柔軟なもの。\nデスクトップUIで、開発者プランを構築し、開発者たちがアプリとして機能を開発。そして別ページでストアのようなものを構築しユーザーが欲しい機能をダウンロード可能にしたい\nそして並列でエージェントによるタスク実行可能にして自動化できるもの。\nまずは既存の要件定義にある基本機能をAPIアプリ化してデフォを作成したい。\n\nこんな感じで考えているので、docsの見直しをお願いします",
+    "aiCompetitionMonitor": false,
+    "monitorTargets": null,
+    "scoringConfig": null,
+    "worktreePath": ".worktrees/task-1762671039372-d34476"
+  }
+]
