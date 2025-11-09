@@ -60,10 +60,11 @@ export function Dock() {
 // Dockアイコンコンポーネント
 function DockIcon({ app }: { app: App }) {
   const [isHovered, setIsHovered] = useState(false);
+  const openWindow = useDesktopStore((state) => state.openWindow);
   const IconComponent = iconMap[app.icon] || RiFolderLine;
 
   const handleClick = () => {
-    console.log(`Dockからアプリ起動: ${app.name}`);
+    openWindow(app.id);
   };
 
   return (

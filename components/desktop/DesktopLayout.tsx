@@ -19,13 +19,17 @@ import {
 import { useDesktopStore } from '@/store/desktopStore';
 import { AppIcon } from './AppIcon';
 import { Dock } from './Dock';
-import { RiMoonLine, RiSunLine } from 'react-icons/ri';
+import { WindowManager } from './WindowManager';
+import { RiMoonLine, RiSunLine, RiSubtractLine } from 'react-icons/ri';
 
 export function DesktopLayout() {
   const apps = useDesktopStore((state) => state.apps);
+  const windows = useDesktopStore((state) => state.windows);
   const reorderApps = useDesktopStore((state) => state.reorderApps);
   const isDarkMode = useDesktopStore((state) => state.isDarkMode);
   const toggleDarkMode = useDesktopStore((state) => state.toggleDarkMode);
+  const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
+  const bringToFront = useDesktopStore((state) => state.bringToFront);
 
   // ドラッグ&ドロップのセンサー設定
   const sensors = useSensors(
@@ -63,17 +67,45 @@ export function DesktopLayout() {
     <div className="h-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {/* ヘッダー */}
       <header className="h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between px-6 shadow-sm">
-        {/* ロゴ */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-xl">N</span>
+        {/* 左側：ロゴ + 開いているウィンドウタブ */}
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          {/* ロゴ */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-xl">N</span>
+            </div>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+              New Gate
+            </h1>
           </div>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">
-            New Gate
-          </h1>
+
+          {/* ウィンドウタブ */}
+          <div className="flex items-center gap-2 overflow-x-auto flex-1">
+            {windows.filter(w => !w.isMinimized).map((window) => (
+              <div
+                key={window.id}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors group flex-shrink-0 cursor-pointer"
+                onClick={() => bringToFront(window.id)}
+              >
+                <span className="text-sm font-medium text-gray-800 dark:text-white">
+                  {window.title}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    minimizeWindow(window.id);
+                  }}
+                  className="w-5 h-5 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 rounded transition-colors"
+                  aria-label="最小化"
+                >
+                  <RiSubtractLine className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* ダークモード切り替えボタン */}
+        {/* 右側：ダークモード切り替えボタン */}
         <button
           onClick={toggleDarkMode}
           className="
@@ -82,6 +114,7 @@ export function DesktopLayout() {
             hover:bg-gray-200 dark:hover:bg-gray-600
             transition-colors duration-200
             shadow-sm hover:shadow-md
+            flex-shrink-0
           "
           aria-label="ダークモード切り替え"
         >
@@ -94,7 +127,7 @@ export function DesktopLayout() {
       </header>
 
       {/* デスクトップエリア */}
-      <main className="h-[calc(100vh-4rem)] overflow-auto p-8">
+      <main className="h-[calc(100vh-4rem)] overflow-auto p-8 relative">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -115,6 +148,9 @@ export function DesktopLayout() {
             </div>
           </SortableContext>
         </DndContext>
+
+        {/* ウィンドウ管理エリア */}
+        <WindowManager />
       </main>
 
       {/* Dock（下部） */}

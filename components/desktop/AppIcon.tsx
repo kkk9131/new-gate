@@ -2,6 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDesktopStore } from '@/store/desktopStore';
 import {
   RiFolderLine,
   RiSettingsLine,
@@ -33,6 +34,8 @@ interface AppIconProps {
 }
 
 export function AppIcon({ id, name, icon, color }: AppIconProps) {
+  const openWindow = useDesktopStore((state) => state.openWindow);
+
   // ドラッグ&ドロップ機能（@dnd-kit/sortable使用）
   const {
     attributes,
@@ -53,9 +56,9 @@ export function AppIcon({ id, name, icon, color }: AppIconProps) {
   // アイコンコンポーネントの取得
   const IconComponent = iconMap[icon] || RiFolderLine;
 
-  // ダブルクリックでアプリ起動（今回は機能なしなのでログのみ）
+  // ダブルクリックでアプリ起動
   const handleDoubleClick = () => {
-    console.log(`アプリ起動: ${name}`);
+    openWindow(id);
   };
 
   return (
