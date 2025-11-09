@@ -73,7 +73,7 @@ const defaultApps: App[] = [
     id: 'projects',
     name: 'Projects',
     icon: 'RiFolder',
-    color: 'text-blue-500',
+    color: 'text-cyan-500',
   },
   {
     id: 'settings',
