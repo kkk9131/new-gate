@@ -173,6 +173,7 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
       {/* デスクトップエリア：アイコングリッド */}
       <div className="h-full overflow-auto p-4">
         <DndContext
+          id={`split-screen-${screenId}`}
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}

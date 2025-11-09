@@ -152,6 +152,7 @@ export function DesktopLayout() {
       {/* デスクトップエリア */}
       <main className="h-[calc(100vh-4rem)] overflow-auto p-8 relative">
         <DndContext
+          id="desktop-main"
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
