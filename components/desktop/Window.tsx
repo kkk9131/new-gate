@@ -10,21 +10,12 @@ interface WindowProps {
 }
 
 export function Window({ window }: WindowProps) {
-  const {
-    closeWindow,
-    minimizeWindow,
-    maximizeWindow,
-    bringToFront,
-    updateWindowPosition,
-    updateWindowSize,
-  } = useDesktopStore((state) => ({
-    closeWindow: state.closeWindow,
-    minimizeWindow: state.minimizeWindow,
-    maximizeWindow: state.maximizeWindow,
-    bringToFront: state.bringToFront,
-    updateWindowPosition: state.updateWindowPosition,
-    updateWindowSize: state.updateWindowSize,
-  }));
+  const closeWindow = useDesktopStore((state) => state.closeWindow);
+  const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
+  const maximizeWindow = useDesktopStore((state) => state.maximizeWindow);
+  const bringToFront = useDesktopStore((state) => state.bringToFront);
+  const updateWindowPosition = useDesktopStore((state) => state.updateWindowPosition);
+  const updateWindowSize = useDesktopStore((state) => state.updateWindowSize);
 
   const AppComponent = useMemo(() => appComponents[window.appId], [window.appId]);
 
