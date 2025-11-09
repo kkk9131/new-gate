@@ -31,9 +31,10 @@ interface AppIconProps {
   name: string;
   icon: string;
   color: string;
+  onOpen?: (appId: string) => void;
 }
 
-export function AppIcon({ id, name, icon, color }: AppIconProps) {
+export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
   const openWindow = useDesktopStore((state) => state.openWindow);
 
   // ドラッグ&ドロップ機能（@dnd-kit/sortable使用）
@@ -58,6 +59,10 @@ export function AppIcon({ id, name, icon, color }: AppIconProps) {
 
   // ダブルクリックでアプリ起動
   const handleDoubleClick = () => {
+    if (onOpen) {
+      onOpen(id);
+      return;
+    }
     openWindow(id);
   };
 

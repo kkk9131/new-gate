@@ -43,22 +43,19 @@ export function Window({ window }: WindowProps) {
   // アプリコンポーネントを取得
   const AppComponent = appComponents[window.appId];
 
-  // 最大化時のサイズ（右側のチャットエリア320pxを除外）
-  const maxSize = {
-    width: typeof globalThis.window !== 'undefined' ? globalThis.window.innerWidth - 320 : 1200,
-    height: typeof globalThis.window !== 'undefined' ? globalThis.window.innerHeight - 64 : 800,
-  };
+  // 最大化時は親要素全体を覆う
+  const maximizedSize = { width: '100%', height: '100%' } as const;
 
   return (
     <Rnd
       size={
         window.isMaximized
-          ? maxSize
+          ? maximizedSize
           : { width: window.size.width, height: window.size.height }
       }
       position={
         window.isMaximized
-          ? { x: 0, y: 64 }
+          ? { x: 0, y: 0 }
           : { x: window.position.x, y: window.position.y }
       }
       onDragStop={(e, d) => {

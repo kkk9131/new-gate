@@ -16,13 +16,11 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { AppIcon } from './AppIcon';
-import { Window } from './Window';
 
 export function SplitMode() {
   const splitMode = useDesktopStore((state) => state.splitMode);
   const apps = useDesktopStore((state) => state.apps);
   const reorderApps = useDesktopStore((state) => state.reorderApps);
-  const setSplitMode = useDesktopStore((state) => state.setSplitMode);
 
   // ドラッグ&ドロップのセンサー設定
   const sensors = useSensors(
@@ -181,17 +179,14 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
           <SortableContext items={apps.map((app) => app.id)} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-4 gap-3">
               {apps.map((app) => (
-                <div
+                <AppIcon
                   key={app.id}
-                  onDoubleClick={() => openWindowInScreen(screenId, app.id)}
-                >
-                  <AppIcon
-                    id={app.id}
-                    name={app.name}
-                    icon={app.icon}
-                    color={app.color}
-                  />
-                </div>
+                  id={app.id}
+                  name={app.name}
+                  icon={app.icon}
+                  color={app.color}
+                  onOpen={() => openWindowInScreen(screenId, app.id)}
+                />
               ))}
             </div>
           </SortableContext>
