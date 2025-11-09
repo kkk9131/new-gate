@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useDesktopStore, WindowState } from '@/store/desktopStore';
+import { shallow } from 'zustand/shallow';
 import type { SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import {
   DndContext,
@@ -163,15 +164,24 @@ interface SplitScreenProps {
 }
 
 function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: SplitScreenProps) {
-  const apps = useDesktopStore((state) => state.apps);
-  const screenWindows = useDesktopStore((state) => state.splitScreenWindows[screenId] || []);
-  const openWindowInScreen = useDesktopStore((state) => state.openWindowInScreen);
-  const closeWindowInScreen = useDesktopStore((state) => state.closeWindowInScreen);
-  const minimizeWindowInScreen = useDesktopStore((state) => state.minimizeWindowInScreen);
-  const maximizeWindowInScreen = useDesktopStore((state) => state.maximizeWindowInScreen);
-  const bringToFrontInScreen = useDesktopStore((state) => state.bringToFrontInScreen);
-  const updateWindowPositionInScreen = useDesktopStore((state) => state.updateWindowPositionInScreen);
-  const updateWindowSizeInScreen = useDesktopStore((state) => state.updateWindowSizeInScreen);
+  // パフォーマンス最適化: セレクターを1つにまとめてshallow比較
+  // これにより不要な再レンダリングを防止
+  const { apps, screenWindows, actions } = useDesktopStore(
+    (state) => ({
+      apps: state.apps,
+      screenWindows: state.splitScreenWindows[screenId] || [],
+      actions: {
+        openWindow: state.openWindowInScreen,
+        closeWindow: state.closeWindowInScreen,
+        minimizeWindow: state.minimizeWindowInScreen,
+        maximizeWindow: state.maximizeWindowInScreen,
+        bringToFront: state.bringToFrontInScreen,
+        updateWindowPosition: state.updateWindowPositionInScreen,
+        updateWindowSize: state.updateWindowSizeInScreen,
+      },
+    }),
+    shallow
+  );
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
@@ -192,7 +202,7 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
                   name={app.name}
                   icon={app.icon}
                   color={app.color}
-                  onOpen={() => openWindowInScreen(screenId, app.id)}
+                  onOpen={() => actions.openWindow(screenId, app.id)}
                 />
               ))}
             </div>
@@ -205,12 +215,12 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
             key={window.id}
             window={window}
             screenId={screenId}
-            closeWindow={closeWindowInScreen}
-            minimizeWindow={minimizeWindowInScreen}
-            maximizeWindow={maximizeWindowInScreen}
-            bringToFront={bringToFrontInScreen}
-            updateWindowPosition={updateWindowPositionInScreen}
-            updateWindowSize={updateWindowSizeInScreen}
+            closeWindow={actions.closeWindow}
+            minimizeWindow={actions.minimizeWindow}
+            maximizeWindow={actions.maximizeWindow}
+            bringToFront={actions.bringToFront}
+            updateWindowPosition={actions.updateWindowPosition}
+            updateWindowSize={actions.updateWindowSize}
           />
         ))}
       </div>

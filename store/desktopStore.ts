@@ -1,7 +1,36 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 
+// ===========================
+// 定数定義（マジックナンバー回避）
+// ===========================
+
+/** z-indexの正規化閾値（この値を超えたら正規化を実行） */
+const Z_INDEX_NORMALIZATION_THRESHOLD = 1000;
+
+// ===========================
+// ヘルパー関数
+// ===========================
+
+/**
+ * ウィンドウIDの生成（一意性を保証）
+ * crypto.randomUUID()を使用してDate.now()の衝突問題を解決
+ * @param appId アプリID
+ * @returns 一意なウィンドウID
+ */
+function generateWindowId(appId: string): string {
+  // crypto.randomUUID()で一意性を保証
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `window-${appId}-${crypto.randomUUID()}`;
+  }
+
+  // フォールバック（テスト環境など）
+  return `window-${appId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+// ===========================
 // アプリの型定義
+// ===========================
 export interface App {
   id: string;
   name: string;
@@ -119,12 +148,20 @@ const defaultApps: App[] = [
   },
 ];
 
+/**
+ * z-indexの正規化（無限増加を防止）
+ * @param windows ウィンドウの配列
+ * @returns 正規化されたウィンドウ配列
+ */
 const normalizeZIndexesIfNeeded = (windows: WindowState[]) => {
   const maxZ = windows.reduce((max, w) => Math.max(max, w.zIndex), 0);
-  if (maxZ <= 1000) {
+
+  // 閾値以下なら正規化不要
+  if (maxZ <= Z_INDEX_NORMALIZATION_THRESHOLD) {
     return windows;
   }
 
+  // z-indexでソートして1から再割り当て
   const sorted = [...windows].sort((a, b) => a.zIndex - b.zIndex);
   const orderMap = new Map(sorted.map((w, index) => [w.id, index + 1]));
   return windows.map((w) => ({ ...w, zIndex: orderMap.get(w.id) ?? w.zIndex }));
@@ -229,7 +266,7 @@ export const useDesktopStore = create<DesktopState>()(
           const app = state.apps.find((a) => a.id === appId);
           if (!app) return state;
 
-          const windowId = `window-${appId}-${Date.now()}`;
+          const windowId = generateWindowId(appId); // 一意性を保証
           const maxZ = Math.max(...state.windows.map((w) => w.zIndex), 0);
 
           const newWindow: WindowState = {
@@ -340,7 +377,7 @@ export const useDesktopStore = create<DesktopState>()(
           const app = state.apps.find((a) => a.id === appId);
           if (!app) return state;
 
-          const windowId = `window-${screenId}-${appId}-${Date.now()}`;
+          const windowId = generateWindowId(appId); // 一意性を保証
           const maxZ = Math.max(...screenWindows.map((w) => w.zIndex), 0);
 
           const newWindow: WindowState = {
@@ -441,7 +478,20 @@ export const useDesktopStore = create<DesktopState>()(
     }),
     {
       name: 'desktop-storage-v2', // localStorageのキー名（バージョンアップで強制初期化）
+      version: 2, // ストレージバージョン
       storage: createJSONStorage(() => (typeof window !== 'undefined' && window.localStorage ? window.localStorage : memoryStorage)),
+      // マイグレーション処理（将来のバージョンアップ時に使用）
+      migrate: (persistedState: any, version: number) => {
+        // v1からv2へのマイグレーション例
+        if (version === 1) {
+          return {
+            ...persistedState,
+            splitScreenWindows: createSplitScreenWindows(),
+          };
+        }
+
+        return persistedState;
+      },
       onRehydrateStorage: () => (state, error) => {
         if (error) {
           console.error('状態の復元に失敗しました:', error);

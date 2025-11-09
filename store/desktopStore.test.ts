@@ -77,4 +77,74 @@ describe('desktopStore', () => {
     expect(splitWindow?.isMinimized).toBe(false);
     expect(useDesktopStore.getState().splitScreenWindows.left).toHaveLength(1);
   });
+
+  // レビュー指摘: 分割モードの切り替えテスト
+  it('toggles split mode in sequence 1→2→3→4→1', () => {
+    const { toggleSplitMode } = useDesktopStore.getState();
+
+    // 初期状態は1（通常モード）
+    expect(useDesktopStore.getState().splitMode).toBe(1);
+
+    // 1→2
+    toggleSplitMode();
+    expect(useDesktopStore.getState().splitMode).toBe(2);
+
+    // 2→3
+    toggleSplitMode();
+    expect(useDesktopStore.getState().splitMode).toBe(3);
+
+    // 3→4
+    toggleSplitMode();
+    expect(useDesktopStore.getState().splitMode).toBe(4);
+
+    // 4→1（ループバック）
+    toggleSplitMode();
+    expect(useDesktopStore.getState().splitMode).toBe(1);
+  });
+
+  // レビュー指摘: ウィンドウ位置・サイズ更新テスト
+  it('updates window position', () => {
+    const { openWindow, updateWindowPosition } = useDesktopStore.getState();
+
+    openWindow('projects');
+    const window = useDesktopStore.getState().windows[0];
+
+    updateWindowPosition(window.id, { x: 200, y: 300 });
+
+    const updatedWindow = useDesktopStore.getState().windows[0];
+    expect(updatedWindow.position).toEqual({ x: 200, y: 300 });
+  });
+
+  it('updates window size', () => {
+    const { openWindow, updateWindowSize } = useDesktopStore.getState();
+
+    openWindow('projects');
+    const window = useDesktopStore.getState().windows[0];
+
+    updateWindowSize(window.id, { width: 1024, height: 768 });
+
+    const updatedWindow = useDesktopStore.getState().windows[0];
+    expect(updatedWindow.size).toEqual({ width: 1024, height: 768 });
+  });
+
+  // レビュー指摘: 存在しないアプリIDを開こうとした場合のテスト
+  it('does not create window for non-existent app ID', () => {
+    const { openWindow } = useDesktopStore.getState();
+
+    // 存在しないアプリIDを開こうとする
+    openWindow('non-existent-app' as any);
+
+    // ウィンドウが作成されないことを確認
+    expect(useDesktopStore.getState().windows).toHaveLength(0);
+  });
+
+  it('does not create split-screen window for non-existent app ID', () => {
+    const { openWindowInScreen } = useDesktopStore.getState();
+
+    // 存在しないアプリIDを開こうとする
+    openWindowInScreen('left', 'non-existent-app' as any);
+
+    // ウィンドウが作成されないことを確認
+    expect(useDesktopStore.getState().splitScreenWindows.left).toHaveLength(0);
+  });
 });

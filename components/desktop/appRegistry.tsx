@@ -7,7 +7,17 @@ import { AgentApp } from '@/components/apps/AgentApp';
 import { AnalyticsApp } from '@/components/apps/AnalyticsApp';
 import { CalendarApp } from '@/components/apps/CalendarApp';
 
-export const appComponents: Record<string, React.ComponentType> = {
+/**
+ * アプリID（厳密な型定義で型安全性を向上）
+ * 存在しないアプリIDへのアクセスはコンパイルエラーになる
+ */
+export type AppId = 'dashboard' | 'projects' | 'settings' | 'revenue' | 'store' | 'agent' | 'analytics' | 'calendar';
+
+/**
+ * アプリIDとコンポーネントのマッピング
+ * 型安全性を保証するためAppId型を使用
+ */
+export const appComponents: Record<AppId, React.ComponentType> = {
   dashboard: DashboardApp,
   projects: ProjectsApp,
   settings: SettingsApp,
