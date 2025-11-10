@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
+import { type AppId } from '@/components/desktop/appRegistry';
 
 // ===========================
 // 定数定義（マジックナンバー回避）
@@ -18,7 +19,7 @@ const Z_INDEX_NORMALIZATION_THRESHOLD = 1000;
  * @param appId アプリID
  * @returns 一意なウィンドウID
  */
-function generateWindowId(appId: string): string {
+function generateWindowId(appId: AppId): string {
   // crypto.randomUUID()で一意性を保証
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return `window-${appId}-${crypto.randomUUID()}`;
@@ -32,7 +33,7 @@ function generateWindowId(appId: string): string {
 // アプリの型定義
 // ===========================
 export interface App {
-  id: string;
+  id: AppId; // 型安全性のためAppId型を使用
   name: string;
   icon: string; // アイコンのコンポーネント名（例: 'RiFolder', 'RiSettings'）
   color: string; // アイコンの色
@@ -41,7 +42,7 @@ export interface App {
 // ウィンドウの型定義
 export interface WindowState {
   id: string; // ウィンドウのユニークID（例: 'window-projects-1'）
-  appId: string; // 対応するアプリのID（例: 'projects'）
+  appId: AppId; // 対応するアプリのID（型安全性のためAppId型を使用）
   title: string; // ウィンドウタイトル（例: 'Projects'）
   position: { x: number; y: number }; // ウィンドウ位置（px）
   size: { width: number; height: number }; // ウィンドウサイズ（px）
@@ -68,11 +69,11 @@ interface DesktopState {
 
   // アプリの追加・削除（将来の拡張用）
   addApp: (app: App) => void;
-  removeApp: (appId: string) => void;
+  removeApp: (appId: AppId) => void;
 
   // ウィンドウ管理
   windows: WindowState[];
-  openWindow: (appId: string) => void;
+  openWindow: (appId: AppId) => void;
   closeWindow: (windowId: string) => void;
   minimizeWindow: (windowId: string) => void;
   maximizeWindow: (windowId: string) => void;
@@ -87,7 +88,7 @@ interface DesktopState {
   setSplitMode: (mode: 1 | 2 | 3 | 4) => void;
 
   // スクリーンごとのウィンドウ管理
-  openWindowInScreen: (screenId: string, appId: string) => void;
+  openWindowInScreen: (screenId: string, appId: AppId) => void;
   closeWindowInScreen: (screenId: string, windowId: string) => void;
   minimizeWindowInScreen: (screenId: string, windowId: string) => void;
   maximizeWindowInScreen: (screenId: string, windowId: string) => void;

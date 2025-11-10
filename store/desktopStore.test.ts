@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useDesktopStore, resetDesktopStore, type WindowState } from './desktopStore';
+import { type AppId } from '@/components/desktop/appRegistry';
 
 const createWindow = (overrides: Partial<WindowState>): WindowState => ({
   id: overrides.id ?? 'window-id',
-  appId: overrides.appId ?? 'projects',
+  appId: (overrides.appId ?? 'projects') as AppId,
   title: overrides.title ?? 'Projects',
   position: overrides.position ?? { x: 0, y: 0 },
   size: overrides.size ?? { width: 800, height: 600 },
