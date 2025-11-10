@@ -39,11 +39,11 @@ export function Dock() {
       <div
         className={`
           flex items-center gap-2 px-4 py-3
-          bg-white/80 dark:bg-gray-800/80
+          bg-surface/90
           backdrop-blur-xl
           rounded-2xl
-          shadow-2xl dark:shadow-gray-900/50
-          border border-gray-200/50 dark:border-gray-700/50
+          shadow-floating
+          border border-white/40
           transition-all duration-300 ease-out
           pointer-events-auto
           ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}
@@ -76,7 +76,7 @@ function DockIcon({ app }: { app: App }) {
       {/* ツールチップ */}
       {isHovered && (
         <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 animate-fade-in">
-          <div className="px-3 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg whitespace-nowrap">
+          <div className="px-3 py-1 bg-ink text-white text-xs rounded-lg shadow-panel whitespace-nowrap">
             {app.name}
           </div>
         </div>
@@ -86,9 +86,9 @@ function DockIcon({ app }: { app: App }) {
       <button
         onClick={handleClick}
         className={`
-          w-12 h-12 rounded-xl
-          bg-white dark:bg-gray-700
-          shadow-md dark:shadow-gray-900/50
+          w-12 h-12 rounded-xl border border-white/40
+          bg-surface
+          shadow-panel
           flex items-center justify-center
           transition-all duration-200
           hover:scale-125 hover:shadow-lg

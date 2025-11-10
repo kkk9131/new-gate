@@ -14,7 +14,7 @@
 - [x] Phase 1: 環境構築・基盤準備（1日目）✅ 完了
 - [x] Phase 2: データベースセットアップ（1日目）✅ 完了
 - [ ] Phase 3: Desktop UI基盤構築（2-4日目）← **実装中**（基本レイアウト・アイコン・Window管理・分割モード完了、ChatPanel未実装）
-- [ ] Phase 4: 認証機能実装（5日目）
+- [x] Phase 4: 認証機能実装（5日目）✅ 完了
 - [ ] Phase 5: API実装 - プロジェクト管理（6-7日目）
 - [ ] Phase 6: API実装 - 設定・売上（8-9日目）
 - [ ] Phase 7: Agent Builder + ChatKit統合（10-11日目）
@@ -110,41 +110,27 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 #### 1.3 プロジェクト構造の作成
 
-- [ ] ディレクトリ構造の作成
+- [x] ディレクトリ構造の作成（一部完了）✅
 ```bash
-mkdir -p lib/supabase
-mkdir -p lib/utils
-mkdir -p lib/types
-mkdir -p components/chat
-mkdir -p components/projects
-mkdir -p components/settings
-mkdir -p components/revenues
+mkdir -p lib/supabase       # ✅ 完了
+mkdir -p lib/auth           # ✅ 完了
+mkdir -p lib/types          # ✅ 完了
+mkdir -p lib/utils          # 未実装（Phase 5で実装予定）
+mkdir -p components/chat    # 未実装（Phase 7で実装予定）
+mkdir -p components/desktop # ✅ 完了
+mkdir -p store              # ✅ 完了
 ```
 
 #### 1.4 TypeScript型定義の作成
 
-- [ ] `lib/types/database.ts` - データベース型定義
+- [x] `lib/types/database.ts` - データベース型定義 ✅
 ```typescript
-// プロジェクト、設定、売上の型定義
-export interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-  status: 'active' | 'completed' | 'on_hold';
-  startDate: string;
-  endDate: string | null;
-  budget: number;
-  actualCost: number;
-  userId: string;
-  isDeleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// UserSettings, AppSettings, Revenue型も定義
+// Phase 4で実装済み
+// Project, UserSettings, AppSettings, Revenue型定義
+// Input型（CreateProjectInput, UpdateProjectInput等）も含む
 ```
 
-- [ ] `lib/types/api.ts` - API型定義
+- [ ] `lib/types/api.ts` - API型定義（Phase 5で実装予定）
 ```typescript
 // APIレスポンス型
 export interface APIResponse<T> {
@@ -162,23 +148,22 @@ export interface APIError {
 
 #### 1.5 Supabaseクライアントの設定
 
-- [ ] `lib/supabase/client.ts` - クライアントサイド用
+- [x] `lib/supabase/client.ts` - クライアントサイド用 ✅
 ```typescript
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-
-export const createClient = () => {
-  return createClientComponentClient();
-};
+// Phase 4で実装済み
+// createBrowserClient() を使用
 ```
 
-- [ ] `lib/supabase/server.ts` - サーバーサイド用
+- [x] `lib/supabase/server.ts` - サーバーサイド用 ✅
 ```typescript
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+// Phase 4で実装済み
+// createServerClient() を使用
+```
 
-export const createClient = () => {
-  return createServerComponentClient({ cookies });
-};
+- [x] `lib/supabase/route.ts` - API Route用 ✅
+```typescript
+// Phase 4で実装済み
+// createRouteHandlerClient() を使用
 ```
 
 #### 1.6 共通ユーティリティの作成
@@ -191,10 +176,10 @@ export const createClient = () => {
 
 - [x] すべての依存パッケージがインストールされている ✅
 - [x] 環境変数が正しく設定されている ✅
-- [ ] プロジェクト構造が作成されている（次タスク）
+- [x] 主要なプロジェクト構造が作成されている（lib/supabase, lib/types, lib/auth, components/desktop, store）✅
 - [x] `npm run dev`でエラーなく起動できる ✅
 
-**Phase 1 実装状況**: セットアップ準備完了、実装コードは次フェーズ
+**Phase 1 実装状況**: Phase 4までで大部分完了（lib/utils, components/chatは後続フェーズで実装）
 
 ---
 
@@ -213,18 +198,18 @@ Supabaseプロジェクトの作成とデータベーススキーマの構築
 
 #### 2.2 データベーススキーマの作成
 
-- [ ] Supabase Dashboard > SQL Editorを開く
-- [ ] `database-schema.md`のSQLを順番に実行（実装時に実施）
+- [x] Supabase Dashboard > SQL Editorを開く ✅
+- [x] `database-schema.md`のSQLを順番に実行 ✅
 
 **実行順序**:
-1. [ ] `update_updated_at_column()`関数の作成
-2. [ ] `projects`テーブル作成
-3. [ ] `projects`のインデックス作成
-4. [ ] `projects`のトリガー作成
-5. [ ] `projects`のRLSポリシー設定
-6. [ ] `user_settings`テーブル作成（同様の手順）
-7. [ ] `app_settings`テーブル作成（同様の手順）
-8. [ ] `revenues`テーブル作成（同様の手順）
+1. [x] `update_updated_at_column()`関数の作成 ✅
+2. [x] `projects`テーブル作成 ✅
+3. [x] `projects`のインデックス作成 ✅
+4. [x] `projects`のトリガー作成 ✅
+5. [x] `projects`のRLSポリシー設定 ✅
+6. [x] `user_settings`テーブル作成（同様の手順）✅
+7. [x] `app_settings`テーブル作成（同様の手順）✅
+8. [x] `revenues`テーブル作成（同様の手順）✅
 
 #### 2.3 自動設定作成トリガーの設定
 
@@ -255,11 +240,11 @@ export async function testConnection() {
 ### 完了条件
 
 - [x] Supabaseプロジェクトが作成されている ✅
-- [ ] すべてのテーブルが作成されている（実装時に実施）
-- [ ] RLSポリシーが正しく設定されている（実装時に実施）
-- [ ] Supabaseへの接続が確認できている（実装時に実施）
+- [x] すべてのテーブルが作成されている（projects, user_settings, app_settings, revenues）✅
+- [x] RLSポリシーが正しく設定されている ✅
+- [x] Supabaseへの接続が確認できている（認証機能で動作確認済み）✅
 
-**Phase 2 実装状況**: Supabaseプロジェクト作成済み、スキーマ構築は実装時に実施
+**Phase 2 実装状況**: Phase 4で完了確認済み（ビューとトリガーは Phase 5で実装予定）
 
 ---
 
@@ -468,77 +453,89 @@ Supabase Authを使った認証機能の実装
 
 ### タスク
 
-#### 3.1 認証ヘルパーの作成
+#### 4.1 認証ヘルパーの作成
 
-- [ ] `lib/auth/server.ts` - サーバーサイド認証
+- [x] `lib/auth/session.ts` - サーバーサイド認証 ✅
 ```typescript
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-
-export async function getUser() {
-  const supabase = createServerComponentClient({ cookies });
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
-
-export async function requireAuth() {
-  const user = await getUser();
-  if (!user) {
-    throw new Error('UNAUTHORIZED');
-  }
-  return user;
-}
+// getUser(), requireAuth()を実装
+// Cookie-based認証でServer Components対応
 ```
 
-- [ ] `lib/auth/client.ts` - クライアントサイド認証
+- [x] `lib/supabase/server.ts` - Server Component用クライアント ✅
+- [x] `lib/supabase/client.ts` - Client Component用クライアント ✅
+- [x] `lib/supabase/route.ts` - Route Handler用クライアント ✅
 
-#### 3.2 API認証ミドルウェアの作成
+#### 4.2 認証状態管理（Zustand）
 
-- [ ] `lib/auth/api-middleware.ts`
-```typescript
-import { createClient } from '@/lib/supabase/server';
-
-export async function verifyAuth(request: Request) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new Error('UNAUTHORIZED');
-  }
-
-  const token = authHeader.substring(7);
-  const supabase = createClient();
-
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) {
-    throw new Error('UNAUTHORIZED');
-  }
-
-  return user;
-}
-```
-
-#### 3.3 ログイン/ログアウトページの作成
-
-- [ ] `app/login/page.tsx` - ログインページ
-- [ ] `app/api/auth/callback/route.ts` - 認証コールバック
-
-#### 3.4 認証状態管理（Zustand）
-
-- [ ] `store/useStore.ts`を拡張
+- [x] `store/authStore.ts` - 認証状態管理 ✅
 ```typescript
 interface AuthState {
   user: User | null;
-  setUser: (user: User | null) => void;
+  session: Session | null;
+  isLoading: boolean;
+  isInitialized: boolean;
+  setAuth: (payload: { user: User | null; session: Session | null }) => void;
+  clearAuth: () => void;
 }
-
-// Zustandストアに追加
 ```
+
+- [x] `components/auth/AuthProvider.tsx` - サーバー→クライアント橋渡し ✅
+- [x] `app/(protected)/layout.tsx` - 保護されたルート ✅
+
+#### 4.3 ログイン/サインアップページの作成
+
+- [x] `app/login/page.tsx` - ログインページ ✅
+  - メール/パスワード認証
+  - Google OAuth認証
+  - パスワードリセットリンク
+- [x] `app/signup/page.tsx` - サインアップページ ✅
+  - メール/パスワード登録
+  - Google OAuth登録
+- [x] `app/api/auth/callback/route.ts` - OAuth認証コールバック ✅
+
+#### 4.4 パスワード管理機能
+
+- [x] `app/(protected)/profile/page.tsx` - プロフィール編集 ✅
+  - パスワード変更機能
+  - 現在のパスワード検証（セキュリティ対策）
+- [x] `app/forgot-password/page.tsx` - パスワードリセット申請 ✅
+- [x] `app/reset-password/page.tsx` - パスワードリセット実行 ✅
+
+#### 4.5 UI/UXの改善
+
+- [x] `components/desktop/UserMenu.tsx` - ユーザーメニュー ✅
+  - ドロップダウンメニュー
+  - プロフィール編集へのリンク
+  - ログアウト機能
+- [x] `lib/constants/auth-errors.ts` - エラーメッセージ定数化 ✅
+- [x] アクセシビリティ対応（aria属性） ✅
+- [x] z-index階層定義（tailwind.config.ts） ✅
+
+#### 4.6 セキュリティ対策
+
+- [x] Cookie設定の最適化 ✅
+- [x] RLSポリシーの設定確認 ✅
+- [x] パスワード変更時の再認証 ✅
+- [x] 二重セッション初期化の防止（AuthListener削除） ✅
 
 ### 完了条件
 
-- [x] ユーザー登録・ログインができる
-- [x] ログアウトができる
-- [x] 認証状態が保持される
-- [x] API認証ミドルウェアが動作する
+- [x] ユーザー登録・ログインができる（メール/パスワード + Google OAuth） ✅
+- [x] ログアウトができる ✅
+- [x] 認証状態が保持される ✅
+- [x] プロフィール編集（パスワード変更）ができる ✅
+- [x] パスワードリセット機能が動作する ✅
+- [x] セキュリティ対策が実装されている ✅
+- [x] エラーハンドリングが適切 ✅
+- [x] アクセシビリティ対応済み ✅
+
+**Phase 4 実装期間**: 1日（2025-11-10完了）
+
+**実装内容の詳細**:
+- 認証方式: メール/パスワード + Google OAuth
+- 状態管理: Zustand（persist削除、サーバー側認証を信頼）
+- セキュリティ: Cookie-based認証、RLS、パスワード再認証
+- UX改善: エラー定数化、アクセシビリティ対応、z-index階層定義
 
 ---
 
@@ -647,12 +644,12 @@ export function handleAPIError(error: any) {
 
 ### 完了条件（AIエージェント統合対応）
 
-- [x] プロジェクト一覧が取得できる
-- [x] プロジェクトが作成できる
-- [x] プロジェクト詳細が取得できる
-- [x] プロジェクトが更新できる
-- [x] プロジェクトが削除できる
-- [x] すべてのAPIでRLSが正しく動作する
+- [ ] プロジェクト一覧が取得できる
+- [ ] プロジェクトが作成できる
+- [ ] プロジェクト詳細が取得できる
+- [ ] プロジェクトが更新できる
+- [ ] プロジェクトが削除できる
+- [ ] すべてのAPIでRLSが正しく動作する
 - [ ] **AIエージェント統合**: Agent BuilderでAPIをツールとして登録
 
 ---
@@ -707,10 +704,10 @@ export function handleAPIError(error: any) {
 
 ### 完了条件（AIエージェント統合対応）
 
-- [x] ユーザー設定の取得・更新ができる
-- [x] アプリ設定の取得・更新ができる
-- [x] 売上の全CRUD操作ができる
-- [x] 売上集計が正しく計算される
+- [ ] ユーザー設定の取得・更新ができる
+- [ ] アプリ設定の取得・更新ができる
+- [ ] 売上の全CRUD操作ができる
+- [ ] 売上集計が正しく計算される
 - [ ] **AIエージェント統合**: Agent BuilderでAPIをツールとして登録
 
 ---
@@ -940,10 +937,10 @@ OPENAI_API_KEY
 
 ### 完了条件
 
-- [x] すべての機能が正常動作する
-- [x] 重大なバグがない
-- [x] Vercelへのデプロイが完了している
-- [x] 本番環境で動作確認できている
+- [ ] すべての機能が正常動作する
+- [ ] 重大なバグがない
+- [ ] Vercelへのデプロイが完了している
+- [ ] 本番環境で動作確認できている
 
 ---
 

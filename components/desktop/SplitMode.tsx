@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { useDesktopStore, WindowState } from '@/store/desktopStore';
-import { shallow } from 'zustand/shallow';
+import { useDesktopStore, WindowState, type App } from '@/store/desktopStore';
+import { useShallow } from 'zustand/react/shallow';
 import type { SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import {
   DndContext,
@@ -59,13 +59,13 @@ export function SplitMode() {
   // 2分割レイアウト
   if (splitMode === 2) {
     return (
-      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-gray-50 dark:bg-gray-900 flex">
+      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="w-1/2 border-r border-gray-300 dark:border-gray-700"
+          className="w-1/2 border-r border-cloud/40"
         />
 
         {/* 右画面 */}
@@ -82,13 +82,13 @@ export function SplitMode() {
   // 3分割レイアウト（左50% + 右上25% + 右下25%）
   if (splitMode === 3) {
     return (
-      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-gray-50 dark:bg-gray-900 flex">
+      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="w-1/2 border-r border-gray-300 dark:border-gray-700"
+          className="w-1/2 border-r border-cloud/40"
         />
 
         {/* 右側2分割 */}
@@ -98,7 +98,7 @@ export function SplitMode() {
             screenId="topRight"
             sensors={sensors}
             handleDragEnd={handleDragEnd}
-            className="h-1/2 border-b border-gray-300 dark:border-gray-700"
+            className="h-1/2 border-b border-cloud/40"
           />
 
           {/* 右下画面 */}
@@ -116,13 +116,13 @@ export function SplitMode() {
   // 4分割レイアウト（2x2グリッド）
   if (splitMode === 4) {
     return (
-      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-gray-50 dark:bg-gray-900 grid grid-cols-2 grid-rows-2">
+      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-mist grid grid-cols-2 grid-rows-2">
         {/* 左上画面 */}
         <SplitScreen
           screenId="topLeft"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="border-r border-b border-gray-300 dark:border-gray-700"
+          className="border-r border-b border-cloud/40"
         />
 
         {/* 右上画面 */}
@@ -130,7 +130,7 @@ export function SplitMode() {
           screenId="topRight"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="border-b border-gray-300 dark:border-gray-700"
+          className="border-b border-cloud/40"
         />
 
         {/* 左下画面 */}
@@ -138,7 +138,7 @@ export function SplitMode() {
           screenId="bottomLeft"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="border-r border-gray-300 dark:border-gray-700"
+          className="border-r border-cloud/40"
         />
 
         {/* 右下画面 */}
@@ -181,11 +181,10 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
 
   // データ部分のみを取得（shallow比較対象）
   const { apps, screenWindows } = useDesktopStore(
-    (state) => ({
+    useShallow((state) => ({
       apps: state.apps,
       screenWindows: state.splitScreenWindows[screenId] || [],
-    }),
-    shallow
+    }))
   );
 
   // アクション関数は別途取得（参照が保持されるため再レンダリングの原因にならない）
@@ -207,9 +206,9 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={apps.map((app) => app.id)} strategy={rectSortingStrategy}>
+          <SortableContext items={apps.map((app: App) => app.id)} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-4 gap-3">
-              {apps.map((app) => (
+              {apps.map((app: App) => (
                 <AppIcon
                   key={app.id}
                   id={app.id}
@@ -224,7 +223,7 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
         </DndContext>
 
         {/* ウィンドウマネージャー：このスクリーン専用のウィンドウを表示 */}
-        {screenWindows.map((window) => (
+        {screenWindows.map((window: WindowState) => (
           <ScreenWindow
             key={window.id}
             window={window}
@@ -292,7 +291,7 @@ function ScreenWindow({
       onResize={handleResize}
       minWidth={SPLIT_WINDOW_MIN_WIDTH}
       minHeight={SPLIT_WINDOW_MIN_HEIGHT}
-      titleBarClassName="window-drag-handle flex items-center justify-between px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white cursor-move select-none text-sm"
+      titleBarClassName="window-drag-handle flex items-center justify-between px-3 py-2 bg-surface text-ink border-b border-accent-sand/60 cursor-move select-none text-sm"
       bodyClassName="flex-1 overflow-auto"
     />
   );

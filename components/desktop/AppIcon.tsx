@@ -3,6 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDesktopStore } from '@/store/desktopStore';
+import { type AppId } from './appRegistry';
 import {
   RiFolderLine,
   RiSettingsLine,
@@ -15,7 +16,7 @@ import {
 } from 'react-icons/ri';
 
 // アイコン名とReactコンポーネントのマッピング
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+export const appIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   RiFolder: RiFolderLine,
   RiSettings: RiSettingsLine,
   RiMoneyDollar: RiMoneyDollarCircleLine,
@@ -27,11 +28,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 interface AppIconProps {
-  id: string;
+  id: AppId;
   name: string;
   icon: string;
   color: string;
-  onOpen?: (appId: string) => void;
+  onOpen?: (appId: AppId) => void;
 }
 
 export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
@@ -55,7 +56,7 @@ export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
   };
 
   // アイコンコンポーネントの取得
-  const IconComponent = iconMap[icon] || RiFolderLine;
+  const IconComponent = appIconMap[icon] || RiFolderLine;
 
   // ダブルクリックでアプリ起動
   const handleDoubleClick = () => {
@@ -91,8 +92,8 @@ export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
       <div
         className={`
           w-16 h-16 rounded-2xl
-          bg-white dark:bg-gray-800
-          shadow-lg dark:shadow-gray-900/50
+          bg-surface
+          shadow-panel
           flex items-center justify-center
           transition-all duration-200
           group-hover:scale-110 group-hover:shadow-xl
@@ -108,8 +109,8 @@ export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
       <span
         className="
           mt-2 text-sm font-medium
-          text-gray-700 dark:text-gray-300
-          group-hover:text-gray-900 dark:group-hover:text-white
+          text-ink
+          group-hover:text-ink
           transition-colors
         "
       >

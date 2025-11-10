@@ -37,6 +37,7 @@ export interface App {
   name: string;
   icon: string; // アイコンのコンポーネント名（例: 'RiFolder', 'RiSettings'）
   color: string; // アイコンの色
+  position: { x: number; y: number }; // デスクトップ上の配置座標
 }
 
 // ウィンドウの型定義
@@ -66,6 +67,8 @@ interface DesktopState {
 
   // アプリの順序変更
   reorderApps: (oldIndex: number, newIndex: number) => void;
+  updateAppPosition: (appId: AppId, position: { x: number; y: number }) => void;
+  resetAppPositions: () => void;
 
   // アプリの追加・削除（将来の拡張用）
   addApp: (app: App) => void;
@@ -98,56 +101,100 @@ interface DesktopState {
 }
 
 // デフォルトのアプリ一覧
-const defaultApps: App[] = [
-  {
-    id: 'projects',
-    name: 'Projects',
-    icon: 'RiFolder',
-    color: 'text-cyan-500',
-  },
-  {
-    id: 'settings',
-    name: 'Settings',
-    icon: 'RiSettings',
-    color: 'text-cyan-500',
-  },
-  {
-    id: 'revenue',
-    name: 'Revenue',
-    icon: 'RiMoneyDollar',
-    color: 'text-cyan-500',
-  },
-  {
-    id: 'store',
-    name: 'Store',
-    icon: 'RiStore',
-    color: 'text-cyan-500',
-  },
-  {
-    id: 'agent',
-    name: 'Agent',
-    icon: 'RiRobot',
-    color: 'text-cyan-500',
-  },
-  {
-    id: 'dashboard',
-    name: 'Dashboard',
-    icon: 'RiDashboard',
-    color: 'text-cyan-500',
-  },
-  {
-    id: 'analytics',
-    name: 'Analytics',
-    icon: 'RiBarChart',
-    color: 'text-cyan-500',
-  },
-  {
-    id: 'calendar',
-    name: 'Calendar',
-    icon: 'RiCalendar',
-    color: 'text-cyan-500',
-  },
+const ICON_COL_COUNT = 12;
+const ICON_X_OFFSET = 48;
+const ICON_Y_OFFSET = 40;
+const ICON_X_GAP = 120;
+const ICON_Y_GAP = 140;
+const ICON_MIN_DISTANCE = 96;
+
+const generateIconPosition = (index: number): { x: number; y: number } => {
+  const column = index % ICON_COL_COUNT;
+  const row = 0;
+  return {
+    x: ICON_X_OFFSET + column * ICON_X_GAP,
+    y: ICON_Y_OFFSET + row * ICON_Y_GAP,
+  };
+};
+
+const snapToGrid = (position: { x: number; y: number }): { x: number; y: number } => {
+  const snap = (value: number, offset: number, gap: number) =>
+    offset + Math.round((value - offset) / gap) * gap;
+  return {
+    x: snap(position.x, ICON_X_OFFSET, ICON_X_GAP),
+    y: snap(position.y, ICON_Y_OFFSET, ICON_Y_GAP),
+  };
+};
+
+type BaseAppConfig = Omit<App, 'position'>;
+
+const baseDefaultApps: BaseAppConfig[] = [
+  { id: 'projects', name: 'Projects', icon: 'RiFolder', color: 'text-ink' },
+  { id: 'settings', name: 'Settings', icon: 'RiSettings', color: 'text-ink' },
+  { id: 'revenue', name: 'Revenue', icon: 'RiMoneyDollar', color: 'text-ink' },
+  { id: 'store', name: 'Store', icon: 'RiStore', color: 'text-ink' },
+  { id: 'agent', name: 'Agent', icon: 'RiRobot', color: 'text-ink' },
+  { id: 'dashboard', name: 'Dashboard', icon: 'RiDashboard', color: 'text-ink' },
+  { id: 'analytics', name: 'Analytics', icon: 'RiBarChart', color: 'text-ink' },
+  { id: 'calendar', name: 'Calendar', icon: 'RiCalendar', color: 'text-ink' },
 ];
+
+const defaultApps: App[] = baseDefaultApps.map((app, index) => ({
+  ...app,
+  position: generateIconPosition(index),
+}));
+
+const ensureAppsHavePositions = (apps: App[]): App[] =>
+  apps.map((app, index) => ({
+    ...app,
+    position: app.position
+      ? snapToGrid({ ...app.position })
+      : generateIconPosition(index),
+  }));
+
+const normalizeApps = (apps?: App[]): App[] =>
+  ensureAppsHavePositions(apps && apps.length ? apps : cloneDefaultApps());
+
+const nudgePositionIfNeeded = (
+  appId: AppId,
+  position: { x: number; y: number },
+  apps: App[]
+): { x: number; y: number } => {
+  let adjusted = snapToGrid(position);
+  const safetyLimit = 30;
+  let attempts = 0;
+
+  const collides = (pos: { x: number; y: number }) =>
+    apps.some(
+      (app) =>
+        app.id !== appId &&
+        app.position &&
+        Math.abs(app.position.x - pos.x) < ICON_MIN_DISTANCE &&
+        Math.abs(app.position.y - pos.y) < ICON_MIN_DISTANCE
+    );
+
+  while (collides(adjusted) && attempts < safetyLimit) {
+    const direction = attempts % 4;
+    const delta = ICON_MIN_DISTANCE;
+    switch (direction) {
+      case 0:
+        adjusted = { x: adjusted.x + delta, y: adjusted.y };
+        break;
+      case 1:
+        adjusted = { x: adjusted.x, y: adjusted.y + delta };
+        break;
+      case 2:
+        adjusted = { x: adjusted.x - delta, y: adjusted.y };
+        break;
+      default:
+        adjusted = { x: adjusted.x, y: adjusted.y - delta };
+        break;
+    }
+    attempts += 1;
+  }
+
+  return adjusted;
+};
 
 /**
  * z-indexの正規化（無限増加を防止）
@@ -197,7 +244,8 @@ const createSplitScreenWindows = (): DesktopDataSlice['splitScreenWindows'] => (
   bottomRight: [],
 });
 
-const cloneDefaultApps = () => defaultApps.map((app) => ({ ...app }));
+const cloneDefaultApps = () =>
+  defaultApps.map((app) => ({ ...app, position: { ...app.position } }));
 
 const createDesktopData = (): DesktopDataSlice => ({
   apps: cloneDefaultApps(),
@@ -251,10 +299,48 @@ export const useDesktopStore = create<DesktopState>()(
           return { apps: newApps };
         }),
 
+      // アプリアイコンの座標を更新
+      updateAppPosition: (appId, position) =>
+        set((state) => ({
+          apps: state.apps.map((app) =>
+            app.id === appId
+              ? {
+                  ...app,
+                  position: nudgePositionIfNeeded(
+                    appId,
+                    snapToGrid(position),
+                    state.apps
+                  ),
+                }
+              : app
+          ),
+        })),
+
+      resetAppPositions: () =>
+        set((state) => ({
+          apps: state.apps.map((app, index) => ({
+            ...app,
+            position: generateIconPosition(index),
+          })),
+        })),
+
       // アプリを追加
       addApp: (app) =>
         set((state) => ({
-          apps: [...state.apps, app],
+          apps: [
+            ...state.apps,
+            {
+              ...app,
+              position:
+                nudgePositionIfNeeded(
+                  app.id,
+                  snapToGrid(
+                    app.position ?? generateIconPosition(state.apps.length)
+                  ),
+                  state.apps
+                ),
+            },
+          ],
         })),
 
       // アプリを削除
@@ -510,17 +596,22 @@ export const useDesktopStore = create<DesktopState>()(
        * @returns 新しいバージョンに変換されたデータ
        */
       migrate: (persistedState: any, persistedVersion: number) => {
+        const withApps = (state: any) => ({
+          ...state,
+          apps: normalizeApps(state?.apps),
+        });
+
         // v0またはv1から来た場合、splitScreenWindowsを追加
         if (persistedVersion < 2) {
-          return {
+          return withApps({
             ...persistedState,
             // 既存のsplitScreenWindowsがあればそれを使い、なければ初期化
-            splitScreenWindows: persistedState.splitScreenWindows || createSplitScreenWindows(),
-          };
+            splitScreenWindows: persistedState?.splitScreenWindows || createSplitScreenWindows(),
+          });
         }
 
-        // v2以降はそのまま返す
-        return persistedState;
+        // v2以降はapp座標のみ補正
+        return withApps(persistedState);
       },
       onRehydrateStorage: () => (state, error) => {
         if (error) {
