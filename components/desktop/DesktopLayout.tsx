@@ -17,6 +17,8 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useDesktopStore } from '@/store/desktopStore';
+import { useAuthStore } from '@/store/authStore';
+import { createClient } from '@/lib/supabase/client';
 import { AppIcon } from './AppIcon';
 import { Dock } from './Dock';
 import { WindowManager } from './WindowManager';
@@ -31,6 +33,8 @@ export function DesktopLayout() {
   const toggleDarkMode = useDesktopStore((state) => state.toggleDarkMode);
   const splitMode = useDesktopStore((state) => state.splitMode);
   const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const desktopDndId = useId();
 
   // ドラッグ&ドロップのセンサー設定
@@ -55,6 +59,37 @@ export function DesktopLayout() {
       reorderApps(oldIndex, newIndex);
     }
   };
+
+  // 認証セッション初期化
+  useEffect(() => {
+    const supabase = createClient();
+
+    // 初回セッション取得
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        console.log('🔐 セッション初期化:', session.user.email);
+        setAuth({ user: session.user, session });
+      } else {
+        console.log('🔓 セッションなし');
+        clearAuth();
+      }
+    });
+
+    // セッション変更を監視
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        console.log('🔄 セッション更新:', session.user.email);
+        setAuth({ user: session.user, session });
+      } else {
+        console.log('🔓 ログアウト検知');
+        clearAuth();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setAuth, clearAuth]);
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
