@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useDesktopStore, WindowState } from '@/store/desktopStore';
+import { shallow } from 'zustand/shallow';
 import type { SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import {
   DndContext,
@@ -163,15 +164,38 @@ interface SplitScreenProps {
 }
 
 function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: SplitScreenProps) {
-  const apps = useDesktopStore((state) => state.apps);
-  const screenWindows = useDesktopStore((state) => state.splitScreenWindows[screenId] || []);
-  const openWindowInScreen = useDesktopStore((state) => state.openWindowInScreen);
-  const closeWindowInScreen = useDesktopStore((state) => state.closeWindowInScreen);
-  const minimizeWindowInScreen = useDesktopStore((state) => state.minimizeWindowInScreen);
-  const maximizeWindowInScreen = useDesktopStore((state) => state.maximizeWindowInScreen);
-  const bringToFrontInScreen = useDesktopStore((state) => state.bringToFrontInScreen);
-  const updateWindowPositionInScreen = useDesktopStore((state) => state.updateWindowPositionInScreen);
-  const updateWindowSizeInScreen = useDesktopStore((state) => state.updateWindowSizeInScreen);
+  /**
+   * パフォーマンス最適化: データとアクションを分離
+   *
+   * 【問題点】
+   * 以前の実装では、actionsオブジェクトをselector内で毎回生成していました。
+   * shallow比較は第一階層のみを比較するため、actionsオブジェクト自体が
+   * 新しいオブジェクト参照として判定され、データが変わっていなくても
+   * 毎回再レンダリングが発生していました。
+   *
+   * 【解決策】
+   * 1. データ（apps, screenWindows）のみをshallow比較対象のselectorで取得
+   * 2. アクション関数は別途取得（Zustandの関数は参照が保持される）
+   * 3. これによりデータが変わったときだけ再レンダリングされる
+   */
+
+  // データ部分のみを取得（shallow比較対象）
+  const { apps, screenWindows } = useDesktopStore(
+    (state) => ({
+      apps: state.apps,
+      screenWindows: state.splitScreenWindows[screenId] || [],
+    }),
+    shallow
+  );
+
+  // アクション関数は別途取得（参照が保持されるため再レンダリングの原因にならない）
+  const openWindow = useDesktopStore((state) => state.openWindowInScreen);
+  const closeWindow = useDesktopStore((state) => state.closeWindowInScreen);
+  const minimizeWindow = useDesktopStore((state) => state.minimizeWindowInScreen);
+  const maximizeWindow = useDesktopStore((state) => state.maximizeWindowInScreen);
+  const bringToFront = useDesktopStore((state) => state.bringToFrontInScreen);
+  const updateWindowPosition = useDesktopStore((state) => state.updateWindowPositionInScreen);
+  const updateWindowSize = useDesktopStore((state) => state.updateWindowSizeInScreen);
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
@@ -192,7 +216,7 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
                   name={app.name}
                   icon={app.icon}
                   color={app.color}
-                  onOpen={() => openWindowInScreen(screenId, app.id)}
+                  onOpen={() => openWindow(screenId, app.id)}
                 />
               ))}
             </div>
@@ -205,12 +229,12 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
             key={window.id}
             window={window}
             screenId={screenId}
-            closeWindow={closeWindowInScreen}
-            minimizeWindow={minimizeWindowInScreen}
-            maximizeWindow={maximizeWindowInScreen}
-            bringToFront={bringToFrontInScreen}
-            updateWindowPosition={updateWindowPositionInScreen}
-            updateWindowSize={updateWindowSizeInScreen}
+            closeWindow={closeWindow}
+            minimizeWindow={minimizeWindow}
+            maximizeWindow={maximizeWindow}
+            bringToFront={bringToFront}
+            updateWindowPosition={updateWindowPosition}
+            updateWindowSize={updateWindowSize}
           />
         ))}
       </div>
