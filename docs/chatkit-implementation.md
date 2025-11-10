@@ -1,22 +1,59 @@
-# ChatKit実装ガイド
+# ChatKit実装ガイド（デスクトップUI統合版）
 
 ## 📋 ドキュメント情報
 - **作成日**: 2025-11-09
+- **更新日**: 2025-11-09
 - **参照**: OpenAI ChatKit公式ドキュメント
-- **対象**: Next.js 16 + React 19
+- **対象**: Next.js 16 + React 19 + デスクトップOS風UI
 
 ---
 
-## 🎯 ChatKitとは
+## 🎯 ChatKitの役割（新アーキテクチャ）
 
-OpenAIが提供するフロントエンド向けJavaScriptツールキットで、カスタムAIチャット体験をWebサイトに埋め込むことができます。
+### UIレイアウト
+```
+┌─────────────────────────────────────────────────┬─────┐
+│  Desktop Area (アプリアイコン、ウィンドウ)       │チャ │
+│                                                 │ット │
+│   [📁]    [⚙️]    [💰]    [📊]                 │     │
+│  Projects Settings Revenue Dashboard            │固定 │
+│                                                 │     │
+│  ┌──────────────────┐                          │[💬] │
+│  │ Window: Projects │                          │     │
+│  │ Content...       │                          │常時 │
+│  └──────────────────┘                          │表示 │
+└─────────────────────────────────────────────────┴─────┘
+```
 
-### 主な特徴
-- ✅ すぐに使えるチャットUIコンポーネント
-- ✅ AgentKitで作成したエージェントとの統合
-- ✅ ストリーミング対応
-- ✅ セキュアな認証フロー
-- ✅ フレームワーク非依存（Web Components）
+### チャットの機能
+
+**1. アプリ起動指示**
+```
+ユーザー: 「プロジェクト管理を開いて」
+→ Projects アプリのウィンドウを開く
+
+ユーザー: 「売上確認したい」
+→ Revenue アプリを起動
+```
+
+**2. データ操作指示**
+```
+ユーザー: 「新しいプロジェクトを作成して」
+→ POST /api/projects API呼び出し
+→ 結果をチャットで報告
+
+ユーザー: 「今月の売上を教えて」
+→ GET /api/revenues?month=2025-01 呼び出し
+→ 集計結果を返答
+```
+
+**3. エージェントタスク実行**
+```
+ユーザー: 「月次レポートを作成して」
+→ Agent APIで task を作成
+→ バックグラウンド実行
+→ 完了通知
+```
 
 ---
 
@@ -27,9 +64,6 @@ OpenAIが提供するフロントエンド向けJavaScriptツールキットで�
 ```bash
 # ChatKit React パッケージ
 npm install @openai/chatkit-react
-
-# または JavaScript版
-npm install @openai/chatkit-js
 
 # OpenAI SDK（サーバーサイド用）
 npm install openai
@@ -129,9 +163,9 @@ export async function POST(request: NextRequest) {
 
 ---
 
-### Step 2: クライアントサイド - ChatKitコンポーネント作成
+### Step 2: クライアントサイド - 右側固定チャットコンポーネント
 
-#### React版 (`components/chat/ChatInterface.tsx`)
+#### React版 (`components/chat/ChatSidebar.tsx`)
 
 ```typescript
 'use client';
@@ -139,7 +173,7 @@ export async function POST(request: NextRequest) {
 import { ChatKit, useChatKit } from '@openai/chatkit-react';
 import { useEffect, useState } from 'react';
 
-export function ChatInterface() {
+export function ChatSidebar() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,17 +209,29 @@ export function ChatInterface() {
   }, []);
 
   // ChatKit初期化
-  const { control } = useChatKit({
+  const { control, methods } = useChatKit({
     api: {
       clientToken: clientSecret || '',
     },
+    // テーマカスタマイズ（右側に合わせる）
+    theme: {
+      primaryColor: '#4F46E5',
+      fontFamily: 'Inter, sans-serif',
+    },
+    // 初期メッセージ
+    initialMessages: [
+      {
+        role: 'assistant',
+        content: 'こんにちは！何かお手伝いできることはありますか？\n\n例:\n・「プロジェクト管理を開いて」\n・「新しいプロジェクトを作成して」\n・「今月の売上を教えて」',
+      },
+    ],
   });
 
   // ローディング状態
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">チャットを読み込み中...</div>
+      <div className="w-80 border-l border-gray-200 flex items-center justify-center">
+        <div className="text-sm text-gray-500">チャット読み込み中...</div>
       </div>
     );
   }
@@ -193,19 +239,30 @@ export function ChatInterface() {
   // エラー状態
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-red-500">エラー: {error}</div>
+      <div className="w-80 border-l border-gray-200 flex items-center justify-center p-4">
+        <div className="text-sm text-red-500">エラー: {error}</div>
       </div>
     );
   }
 
-  // ChatKitレンダリング
+  // ChatKitレンダリング（右側固定）
   return (
-    <div className="h-screen w-full">
-      <ChatKit
-        control={control}
-        className="h-full w-full"
-      />
+    <div className="w-80 border-l border-gray-200 flex flex-col h-full">
+      {/* ヘッダー */}
+      <div className="h-16 border-b border-gray-200 flex items-center px-4">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">💬</span>
+          <span className="font-semibold text-gray-900">アシスタント</span>
+        </div>
+      </div>
+
+      {/* ChatKit本体 */}
+      <div className="flex-1 overflow-hidden">
+        <ChatKit
+          control={control}
+          className="h-full w-full"
+        />
+      </div>
     </div>
   );
 }
@@ -213,18 +270,25 @@ export function ChatInterface() {
 
 ---
 
-### Step 3: メインページへの統合
+### Step 3: メインレイアウトへの統合
 
-#### `app/page.tsx`
+#### `app/layout.tsx` または `app/page.tsx`
 
 ```typescript
-import { ChatInterface } from '@/components/chat/ChatInterface';
+import { ChatSidebar } from '@/components/chat/ChatSidebar';
+import { DesktopArea } from '@/components/desktop/DesktopArea';
 
-export default function Home() {
+export default function MainLayout() {
   return (
-    <main className="h-screen">
-      <ChatInterface />
-    </main>
+    <div className="h-screen flex">
+      {/* 左側: デスクトップエリア */}
+      <div className="flex-1 flex flex-col">
+        <DesktopArea />
+      </div>
+
+      {/* 右側: チャットサイドバー（固定） */}
+      <ChatSidebar />
+    </div>
   );
 }
 ```
@@ -272,43 +336,156 @@ ChatKitが動作するには、**OpenAI組織設定でドメインをAllowlist�
 
 ---
 
-## 🔧 高度な設定
+## 🤖 Agent Builderでの設定
 
-### useChatKit フックのメソッド
+### ワークフローIDの取得方法
 
-```typescript
-const { control, methods } = useChatKit({
-  api: { clientToken },
-});
+1. OpenAI Platform → Agent Builder
+2. エージェントを作成・編集
+3. 「Publish」ボタンをクリック
+4. ワークフローIDが表示される（`workflow_xxxxx`形式）
+5. `.env.local`に`CHATKIT_WORKFLOW_ID`として設定
 
-// メソッド一覧
-methods.focusComposer();              // 入力欄にフォーカス
-methods.setThreadId('thread-123');    // スレッドID設定
-methods.sendUserMessage('こんにちは');  // メッセージ送信
-methods.setComposerValue('テキスト');   // 入力欄の値設定
-methods.fetchUpdates();               // 更新取得
-methods.sendCustomAction({ ... });    // カスタムアクション
+### エージェントの設定例
+
+```yaml
+Name: 新時代SaaSアシスタント
+
+Instructions (システムプロンプト):
+  あなたは新時代SaaSのアシスタントです。
+  ユーザーの指示に応じて以下の操作を実行してください：
+
+  1. アプリ起動: 「〇〇を開いて」→ アプリウィンドウを開く
+  2. データ操作: 「〇〇を作成して」→ API呼び出し
+  3. エージェントタスク: 「〇〇を実行して」→ タスク作成
+
+  利用可能なアプリ:
+  - プロジェクト管理 (Projects)
+  - 設定 (Settings)
+  - 売上確認 (Revenue)
+  - プラグインストア (Store)
+  - エージェント (Agent)
+
+  日本語で親しみやすく、わかりやすく回答してください。
+
+Tools:
+  - get_projects: プロジェクト一覧取得
+  - create_project: プロジェクト作成
+  - get_revenues: 売上データ取得
+  - create_agent_task: エージェントタスク作成
+  （Agent Builderでカスタム関数として定義）
 ```
 
-### カスタマイズ例
+---
+
+## 🔧 高度な機能実装
+
+### 1. アプリ起動指示の処理
+
+#### `components/chat/ChatSidebar.tsx` に追加
+
+```typescript
+import { useDesktopStore } from '@/store/useDesktopStore';
+
+export function ChatSidebar() {
+  const { openApp } = useDesktopStore();
+
+  const { control, methods } = useChatKit({
+    api: { clientToken: clientSecret || '' },
+
+    // カスタムアクションハンドラー
+    onCustomAction: (action) => {
+      if (action.type === 'open_app') {
+        // アプリを開く
+        openApp(action.appId);
+
+        // 確認メッセージを送信
+        methods.sendUserMessage(`${action.appName}を開きました`);
+      }
+    },
+  });
+
+  // ...
+}
+```
+
+### 2. API呼び出し統合
+
+Agent Builderのカスタム関数として以下を定義：
+
+```javascript
+// get_projects 関数
+async function get_projects() {
+  const response = await fetch('/api/projects', {
+    headers: {
+      'Authorization': `Bearer ${userToken}`,
+    },
+  });
+  return await response.json();
+}
+
+// create_project 関数
+async function create_project(name, description) {
+  const response = await fetch('/api/projects', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`,
+    },
+    body: JSON.stringify({ name, description }),
+  });
+  return await response.json();
+}
+```
+
+### 3. エージェントタスク実行
+
+```javascript
+// create_agent_task 関数
+async function create_agent_task(taskName, workflow) {
+  const response = await fetch('/api/agent/tasks', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`,
+    },
+    body: JSON.stringify({
+      name: taskName,
+      workflow: workflow,
+    }),
+  });
+  return await response.json();
+}
+```
+
+---
+
+## 🎨 スタイリングカスタマイズ
+
+### 右側固定レイアウトに最適化
 
 ```typescript
 const { control } = useChatKit({
-  api: {
-    clientToken,
-  },
+  api: { clientToken },
+
   // テーマカスタマイズ
   theme: {
+    // プライマリカラー
     primaryColor: '#4F46E5',
-    fontFamily: 'Inter, sans-serif',
+
+    // フォント
+    fontFamily: 'Inter, -apple-system, sans-serif',
+
+    // ボーダー半径
+    borderRadius: '0.5rem',
+
+    // 背景色（右側に馴染むように）
+    backgroundColor: '#FFFFFF',
+
+    // メッセージ背景
+    userMessageBackgroundColor: '#4F46E5',
+    assistantMessageBackgroundColor: '#F3F4F6',
   },
-  // 初期メッセージ
-  initialMessages: [
-    {
-      role: 'assistant',
-      content: 'こんにちは！何かお手伝いできることはありますか？',
-    },
-  ],
 });
 ```
 
@@ -349,35 +526,22 @@ const { control } = useChatKit({
 - ✅ ドメインがAllowlistに追加されているか
 - ✅ ブラウザコンソールにエラーが出ていないか
 
----
+### 5. 右側レイアウトが崩れる
 
-## 📊 Agent Builder連携
-
-### ワークフローIDの取得方法
-
-1. OpenAI Platform → Agent Builder
-2. エージェントを作成・編集
-3. 「Publish」ボタンをクリック
-4. ワークフローIDが表示される（`workflow_xxxxx`形式）
-5. `.env.local`に`CHATKIT_WORKFLOW_ID`として設定
-
-### エージェントの設定
-
-Agent Builderで以下を設定：
-- **Name**: エージェント名
-- **Instructions**: システムプロンプト
-- **Tools**: 使用するツール（関数呼び出し等）
-- **Knowledge**: アップロードしたファイル
+**確認事項**:
+- ✅ `w-80`（320px固定幅）が適用されているか
+- ✅ 親要素が`flex`レイアウトになっているか
+- ✅ `h-full`が正しく継承されているか
 
 ---
 
 ## 🔄 次のステップ
 
-1. **基本実装**: 上記のコードでChatKitを動作させる
-2. **カスタマイズ**: テーマ、スタイリングを調整
-3. **機能統合**: プロジェクト管理・売上確認APIとの連携
-4. **コマンド解釈**: ユーザーメッセージから意図を抽出
-5. **レスポンス生成**: APIデータを使ったAI応答
+1. **基本実装**: ChatKitを右側に配置
+2. **API統合**: Agent BuilderにAPI関数を登録
+3. **アプリ起動連携**: チャットからアプリウィンドウを開く
+4. **エージェント連携**: バックグラウンドタスク実行
+5. **UI調整**: デザインシステムに統一
 
 ---
 
@@ -392,6 +556,8 @@ Agent Builderで以下を設定：
 
 ## 関連ドキュメント
 
-- [MVP要件定義書](./mvp-requirements.md)
+- [デスクトップUI設計書](./desktop-ui-design.md)
+- [プラグインアーキテクチャ](./plugin-architecture.md)
+- [エージェントシステム設計](./agent-system-design.md)
 - [API設計書](./api-design.md)
 - [実装タスクリスト](./tasks.md)

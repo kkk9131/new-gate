@@ -9,24 +9,58 @@
 
 ## 📊 進捗管理
 
-### 全体進捗
+### 全体進捗（MVP Phase）
 
 - [x] Phase 1: 環境構築・基盤準備（1日目）✅ 完了
 - [x] Phase 2: データベースセットアップ（1日目）✅ 完了
-- [ ] Phase 3: Desktop UI基盤構築（2-4日目）← **優先実装**
+- [ ] Phase 3: Desktop UI基盤構築（2-4日目）← **実装中**（基本レイアウト・アイコン・Window管理・分割モード完了、ChatPanel未実装）
 - [ ] Phase 4: 認証機能実装（5日目）
 - [ ] Phase 5: API実装 - プロジェクト管理（6-7日目）
 - [ ] Phase 6: API実装 - 設定・売上（8-9日目）
 - [ ] Phase 7: Agent Builder + ChatKit統合（10-11日目）
 - [ ] Phase 8: テスト・デプロイ（12日目）
 
+**MVP見積もり総日数**: 12-15日（Desktop UI実装を含む）
+
+---
+
+### プラグインシステム Phase
+
+- [ ] Phase 9: プラグインシステム実装（13-17日目）
+  - [ ] データベース（store_plugins, plugin_installations等）
+  - [ ] プラグインストアAPI（17-24エンドポイント）
+  - [ ] StoreAppコンポーネント実装
+  - [ ] プラグイン動的ロード機能
+- [ ] Phase 10: 開発者向け機能実装（18-20日目）
+  - [ ] Core APIライブラリ（@platform/sdk）
+  - [ ] Plugin SDKとCLI
+  - [ ] 開発者ダッシュボード
+
+**プラグインシステム見積もり総日数**: 8-10日
+
+---
+
+### エージェントシステム Phase
+
+- [ ] Phase 11: エージェントシステム実装（21-25日目）
+  - [ ] データベース（agent_tasks, agent_executions等）
+  - [ ] エージェントAPI（25-32エンドポイント）
+  - [ ] AgentAppコンポーネント実装
+  - [ ] Workflow Executor Engine
+  - [ ] Cron Scheduler実装
+
+**エージェントシステム見積もり総日数**: 5-7日
+
+---
+
+**全体見積もり総日数**: 25-32日（MVP + プラグイン + エージェント）
+
 **実装優先順位の考え方**
 1. **UI構築優先**: Desktop OS風UIを先に実装し、ユーザー体験の基盤を構築
 2. **段階的機能追加**: UI完成後に認証→API→ChatKit統合の順で機能を追加
-3. **AIエージェント対応**: すべてのAPIはAIエージェントから呼び出し可能な設計とする
-4. **最終統合**: API完成後にAgent Builderでワークフロー構築→ChatKit統合の順
-
-**見積もり総日数**: 12-15日（Desktop UI実装を含む）
+3. **プラグイン基盤**: MVPアプリをプラグイン化してプラグインシステムの実証
+4. **AIエージェント対応**: すべてのAPIはAIエージェントから呼び出し可能な設計とする
+5. **最終統合**: Agent Builderでワークフロー構築→ChatKit統合の順
 
 ---
 
@@ -241,16 +275,16 @@ Desktop OS風UIの実装（Window管理、AppIcon、ChatPanel、4分割モード
 
 #### 3.1 必要なパッケージのインストール
 
-- [ ] Window管理・UI関連パッケージ
+- [x] Window管理・UI関連パッケージ ✅
 ```bash
 npm install react-rnd @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
-npm install react-resizable-panels
+npm install react-resizable-panels  # ChatPanel実装時に必要
 npm install react-icons
 ```
 
 #### 3.2 Zustand状態管理の拡張
 
-- [ ] `store/desktopStore.ts` - Desktop UI状態管理
+- [x] `store/desktopStore.ts` - Desktop UI状態管理（基本実装完了）✅
 ```typescript
 interface App {
   id: string;
@@ -303,7 +337,7 @@ interface DesktopState {
 
 #### 3.3 デスクトップレイアウトコンポーネント
 
-- [ ] `components/desktop/DesktopLayout.tsx` - メインレイアウト
+- [x] `components/desktop/DesktopLayout.tsx` - メインレイアウト ✅
 ```typescript
 // Header（64px固定）
 // Desktop Area（アイコングリッド + ウィンドウエリア）
@@ -312,31 +346,36 @@ interface DesktopState {
 
 #### 3.4 AppIconグリッド実装
 
-- [ ] `components/desktop/AppIconGrid.tsx`
+- [x] `components/desktop/AppIcon.tsx` - AppIconコンポーネント実装済み ✅
+- [x] DesktopLayout.tsx内でグリッド表示実装済み ✅
 ```typescript
-// @dnd-kit/sortableでドラッグ＆ドロップ
-// 80x80pxアイコン
-// グリッドレイアウト（8列自動調整）
-// ダブルクリックでウィンドウ起動
+// @dnd-kit/sortableでドラッグ＆ドロップ ✅
+// 80x80pxアイコン ✅
+// グリッドレイアウト（8列自動調整） ✅
+// ダブルクリックでウィンドウ起動（機能は未実装、Window管理システム実装後に追加）
 ```
 
 #### 3.5 Window管理システム実装
 
-- [ ] `components/desktop/WindowManager.tsx`
+- [x] `components/desktop/WindowManager.tsx` ✅
 ```typescript
-// react-rndでドラッグ＆リサイズ
-// Z-index管理（クリックで最前面）
-// 最大3-4ウィンドウ（超過時はタブ化）
-// 最小化・最大化・閉じる
+// react-rndでドラッグ＆リサイズ ✅
+// Z-index管理（クリックで最前面） ✅
+// 最大3-4ウィンドウ（超過時はタブ化） ✅
+// 最小化・最大化・閉じる ✅
 ```
 
-- [ ] `components/desktop/Window.tsx` - 個別ウィンドウ
+- [x] `components/desktop/Window.tsx` - 個別ウィンドウ ✅
 ```typescript
-// タイトルバー（ドラッグハンドル）
-// 制御ボタン（最小化・最大化・閉じる）
-// リサイズハンドル
-// コンテンツエリア
+// タイトルバー（ドラッグハンドル） ✅
+// 制御ボタン（最小化・最大化・閉じる） ✅
+// リサイズハンドル ✅
+// コンテンツエリア ✅
 ```
+
+- [x] アプリコンポーネント8つ作成 ✅
+  - DashboardApp, ProjectsApp, SettingsApp, RevenueApp
+  - StoreApp, AgentApp, AnalyticsApp, CalendarApp
 
 #### 3.6 ChatPanel実装
 
@@ -348,19 +387,26 @@ interface DesktopState {
 // アニメーション付きスライド表示
 ```
 
-#### 3.7 4分割モード実装
+#### 3.7 分割モード実装（2/3/4分割対応）
 
-- [ ] `components/desktop/QuadMode.tsx`
+- [x] `components/desktop/SplitMode.tsx` ✅
 ```typescript
-// オーバーレイレイヤー（z-index: 1000）
-// 2x2グリッドレイアウト
-// 各スクリーンにApp割り当て
-// 終了ボタンでデスクトップに戻る
+// 2分割: 左右（50%ずつ） ✅
+// 3分割: 左50% + 右上25% + 右下25% ✅
+// 4分割: 2x2グリッド（各25%） ✅
+// 各スクリーンにApp割り当てドロップダウン ✅
+// 終了ボタンでデスクトップに戻る ✅
+```
+
+- [x] Headerに分割ボタン追加 ✅
+```typescript
+// クリックで1→2→3→4→1と段階的に切り替え ✅
+// splitModeに応じてアイコン変化（通常/2分割/3分割/4分割） ✅
 ```
 
 #### 3.8 初期アプリ登録
 
-- [ ] デフォルトアプリの定義
+- [x] デフォルトアプリの定義 ✅
 ```typescript
 const defaultApps: App[] = [
   {
@@ -400,15 +446,16 @@ const defaultApps: App[] = [
 
 ### 完了条件
 
-- [ ] デスクトップレイアウトが表示される
-- [ ] アプリアイコンがグリッド表示される
-- [ ] アイコンをドラッグ＆ドロップで並び替えできる
-- [ ] アイコンダブルクリックでウィンドウが開く
-- [ ] ウィンドウをドラッグ＆リサイズできる
-- [ ] ウィンドウの最小化・最大化・閉じるが動作する
-- [ ] ChatPanelが開閉・リサイズできる
-- [ ] 4分割モードが動作する
-- [ ] 状態がlocalStorageに保存される
+- [x] デスクトップレイアウトが表示される ✅
+- [x] アプリアイコンがグリッド表示される ✅
+- [x] アイコンをドラッグ＆ドロップで並び替えできる ✅
+- [x] アイコンダブルクリックでウィンドウが開く ✅
+- [x] ウィンドウをドラッグ＆リサイズできる ✅
+- [x] ウィンドウの最小化・最大化・閉じるが動作する ✅
+- [x] Headerにウィンドウタブ表示＆最小化復元 ✅
+- [ ] ChatPanelが開閉・リサイズできる（未実装）
+- [x] 分割モードが動作する（2/3/4分割対応） ✅
+- [x] 状態がlocalStorageに保存される ✅
 
 **Phase 3 実装期間**: 2-4日
 
