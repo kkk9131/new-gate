@@ -48,11 +48,28 @@ export async function GET(request: NextRequest) {
       throw new Error('セッションの作成に失敗しました');
     }
 
+    console.log('✅ セッション作成成功:', {
+      userId: data.user.id,
+      email: data.user.email,
+      expiresAt: data.session.expires_at,
+    });
+
     // 成功 → デスクトップUIへリダイレクト
     const redirectUrl = new URL('/', requestUrl.origin);
-    return NextResponse.redirect(redirectUrl, {
-      headers: response.headers,
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+
+    // レスポンスのCookieをコピー
+    response.cookies.getAll().forEach(cookie => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        ...cookie,
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
     });
+
+    return redirectResponse;
   } catch (err: any) {
     console.error('認証コード交換エラー:', err);
     return NextResponse.redirect(
