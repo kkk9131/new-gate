@@ -16,7 +16,7 @@ import {
 } from 'react-icons/ri';
 
 // アイコン名とReactコンポーネントのマッピング
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+export const appIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   RiFolder: RiFolderLine,
   RiSettings: RiSettingsLine,
   RiMoneyDollar: RiMoneyDollarCircleLine,
@@ -56,7 +56,7 @@ export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
   };
 
   // アイコンコンポーネントの取得
-  const IconComponent = iconMap[icon] || RiFolderLine;
+  const IconComponent = appIconMap[icon] || RiFolderLine;
 
   // ダブルクリックでアプリ起動
   const handleDoubleClick = () => {

@@ -33,6 +33,15 @@ const config: Config = {
     extend: {
       // カスタムカラーパレット
       colors: colorTokens,
+      // z-index階層定義
+      zIndex: {
+        'base': '0',
+        'dropdown': '100',
+        'sticky': '150',
+        'modal': '200',
+        'toast': '300',
+        'tooltip': '400',
+      },
       // カスタムアニメーション
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',

@@ -130,12 +130,20 @@ export default function LoginPage() {
 
             {/* パスワード */}
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                パスワード
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  パスワード
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-accent-sand hover:text-accent-sand/80 font-medium"
+                >
+                  パスワードを忘れた方
+                </Link>
+              </div>
               <input
                 id="password"
                 type="password"

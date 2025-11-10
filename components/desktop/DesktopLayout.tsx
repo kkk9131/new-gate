@@ -1,118 +1,32 @@
 'use client';
 
-import { useEffect, useId } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
-import { useDesktopStore } from '@/store/desktopStore';
-import { useAuthStore } from '@/store/authStore';
-import { createClient } from '@/lib/supabase/client';
-import { AppIcon } from './AppIcon';
+import { useEffect } from 'react';
+import { Rnd } from 'react-rnd';
+import { useDesktopStore, type App } from '@/store/desktopStore';
+import { appIconMap } from './AppIcon';
 import { Dock } from './Dock';
 import { WindowManager } from './WindowManager';
 import { SplitMode } from './SplitMode';
 import { UserMenu } from './UserMenu';
-import { RiMoonLine, RiSunLine, RiLayout2Line, RiLayout3Line, RiLayout4Line, RiLayoutLine } from 'react-icons/ri';
+import {
+  RiMoonLine,
+  RiSunLine,
+  RiLayout2Line,
+  RiLayout3Line,
+  RiLayout4Line,
+  RiLayoutLine,
+  RiArrowGoBackLine,
+} from 'react-icons/ri';
 
 export function DesktopLayout() {
   const apps = useDesktopStore((state) => state.apps);
-  const reorderApps = useDesktopStore((state) => state.reorderApps);
+  const updateAppPosition = useDesktopStore((state) => state.updateAppPosition);
+  const openWindow = useDesktopStore((state) => state.openWindow);
+  const resetAppPositions = useDesktopStore((state) => state.resetAppPositions);
   const isDarkMode = useDesktopStore((state) => state.isDarkMode);
   const toggleDarkMode = useDesktopStore((state) => state.toggleDarkMode);
   const splitMode = useDesktopStore((state) => state.splitMode);
   const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
-  const setAuth = useAuthStore((state) => state.setAuth);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-  const desktopDndId = useId();
-
-  // ドラッグ&ドロップのセンサー設定
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // 8px移動したらドラッグ開始
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // ドラッグ終了時の処理
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = apps.findIndex((app) => app.id === active.id);
-      const newIndex = apps.findIndex((app) => app.id === over.id);
-      reorderApps(oldIndex, newIndex);
-    }
-  };
-
-  // 認証セッション初期化
-  useEffect(() => {
-    const supabase = createClient();
-    let subscription: any = null;
-
-    // URLクエリパラメータを確認
-    const urlParams = new URLSearchParams(window.location.search);
-    const shouldReload = urlParams.get('session') === 'reload';
-
-    if (shouldReload) {
-      console.log('🔄 OAuth認証後のセッション再読み込み');
-      // クエリパラメータを削除
-      window.history.replaceState({}, '', '/');
-    }
-
-    // 初回セッション取得（OAuth認証後は少し待つ）
-    const loadSession = async () => {
-      if (shouldReload) {
-        // OAuth認証後は待機時間を長めに（Cookie設定完了を確実に待つ）
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        console.log('🔐 セッション初期化:', session.user.email);
-        setAuth({ user: session.user, session });
-      } else {
-        console.log('🔓 セッションなし');
-        clearAuth();
-      }
-
-      // セッション取得完了後にリスナーを登録
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          console.log('🔄 セッション更新:', session.user.email);
-          setAuth({ user: session.user, session });
-        } else {
-          console.log('🔓 ログアウト検知');
-          clearAuth();
-        }
-      });
-      subscription = data.subscription;
-    };
-
-    loadSession();
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-    };
-  }, [setAuth, clearAuth]);
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
@@ -136,6 +50,19 @@ export function DesktopLayout() {
 
         {/* 右側：分割ボタン + ダークモード切り替えボタン */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={resetAppPositions}
+            className="
+              p-2 rounded-xl
+              bg-surface border border-white/40
+              hover:bg-cloud/20
+              transition-colors duration-200
+              shadow-soft hover:shadow-panel
+            "
+            aria-label="アイコン配置をリセット"
+          >
+            <RiArrowGoBackLine className="w-6 h-6 text-accent-sand" />
+          </button>
           {/* 分割モードボタン */}
           <button
             onClick={toggleSplitMode}
@@ -180,29 +107,17 @@ export function DesktopLayout() {
 
       {/* デスクトップエリア */}
       <main className="h-[calc(100vh-4rem)] overflow-auto p-8 relative">
-        <DndContext
-          id={desktopDndId}
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={apps.map((app) => app.id)} strategy={rectSortingStrategy}>
-            {/* アプリアイコングリッド */}
-            <div className="grid grid-cols-8 gap-4 max-w-7xl mx-auto">
-              {apps.map((app) => (
-                <AppIcon
-                  key={app.id}
-                  id={app.id}
-                  name={app.name}
-                  icon={app.icon}
-                  color={app.color}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <div className="relative w-full h-full min-h-[400px]">
+          {apps.map((app) => (
+            <DesktopIcon
+              key={app.id}
+              app={app}
+              onOpen={openWindow}
+              onPositionChange={updateAppPosition}
+            />
+          ))}
+        </div>
 
-        {/* ウィンドウ管理エリア */}
         <WindowManager />
       </main>
 
@@ -212,5 +127,57 @@ export function DesktopLayout() {
       {/* 分割モード */}
       <SplitMode />
     </div>
+  );
+}
+
+const ICON_WRAPPER_WIDTH = 96;
+const ICON_WRAPPER_HEIGHT = 120;
+
+interface DesktopIconProps {
+  app: App;
+  onOpen: (appId: App['id']) => void;
+  onPositionChange: (appId: App['id'], position: { x: number; y: number }) => void;
+}
+
+function DesktopIcon({ app, onOpen, onPositionChange }: DesktopIconProps) {
+  const IconComponent = appIconMap[app.icon] || appIconMap['RiFolder'];
+  const position = app.position ?? { x: 0, y: 0 };
+
+  const handleDoubleClick = () => onOpen(app.id);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleDoubleClick();
+    }
+  };
+
+  return (
+    <Rnd
+      size={{ width: ICON_WRAPPER_WIDTH, height: ICON_WRAPPER_HEIGHT }}
+      position={{ x: position.x, y: position.y }}
+      bounds="parent"
+      enableResizing={false}
+      dragAxis="both"
+      onDragStop={(e, data) => onPositionChange(app.id, { x: data.x, y: data.y })}
+      className="absolute"
+    >
+      <div
+        onDoubleClick={handleDoubleClick}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="button"
+        aria-label={`${app.name}アプリを起動`}
+        className="flex flex-col items-center justify-center p-4 cursor-pointer select-none group"
+      >
+        <div
+          className="w-16 h-16 rounded-2xl bg-surface shadow-panel flex items-center justify-center transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl"
+        >
+          <IconComponent className={`w-8 h-8 ${app.color} transition-transform group-hover:scale-110`} />
+        </div>
+        <span className="mt-2 text-sm font-medium text-ink group-hover:text-ink transition-colors">
+          {app.name}
+        </span>
+      </div>
+    </Rnd>
   );
 }

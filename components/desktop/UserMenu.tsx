@@ -40,17 +40,12 @@ export function UserMenu() {
 
   // ログアウト処理
   const handleLogout = async () => {
-    console.log('🔴 ログアウトボタンがクリックされました');
     try {
       const supabase = createClient();
-      console.log('🔴 Supabaseクライアント作成');
       await supabase.auth.signOut();
-      console.log('🔴 ログアウト成功');
       clearAuth();
-      console.log('🔴 Auth状態クリア');
       setIsOpen(false);
       router.push('/login');
-      console.log('🔴 /loginにリダイレクト');
       router.refresh();
     } catch (error) {
       console.error('ログアウトエラー:', error);
@@ -59,11 +54,8 @@ export function UserMenu() {
 
   // プロフィール編集画面へ遷移
   const handleProfile = () => {
-    console.log('🟢 プロフィール編集ボタンがクリックされました');
     setIsOpen(false);
-    console.log('🟢 メニューを閉じました');
     router.push('/profile');
-    console.log('🟢 /profileにリダイレクト');
   };
 
   if (!user) return null;
@@ -77,10 +69,7 @@ export function UserMenu() {
       {/* ユーザーボタン */}
       <button
         type="button"
-        onClick={() => {
-          console.log('🔵 ユーザーメニューボタンがクリックされました。現在の状態:', isOpen);
-          setIsOpen(!isOpen);
-        }}
+        onClick={() => setIsOpen(!isOpen)}
         className="
           flex items-center gap-2 px-2 py-2
           bg-surface border border-white/40
@@ -123,7 +112,7 @@ export function UserMenu() {
             rounded-xl shadow-panel
             border border-white/40
             py-2
-            z-[100]
+            z-dropdown
           "
         >
           {/* ユーザー情報表示 */}

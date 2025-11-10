@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { createClient } from '@/lib/supabase/client';
+import { AUTH_ERRORS, AUTH_SUCCESS } from '@/lib/constants/auth-errors';
 import { RiArrowLeftLine, RiLockPasswordLine } from 'react-icons/ri';
 
 /**
@@ -31,20 +32,38 @@ export default function ProfilePage() {
     setSuccess(null);
 
     // バリデーション
+    if (!currentPassword) {
+      setError(AUTH_ERRORS.CURRENT_PASSWORD_REQUIRED);
+      setIsLoading(false);
+      return;
+    }
+
     if (newPassword.length < 6) {
-      setError('新しいパスワードは6文字以上で入力してください');
+      setError(AUTH_ERRORS.PASSWORD_TOO_SHORT);
       setIsLoading(false);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('新しいパスワードが一致しません');
+      setError(AUTH_ERRORS.PASSWORD_MISMATCH);
       setIsLoading(false);
       return;
     }
 
     try {
       const supabase = createClient();
+
+      // 現在のパスワードで再認証（セキュリティ対策）
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user!.email!,
+        password: currentPassword,
+      });
+
+      if (verifyError) {
+        setError(AUTH_ERRORS.CURRENT_PASSWORD_INVALID);
+        setIsLoading(false);
+        return;
+      }
 
       // パスワード更新
       const { error: updateError } = await supabase.auth.updateUser({
@@ -56,13 +75,13 @@ export default function ProfilePage() {
       }
 
       // 成功
-      setSuccess('パスワードを変更しました');
+      setSuccess(AUTH_SUCCESS.PASSWORD_CHANGED);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
       console.error('パスワード変更エラー:', err);
-      setError('パスワードの変更に失敗しました。もう一度お試しください。');
+      setError(AUTH_ERRORS.PASSWORD_UPDATE_FAILED);
     } finally {
       setIsLoading(false);
     }
@@ -156,17 +175,49 @@ export default function ProfilePage() {
           <form onSubmit={handlePasswordChange} className="space-y-5">
             {/* エラーメッセージ */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"
+              >
                 {error}
               </div>
             )}
 
             {/* 成功メッセージ */}
             {success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+              <div
+                role="status"
+                aria-live="polite"
+                className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm"
+              >
                 {success}
               </div>
             )}
+
+            {/* 現在のパスワード */}
+            <div>
+              <label
+                htmlFor="currentPassword"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                現在のパスワード
+              </label>
+              <input
+                id="currentPassword"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-sand focus:border-transparent transition-all"
+                placeholder="現在のパスワードを入力"
+                disabled={isLoading}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                ※ セキュリティのため、現在のパスワードを入力してください
+              </p>
+            </div>
 
             {/* 新しいパスワード */}
             <div>

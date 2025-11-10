@@ -48,26 +48,19 @@ export async function GET(request: NextRequest) {
       throw new Error('セッションの作成に失敗しました');
     }
 
-    console.log('✅ セッション作成成功:', {
-      userId: data.user.id,
-      email: data.user.email,
-      expiresAt: data.session.expires_at,
-    });
-
     // 成功 → デスクトップUIへリダイレクト
-    // クエリパラメータでセッション再読み込みを指示
     const redirectUrl = new URL('/', requestUrl.origin);
-    redirectUrl.searchParams.set('session', 'reload');
     const redirectResponse = NextResponse.redirect(redirectUrl);
 
-    // レスポンスのCookieをコピー
+    // レスポンスのCookieをコピー（既存の設定を保持しつつ、必要な設定のみ上書き）
     response.cookies.getAll().forEach(cookie => {
       redirectResponse.cookies.set(cookie.name, cookie.value, {
-        ...cookie,
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        path: cookie.path || '/',
+        httpOnly: cookie.httpOnly ?? true,
+        secure: cookie.secure ?? (process.env.NODE_ENV === 'production'),
+        sameSite: (cookie.sameSite as 'lax' | 'strict' | 'none') || 'lax',
+        maxAge: cookie.maxAge,
+        domain: cookie.domain,
       });
     });
 

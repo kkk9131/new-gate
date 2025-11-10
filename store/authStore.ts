@@ -23,7 +23,7 @@ interface AuthState {
  * 認証状態管理ストア
  *
  * ユーザーのログイン状態、セッション情報、ローディング状態を管理します。
- * localStorageに永続化されます（セキュリティ上、セッショントークンは保存しません）。
+ * サーバー側の認証情報を信頼し、localStorageには保存しません。
  *
  * 使用例:
  * ```typescript
@@ -36,61 +36,43 @@ interface AuthState {
  * clearAuth();
  * ```
  */
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      // 初期状態
+export const useAuthStore = create<AuthState>()((set) => ({
+  // 初期状態
+  user: null,
+  session: null,
+  isLoading: true,
+  isInitialized: false,
+
+  // 認証情報を設定
+  setAuth: ({ user, session }) => {
+    set({
+      user,
+      session,
+      isLoading: false,
+      isInitialized: true,
+    });
+  },
+
+  // ローディング状態を設定
+  setLoading: (value) => {
+    set({ isLoading: value });
+  },
+
+  // 初期化完了フラグを設定
+  setInitialized: (value) => {
+    set({ isInitialized: value });
+  },
+
+  // 認証情報をクリア
+  clearAuth: () => {
+    set({
       user: null,
       session: null,
-      isLoading: true,
-      isInitialized: false,
-
-      // 認証情報を設定
-      setAuth: ({ user, session }) => {
-        set({
-          user,
-          session,
-          isLoading: false,
-          isInitialized: true,
-        });
-      },
-
-      // ローディング状態を設定
-      setLoading: (value) => {
-        set({ isLoading: value });
-      },
-
-      // 初期化完了フラグを設定
-      setInitialized: (value) => {
-        set({ isInitialized: value });
-      },
-
-      // 認証情報をクリア
-      clearAuth: () => {
-        set({
-          user: null,
-          session: null,
-          isLoading: false,
-          isInitialized: true,
-        });
-      },
-    }),
-    {
-      name: 'auth-storage',
-      // セキュリティ上、セッショントークンは永続化しない
-      partialize: (state) => ({
-        user: state.user
-          ? {
-              id: state.user.id,
-              email: state.user.email,
-              created_at: state.user.created_at,
-            }
-          : null,
-        isInitialized: state.isInitialized,
-      }),
-    }
-  )
-);
+      isLoading: false,
+      isInitialized: true,
+    });
+  },
+}));
 
 /**
  * 認証状態のセレクター（パフォーマンス最適化用）
