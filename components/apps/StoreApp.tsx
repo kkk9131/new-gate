@@ -10,46 +10,49 @@ export function StoreApp() {
   ];
 
   return (
-    <div className="p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-900">
-      <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Plugin Store</h2>
+    <div className="p-6 h-full overflow-auto bg-mist text-ink">
+      <h2 className="text-2xl font-bold mb-6">Plugin Store</h2>
 
       {/* 検索バー */}
       <div className="mb-6">
         <input
           type="text"
           placeholder="プラグインを検索..."
-          className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800 dark:text-white"
+          className="w-full px-4 py-3 bg-surface border border-cloud/40 rounded-2xl focus:outline-none focus:ring-2 focus:ring-ink/20"
         />
       </div>
 
       {/* プラグイン一覧 */}
       <div className="space-y-4">
         {plugins.map((plugin, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+          <div
+            key={i}
+            className="bg-surface border border-white/40 p-4 rounded-2xl shadow-sm shadow-black/5 hover:shadow-black/10 transition-shadow"
+          >
             <div className="flex items-start gap-4">
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                <RiStoreLine className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              <div className="w-16 h-16 bg-accent-calm/25 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <RiStoreLine className="w-8 h-8 text-ink" />
               </div>
 
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-800 dark:text-white mb-1">{plugin.name}</h3>
+                <h3 className="font-semibold mb-1">{plugin.name}</h3>
 
                 {/* 評価とダウンロード数 */}
                 <div className="flex items-center gap-4 mb-3">
-                  <div className="flex items-center gap-1">
-                    <RiStarLine className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{plugin.rating}</span>
+                  <div className="flex items-center gap-1 text-cloud">
+                    <RiStarLine className="w-4 h-4 text-accent-calm" />
+                    <span className="text-sm">{plugin.rating}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <RiDownloadLine className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{plugin.downloads}</span>
+                  <div className="flex items-center gap-1 text-cloud">
+                    <RiDownloadLine className="w-4 h-4" />
+                    <span className="text-sm">{plugin.downloads}</span>
                   </div>
                 </div>
 
                 {/* 価格とボタン */}
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-800 dark:text-white">{plugin.price}</span>
-                  <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium">
+                  <span className="text-lg font-bold text-ink">{plugin.price}</span>
+                  <button className="px-4 py-2 bg-accent-sand hover:bg-accent-sand/80 text-ink rounded-full transition-colors text-sm font-medium">
                     インストール
                   </button>
                 </div>

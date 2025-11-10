@@ -21,6 +21,7 @@ import { AppIcon } from './AppIcon';
 import { Dock } from './Dock';
 import { WindowManager } from './WindowManager';
 import { SplitMode } from './SplitMode';
+import { UserMenu } from './UserMenu';
 import { RiMoonLine, RiSunLine, RiLayout2Line, RiLayout3Line, RiLayout4Line, RiLayoutLine } from 'react-icons/ri';
 
 export function DesktopLayout() {
@@ -62,15 +63,15 @@ export function DesktopLayout() {
   }, [isDarkMode]);
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {/* ヘッダー */}
-      <header className="h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between px-6 shadow-sm">
+      <header className="h-16 bg-surface/90 backdrop-blur-xl border-b border-white/40 flex items-center justify-between px-6 shadow-panel text-ink relative z-50">
         {/* 左側：ロゴ */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-xl">N</span>
+          <div className="w-10 h-10 rounded-xl bg-accent-sand flex items-center justify-center shadow-soft text-ink">
+            <span className="font-bold text-xl">N</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-xl font-bold">
             New Gate
           </h1>
         </div>
@@ -82,17 +83,17 @@ export function DesktopLayout() {
             onClick={toggleSplitMode}
             className="
               p-2 rounded-xl
-              bg-gray-100 dark:bg-gray-700
-              hover:bg-gray-200 dark:hover:bg-gray-600
+              bg-surface border border-white/40
+              hover:bg-cloud/20
               transition-colors duration-200
-              shadow-sm hover:shadow-md
+              shadow-soft hover:shadow-panel
             "
             aria-label="分割モード切り替え"
           >
-            {splitMode === 1 && <RiLayoutLine className="w-6 h-6 text-blue-500" />}
-            {splitMode === 2 && <RiLayout2Line className="w-6 h-6 text-blue-500" />}
-            {splitMode === 3 && <RiLayout3Line className="w-6 h-6 text-blue-500" />}
-            {splitMode === 4 && <RiLayout4Line className="w-6 h-6 text-blue-500" />}
+            {splitMode === 1 && <RiLayoutLine className="w-6 h-6 text-accent-sand" />}
+            {splitMode === 2 && <RiLayout2Line className="w-6 h-6 text-accent-sand" />}
+            {splitMode === 3 && <RiLayout3Line className="w-6 h-6 text-accent-sand" />}
+            {splitMode === 4 && <RiLayout4Line className="w-6 h-6 text-accent-sand" />}
           </button>
 
           {/* ダークモード切り替えボタン */}
@@ -100,19 +101,22 @@ export function DesktopLayout() {
             onClick={toggleDarkMode}
             className="
               p-2 rounded-xl
-              bg-gray-100 dark:bg-gray-700
-              hover:bg-gray-200 dark:hover:bg-gray-600
+              bg-surface border border-white/40
+              hover:bg-cloud/20
               transition-colors duration-200
-              shadow-sm hover:shadow-md
+              shadow-soft hover:shadow-panel
             "
             aria-label="ダークモード切り替え"
           >
             {isDarkMode ? (
-              <RiSunLine className="w-6 h-6 text-yellow-400" />
+              <RiSunLine className="w-6 h-6 text-accent-sand" />
             ) : (
-              <RiMoonLine className="w-6 h-6 text-gray-600" />
+              <RiMoonLine className="w-6 h-6 text-accent-sand" />
             )}
           </button>
+
+          {/* ユーザーメニュー */}
+          <UserMenu />
         </div>
       </header>
 

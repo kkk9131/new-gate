@@ -7,22 +7,22 @@ export function RevenueApp() {
   const revenues = [650, 720, 680, 850, 920, 850];
 
   return (
-    <div className="p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-900">
-      <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Revenue</h2>
+    <div className="p-6 h-full overflow-auto bg-mist text-ink">
+      <h2 className="text-2xl font-bold mb-6">Revenue</h2>
 
       {/* 今月の売上サマリー */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm mb-6">
+      <div className="bg-surface border border-white/40 p-6 rounded-2xl shadow-sm shadow-black/5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <RiMoneyDollarCircleLine className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div className="w-14 h-14 bg-accent-warm/30 rounded-2xl flex items-center justify-center">
+              <RiMoneyDollarCircleLine className="w-7 h-7 text-ink" />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">今月の売上</p>
-              <p className="text-3xl font-bold text-gray-800 dark:text-white">¥850,000</p>
+              <p className="text-sm text-cloud">今月の売上</p>
+              <p className="text-3xl font-bold">¥850,000</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+          <div className="flex items-center gap-1 text-accent-warm">
             <RiArrowUpLine className="w-5 h-5" />
             <span className="font-semibold">+8.5%</span>
           </div>
@@ -32,38 +32,46 @@ export function RevenueApp() {
         <div className="flex items-end gap-2 h-32">
           {revenues.map((revenue, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-2">
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg relative" style={{ height: `${(revenue / 1000) * 100}%` }}>
-                <div className="absolute inset-0 bg-gradient-to-t from-green-600 to-green-400 rounded-t-lg" />
+              <div
+                className="w-full bg-cloud/30 rounded-t-3xl relative"
+                style={{ height: `${(revenue / 1000) * 100}%` }}
+              >
+                <div className="absolute inset-0 bg-accent-warm/70 rounded-t-3xl" />
               </div>
-              <span className="text-xs text-gray-600 dark:text-gray-400">{months[i]}</span>
+              <span className="text-xs text-cloud">{months[i]}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* 最近の取引 */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">最近の取引</h3>
+      <div className="bg-surface border border-white/40 p-4 rounded-2xl shadow-sm shadow-black/5">
+        <h3 className="text-lg font-semibold mb-4">最近の取引</h3>
         <div className="space-y-3">
           {[
             { title: 'Webサイト制作', amount: 250000, type: 'income' },
             { title: 'サーバー費用', amount: -15000, type: 'expense' },
             { title: 'コンサルティング', amount: 180000, type: 'income' },
           ].map((transaction, i) => (
-            <div key={i} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <span className="text-sm text-gray-700 dark:text-gray-300">{transaction.title}</span>
+            <div
+              key={i}
+              className="flex items-center justify-between p-3 rounded-xl transition-colors hover:bg-cloud/10"
+            >
+              <span className="text-sm">{transaction.title}</span>
               <div className="flex items-center gap-2">
-                <span className={`font-semibold ${
-                  transaction.type === 'income'
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-red-600 dark:text-red-400'
-                }`}>
+                <span
+                  className={`font-semibold ${
+                    transaction.type === 'income'
+                      ? 'text-accent-warm'
+                      : 'text-accent-warm/70'
+                  }`}
+                >
                   {transaction.amount > 0 ? '+' : ''}¥{Math.abs(transaction.amount).toLocaleString()}
                 </span>
                 {transaction.type === 'income' ? (
-                  <RiArrowUpLine className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <RiArrowUpLine className="w-4 h-4 text-accent-warm" />
                 ) : (
-                  <RiArrowDownLine className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <RiArrowDownLine className="w-4 h-4 text-accent-warm/70" />
                 )}
               </div>
             </div>

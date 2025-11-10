@@ -1,5 +1,26 @@
 import type { Config } from "tailwindcss";
 
+const withOpacityValue = (variable: string) => {
+  return ({ opacityValue }: { opacityValue?: string }) => {
+    if (opacityValue === undefined) {
+      return `rgb(var(${variable}) / 1)`;
+    }
+    return `rgb(var(${variable}) / ${opacityValue})`;
+  };
+};
+
+const colorTokens = {
+  mist: withOpacityValue('--color-mist'),
+  ink: withOpacityValue('--color-ink'),
+  cloud: withOpacityValue('--color-cloud'),
+  surface: withOpacityValue('--color-surface'),
+  'surface-strong': withOpacityValue('--color-surface-strong'),
+  'accent-calm': withOpacityValue('--color-accent-calm'),
+  'accent-warm': withOpacityValue('--color-accent-warm'),
+  'accent-bloom': withOpacityValue('--color-accent-bloom'),
+  'accent-sand': withOpacityValue('--color-accent-sand'),
+};
+
 const config: Config = {
   // ダークモードをクラスベースで有効化
   darkMode: 'class',
@@ -11,24 +32,16 @@ const config: Config = {
   theme: {
     extend: {
       // カスタムカラーパレット
-      colors: {
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-        },
-      },
+      colors: colorTokens,
       // カスタムアニメーション
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-in-out',
+      },
+      boxShadow: {
+        floating: '0 30px 80px rgba(31, 40, 53, 0.18)',
+        panel: '0 15px 45px rgba(31, 40, 53, 0.12)',
+        soft: '0 10px 25px rgba(31, 40, 53, 0.08)',
       },
       keyframes: {
         fadeIn: {
@@ -45,4 +58,3 @@ const config: Config = {
   plugins: [],
 };
 export default config;
-

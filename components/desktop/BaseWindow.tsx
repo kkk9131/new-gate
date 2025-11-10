@@ -45,7 +45,7 @@ export function BaseWindow({
   bounds = 'parent',
   maximizedSize = { width: '100%', height: '100%' },
   maximizedPosition = { x: 0, y: 0 },
-  titleBarClassName = 'window-drag-handle flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white cursor-move select-none',
+  titleBarClassName = 'window-drag-handle flex items-center justify-between px-4 py-3 bg-surface text-ink border-b border-accent-sand/60 cursor-move select-none',
   bodyClassName = 'flex-1 overflow-hidden',
 }: BaseWindowProps) {
   const size = useMemo(
@@ -92,7 +92,7 @@ export function BaseWindow({
       enableResizing={!window.isMaximized}
       disableDragging={window.isMaximized}
     >
-      <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
+      <div className="h-full flex flex-col bg-surface text-ink rounded-2xl shadow-floating border border-white/40 overflow-hidden">
         {/* タイトルバー */}
         <div className={titleBarClassName}>
           <h3 className="font-semibold truncate">{window.title}</h3>
@@ -101,7 +101,7 @@ export function BaseWindow({
           <div className="flex items-center gap-2">
             <button
               onClick={onMinimize}
-              className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center hover:bg-cloud/30 rounded-lg transition-colors"
               aria-label="最小化"
             >
               <RiSubtractLine className="w-5 h-5" />
@@ -109,7 +109,7 @@ export function BaseWindow({
 
             <button
               onClick={onMaximize}
-              className="w-8 h-8 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center hover:bg-cloud/30 rounded-lg transition-colors"
               aria-label={window.isMaximized ? '元に戻す' : '最大化'}
             >
               {window.isMaximized ? (
@@ -121,7 +121,7 @@ export function BaseWindow({
 
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center hover:bg-red-500 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center hover:bg-cloud/40 rounded-lg transition-colors"
               aria-label="閉じる"
             >
               <RiCloseLine className="w-5 h-5" />
@@ -134,7 +134,7 @@ export function BaseWindow({
           {AppComponent ? (
             <AppComponent />
           ) : (
-            <div className="p-6 text-center text-gray-600 dark:text-gray-400">
+            <div className="p-6 text-center text-cloud">
               アプリが見つかりません: {window.appId}
             </div>
           )}
