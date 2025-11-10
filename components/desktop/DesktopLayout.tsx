@@ -63,6 +63,7 @@ export function DesktopLayout() {
   // 認証セッション初期化
   useEffect(() => {
     const supabase = createClient();
+    let subscription: any = null;
 
     // URLクエリパラメータを確認
     const urlParams = new URLSearchParams(window.location.search);
@@ -77,8 +78,8 @@ export function DesktopLayout() {
     // 初回セッション取得（OAuth認証後は少し待つ）
     const loadSession = async () => {
       if (shouldReload) {
-        // OAuth認証後は少し待ってからセッションを取得
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // OAuth認証後は待機時間を長めに（Cookie設定完了を確実に待つ）
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -90,24 +91,27 @@ export function DesktopLayout() {
         console.log('🔓 セッションなし');
         clearAuth();
       }
+
+      // セッション取得完了後にリスナーを登録
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          console.log('🔄 セッション更新:', session.user.email);
+          setAuth({ user: session.user, session });
+        } else {
+          console.log('🔓 ログアウト検知');
+          clearAuth();
+        }
+      });
+      subscription = data.subscription;
     };
 
     loadSession();
 
-    // セッション変更を監視
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        console.log('🔄 セッション更新:', session.user.email);
-        setAuth({ user: session.user, session });
-      } else {
-        console.log('🔓 ログアウト検知');
-        clearAuth();
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
       }
-    });
-
-    return () => subscription.unsubscribe();
+    };
   }, [setAuth, clearAuth]);
 
   // ダークモード初期化（localStorageから復元）
