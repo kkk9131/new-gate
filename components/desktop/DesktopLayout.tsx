@@ -64,8 +64,25 @@ export function DesktopLayout() {
   useEffect(() => {
     const supabase = createClient();
 
-    // 初回セッション取得
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // URLクエリパラメータを確認
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldReload = urlParams.get('session') === 'reload';
+
+    if (shouldReload) {
+      console.log('🔄 OAuth認証後のセッション再読み込み');
+      // クエリパラメータを削除
+      window.history.replaceState({}, '', '/');
+    }
+
+    // 初回セッション取得（OAuth認証後は少し待つ）
+    const loadSession = async () => {
+      if (shouldReload) {
+        // OAuth認証後は少し待ってからセッションを取得
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+
       if (session?.user) {
         console.log('🔐 セッション初期化:', session.user.email);
         setAuth({ user: session.user, session });
@@ -73,7 +90,9 @@ export function DesktopLayout() {
         console.log('🔓 セッションなし');
         clearAuth();
       }
-    });
+    };
+
+    loadSession();
 
     // セッション変更を監視
     const {

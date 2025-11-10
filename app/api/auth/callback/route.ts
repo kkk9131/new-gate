@@ -55,7 +55,9 @@ export async function GET(request: NextRequest) {
     });
 
     // 成功 → デスクトップUIへリダイレクト
+    // クエリパラメータでセッション再読み込みを指示
     const redirectUrl = new URL('/', requestUrl.origin);
+    redirectUrl.searchParams.set('session', 'reload');
     const redirectResponse = NextResponse.redirect(redirectUrl);
 
     // レスポンスのCookieをコピー
