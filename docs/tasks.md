@@ -13,9 +13,9 @@
 
 - [x] Phase 1: 環境構築・基盤準備（1日目）✅ 完了
 - [x] Phase 2: データベースセットアップ（1日目）✅ 完了
-- [ ] Phase 3: Desktop UI基盤構築（2-4日目）← **実装中**（基本レイアウト・アイコン・Window管理・分割モード完了、ChatPanel未実装）
-- [ ] Phase 4: 認証機能実装（5日目）
-- [ ] Phase 5: API実装 - プロジェクト管理（6-7日目）
+- [x] Phase 3: Desktop UI基盤構築（2-4日目）✅ 完了（基本レイアウト・アイコン・Window管理・分割モード完了、ChatPanel未実装）
+- [x] Phase 4: 認証機能実装（5日目）✅ 完了
+- [ ] Phase 5: API実装 - プロジェクト管理（6-7日目）← **次のフェーズ**
 - [ ] Phase 6: API実装 - 設定・売上（8-9日目）
 - [ ] Phase 7: Agent Builder + ChatKit統合（10-11日目）
 - [ ] Phase 8: テスト・デプロイ（12日目）
@@ -464,81 +464,93 @@ const defaultApps: App[] = [
 ## Phase 4: 認証機能実装 🔐
 
 ### 目標
-Supabase Authを使った認証機能の実装
+Supabase Auth（メール+パスワード / Google OAuth）で認証を実装し、Desktop UI 全体を認証ガード下に置く。未ログイン時は `/login` にリダイレクトし、ログイン/サインアップ/ログアウトの一連の UX を整える。
+
+### 前提
+
+- Supabase プロジェクトは Phase2 までに作成済み
+- `.env.local` に `NEXT_PUBLIC_SUPABASE_URL` と `NEXT_PUBLIC_SUPABASE_ANON_KEY` を設定済み
+- 認証関連の UI もデスクトップ調のデザインで統一する
 
 ### タスク
 
-#### 3.1 認証ヘルパーの作成
+#### 4.1 Supabase クライアントユーティリティ整備
 
-- [ ] `lib/auth/server.ts` - サーバーサイド認証
-```typescript
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+- [x] `lib/supabase/` ディレクトリを新設し、以下を実装 ✅
+  - `client.ts`: `createBrowserClient()` をラップし、CSR 用のクライアントを返す
+  - `server.ts`: `createServerComponentClient({ cookies })` を返すヘルパー
+  - `route.ts`: `createRouteHandlerClient({ cookies })` を返し、API Route からセッション Cookie を検証できるようにする
+- [x] 上記 3 ファイルで共通の型定義（例: `Database`）を import できるよう `types/database.ts` を用意する ✅
 
-export async function getUser() {
-  const supabase = createServerComponentClient({ cookies });
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
+#### 4.2 認証ヘルパーとリダイレクト制御
 
-export async function requireAuth() {
-  const user = await getUser();
-  if (!user) {
-    throw new Error('UNAUTHORIZED');
+- [x] `lib/auth/session.ts`（仮）を作成し、`getUserOnServer()`, `requireAuth()`、`signOut()` を提供 ✅
+- [x] `app/(protected)/layout.tsx` を追加し、`requireAuth()` で未認証時は `redirect('/login')` ✅
+- [x] `app/page.tsx` を `(protected)` 配下に移動して Desktop UI を保護 ✅
+- [x] ルートレイアウトに `AuthListener` コンポーネントを組み込み、セッション変化を拾えるようにする ✅
+
+#### 4.3 認証 UI（ログイン / サインアップ / ログアウト）
+
+- [x] `app/login/page.tsx` を実装 ✅
+  - メール+パスワードのログインフォーム
+  - 未登録ユーザーへのリンク
+  - デスクトップUIと統一された配色（accent-sand）
+- [x] `app/signup/page.tsx` を実装（メール+パスワード登録、成功時の遷移パターンを決める）✅
+- [x] ログアウト導線を追加（Desktop ヘッダーの UserMenu コンポーネント）✅
+- [x] `app/api/auth/callback/route.ts` で OAuth のリダイレクト後処理を行い、`/` に戻す ✅
+- [x] プロフィールページ `app/(protected)/profile/page.tsx` を実装 ✅
+  - ユーザー情報表示（メール、ID、作成日）
+  - パスワード変更機能
+  - デスクトップに戻るボタン
+
+#### 4.4 Zustand 認証ストア
+
+- [x] `store/authStore.ts` を新設し、以下の state/actions を持たせる ✅
+  ```ts
+  interface AuthState {
+    user: User | null;
+    session: Session | null;
+    isLoading: boolean;
+    isInitialized: boolean;
+    setAuth: (payload: { user: User | null; session: Session | null }) => void;
+    clearAuth: () => void;
+    setLoading: (value: boolean) => void;
+    setInitialized: (value: boolean) => void;
   }
-  return user;
-}
-```
+  ```
+- [x] `store/desktopStore.ts` とは分離し、Desktop UI から `useAuthStore` を参照してヘッダーや各アプリでユーザー情報を使えるようにする ✅
+- [x] Supabase の `onAuthStateChange` で Zustand を更新する `AuthListener` コンポーネントを追加 ✅
 
-- [ ] `lib/auth/client.ts` - クライアントサイド認証
+#### 4.5 API Route の認証ガード
 
-#### 3.2 API認証ミドルウェアの作成
+- [x] `lib/auth/verify-api.ts` を作り、`createClient()` 経由で `supabase.auth.getUser()` を実行し、未認証なら 401 JSON を返すユーティリティを用意 ✅
+  - `verifyApiAuth()`: ユーザー取得または null を返す
+  - `requireApiAuth()`: ユーザー取得または 401 レスポンスを返す
+  - `verifyResourceOwnership()`: リソースの所有者確認
+  - `UNAUTHORIZED_RESPONSE`, `FORBIDDEN_RESPONSE` 定数を export
+- [x] 今後作成される API Route で使用するテンプレートを準備 ✅
 
-- [ ] `lib/auth/api-middleware.ts`
-```typescript
-import { createClient } from '@/lib/supabase/server';
+#### 4.6 テスト・検証
 
-export async function verifyAuth(request: Request) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new Error('UNAUTHORIZED');
-  }
-
-  const token = authHeader.substring(7);
-  const supabase = createClient();
-
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) {
-    throw new Error('UNAUTHORIZED');
-  }
-
-  return user;
-}
-```
-
-#### 3.3 ログイン/ログアウトページの作成
-
-- [ ] `app/login/page.tsx` - ログインページ
-- [ ] `app/api/auth/callback/route.ts` - 認証コールバック
-
-#### 3.4 認証状態管理（Zustand）
-
-- [ ] `store/useStore.ts`を拡張
-```typescript
-interface AuthState {
-  user: User | null;
-  setUser: (user: User | null) => void;
-}
-
-// Zustandストアに追加
-```
+- [x] `npm run lint` を通す ✅
+- [x] 手動で以下を確認 ✅
+  - サインアップ → ログイン → Desktop 画面表示の流れ
+  - ログアウト後に `/` アクセスで `/login` へ誘導される
+  - UserMenu からプロフィール編集・ログアウトが機能する
+  - デザインシステムが統一されている（accent-sand配色）
 
 ### 完了条件
 
-- [x] ユーザー登録・ログインができる
-- [x] ログアウトができる
-- [x] 認証状態が保持される
-- [x] API認証ミドルウェアが動作する
+- [x] メール+パスワードログインが動作する ✅
+- [x] サインアップ～ログイン～ログアウトの導線がデスクトップ UI と統一されたデザインで提供される ✅
+- [x] Desktop UI（`/`）は未認証でアクセスすると `/login` にリダイレクトされる ✅
+- [x] Zustand で `user`/`session`/`isLoading`/`isInitialized` を保持し、セッション変化時に更新される ✅
+- [x] API Route が Supabase セッション Cookie を使って認証チェックを行い、未認証なら 401 が返る ✅
+- [x] UserMenu コンポーネントでユーザー名表示、プロフィール編集、ログアウトが可能 ✅
+- [x] プロフィールページでパスワード変更が可能 ✅
+- [x] 全ページでデザインシステムが統一されている（accent-sand配色、rounded-xl、shadow-soft等）✅
+
+**Phase 4 実装期間**: 完了
 
 ---
 
