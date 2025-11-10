@@ -151,8 +151,25 @@ const defaultApps: App[] = [
 
 /**
  * z-indexの正規化（無限増加を防止）
+ *
+ * ウィンドウを最前面に持ってくる度にz-indexが増加していくと、
+ * 最終的に数値が大きくなりすぎてオーバーフローする可能性があります。
+ * この関数は、最大z-indexが閾値を超えた場合に、すべてのウィンドウの
+ * z-indexを相対順序を保ったまま1から再割り当てします。
+ *
+ * 処理手順：
+ * 1. 全ウィンドウの最大z-indexをチェック
+ * 2. 閾値（1000）以下なら何もせずそのまま返す
+ * 3. 閾値を超えていたら、z-indexの昇順でソート
+ * 4. ソート順に1, 2, 3...と新しいz-indexを割り当て
+ * 5. 元の配列順序を維持したまま、新しいz-indexを適用
+ *
  * @param windows ウィンドウの配列
  * @returns 正規化されたウィンドウ配列
+ *
+ * @example
+ * // 入力: [{id: 'a', zIndex: 1500}, {id: 'b', zIndex: 1501}]
+ * // 出力: [{id: 'a', zIndex: 1}, {id: 'b', zIndex: 2}]
  */
 const normalizeZIndexesIfNeeded = (windows: WindowState[]) => {
   const maxZ = windows.reduce((max, w) => Math.max(max, w.zIndex), 0);
@@ -163,6 +180,7 @@ const normalizeZIndexesIfNeeded = (windows: WindowState[]) => {
   }
 
   // z-indexでソートして1から再割り当て
+  // 相対的な前後関係（どのウィンドウが前面にあるか）は維持される
   const sorted = [...windows].sort((a, b) => a.zIndex - b.zIndex);
   const orderMap = new Map(sorted.map((w, index) => [w.id, index + 1]));
   return windows.map((w) => ({ ...w, zIndex: orderMap.get(w.id) ?? w.zIndex }));
@@ -479,18 +497,29 @@ export const useDesktopStore = create<DesktopState>()(
     }),
     {
       name: 'desktop-storage-v2', // localStorageのキー名（バージョンアップで強制初期化）
-      version: 2, // ストレージバージョン
+      version: 2, // 現在のストレージバージョン
       storage: createJSONStorage(() => (typeof window !== 'undefined' && window.localStorage ? window.localStorage : memoryStorage)),
-      // マイグレーション処理（将来のバージョンアップ時に使用）
-      migrate: (persistedState: any, version: number) => {
-        // v1からv2へのマイグレーション例
-        if (version === 1) {
+      /**
+       * マイグレーション処理（古いバージョンのデータを新しい形式に変換）
+       *
+       * この関数は、localStorageに保存されている古いバージョンのデータを
+       * 現在のバージョン（v2）の形式に変換します。
+       *
+       * @param persistedState - localStorageから読み込まれた古いデータ
+       * @param persistedVersion - 保存されていたデータのバージョン番号
+       * @returns 新しいバージョンに変換されたデータ
+       */
+      migrate: (persistedState: any, persistedVersion: number) => {
+        // v0またはv1から来た場合、splitScreenWindowsを追加
+        if (persistedVersion < 2) {
           return {
             ...persistedState,
-            splitScreenWindows: createSplitScreenWindows(),
+            // 既存のsplitScreenWindowsがあればそれを使い、なければ初期化
+            splitScreenWindows: persistedState.splitScreenWindows || createSplitScreenWindows(),
           };
         }
 
+        // v2以降はそのまま返す
         return persistedState;
       },
       onRehydrateStorage: () => (state, error) => {
