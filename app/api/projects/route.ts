@@ -10,8 +10,8 @@ const createProjectSchema = z.object({
   description: z.string().optional(),
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）'),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）').optional(),
-  budget: z.number().min(0, '予算は0以上で入力してください').optional(),
-  status: z.enum(['active', 'completed', 'on_hold']).optional(),
+  notes: z.string().optional(),
+  status: z.enum(['planning', 'active', 'completed', 'on_hold']).optional(),
 });
 
 /**
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
  *   description?: string,
  *   start_date: string (YYYY-MM-DD),
  *   end_date?: string (YYYY-MM-DD),
- *   budget?: number,
- *   status?: 'active' | 'completed' | 'on_hold'
+ *   notes?: string,
+ *   status?: 'planning' | 'active' | 'completed' | 'on_hold'
  * }
  */
 export async function POST(request: NextRequest) {

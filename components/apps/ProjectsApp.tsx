@@ -6,12 +6,15 @@ import {
   RiCalendarLine,
   RiFolderLine,
   RiListCheck,
-  RiMoreLine,
   RiLayoutGridLine,
   RiFileCopyLine,
 } from 'react-icons/ri';
+import { ProjectFormModal } from './projects/ProjectFormModal';
+import { ProjectDeleteDialog } from './projects/ProjectDeleteDialog';
+import { ProjectActionsMenu } from './projects/ProjectActionsMenu';
+import { ProjectStatusMenu } from './projects/ProjectStatusMenu';
 
-type ProjectStatus = 'active' | 'completed' | 'on_hold';
+type ProjectStatus = 'planning' | 'active' | 'completed' | 'on_hold';
 
 type Project = {
   id: string;
@@ -20,21 +23,23 @@ type Project = {
   status: ProjectStatus;
   start_date: string;
   end_date: string | null;
-  budget: number | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 };
 
 const statusLabel: Record<ProjectStatus, string> = {
+  planning: '企画',
   active: '進行中',
   completed: '完了',
   on_hold: '保留',
 };
 
 const statusStyle: Record<ProjectStatus, string> = {
+  planning: 'text-accent-sand',
   active: 'text-ink',
   completed: 'text-cloud',
-  on_hold: 'text-accent-sand',
+  on_hold: 'text-cloud',
 };
 
 type ViewMode = 'card' | 'list';
@@ -44,6 +49,12 @@ export function ProjectsApp() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // モーダル・ダイアログの状態管理
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   // プロジェクト一覧取得
   const fetchProjects = async () => {
@@ -71,6 +82,72 @@ export function ProjectsApp() {
     fetchProjects();
   }, []);
 
+  // プロジェクト作成ハンドラー
+  const handleCreate = async (formData: any) => {
+    const response = await fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: formData.name,
+        description: formData.description || null,
+        start_date: formData.start_date,
+        end_date: formData.end_date || null,
+        notes: formData.notes || null,
+        status: formData.status,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'プロジェクトの作成に失敗しました');
+    }
+
+    await fetchProjects();
+  };
+
+  // プロジェクト更新ハンドラー
+  const handleUpdate = async (formData: any) => {
+    if (!selectedProject) return;
+
+    const response = await fetch(`/api/projects/${selectedProject.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: formData.name,
+        description: formData.description || null,
+        start_date: formData.start_date,
+        end_date: formData.end_date || null,
+        notes: formData.notes || null,
+        status: formData.status,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'プロジェクトの更新に失敗しました');
+    }
+
+    await fetchProjects();
+    setSelectedProject(null);
+  };
+
+  // プロジェクト削除ハンドラー
+  const handleDelete = async () => {
+    if (!selectedProject) return;
+
+    const response = await fetch(`/api/projects/${selectedProject.id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'プロジェクトの削除に失敗しました');
+    }
+
+    await fetchProjects();
+    setSelectedProject(null);
+  };
+
   // プロジェクト複製ハンドラー
   const handleDuplicate = async (projectId: string) => {
     try {
@@ -86,6 +163,39 @@ export function ProjectsApp() {
       await fetchProjects();
     } catch (err) {
       console.error('Error duplicating project:', err);
+      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+    }
+  };
+
+  // 編集モーダルを開く
+  const handleEditClick = (project: Project) => {
+    setSelectedProject(project);
+    setIsEditModalOpen(true);
+  };
+
+  // 削除ダイアログを開く
+  const handleDeleteClick = (project: Project) => {
+    setSelectedProject(project);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // ステータス変更ハンドラー
+  const handleStatusChange = async (projectId: string, newStatus: ProjectStatus) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'ステータスの更新に失敗しました');
+      }
+
+      await fetchProjects();
+    } catch (err) {
+      console.error('Error updating status:', err);
       alert(err instanceof Error ? err.message : 'エラーが発生しました');
     }
   };
@@ -115,7 +225,7 @@ export function ProjectsApp() {
 
   return (
     <div className="p-6 h-full overflow-auto bg-mist text-ink space-y-6">
-      <Header viewMode={viewMode} onChangeView={setViewMode} />
+      <Header viewMode={viewMode} onChangeView={setViewMode} onCreateClick={() => setIsCreateModalOpen(true)} />
 
       {projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-cloud">
@@ -131,17 +241,77 @@ export function ProjectsApp() {
               project={project}
               overdue={overdueIds.includes(project.id)}
               onDuplicate={handleDuplicate}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
+              onStatusChange={handleStatusChange}
             />
           ))}
         </div>
       ) : (
-        <ProjectList projects={projects} overdueIds={overdueIds} onDuplicate={handleDuplicate} />
+        <ProjectList
+          projects={projects}
+          overdueIds={overdueIds}
+          onDuplicate={handleDuplicate}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          onStatusChange={handleStatusChange}
+        />
       )}
+
+      {/* 新規作成モーダル */}
+      <ProjectFormModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreate}
+        mode="create"
+      />
+
+      {/* 編集モーダル */}
+      <ProjectFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedProject(null);
+        }}
+        onSubmit={handleUpdate}
+        initialData={
+          selectedProject
+            ? {
+                name: selectedProject.name,
+                description: selectedProject.description || '',
+                start_date: selectedProject.start_date,
+                end_date: selectedProject.end_date || '',
+                notes: selectedProject.notes || '',
+                status: selectedProject.status,
+              }
+            : undefined
+        }
+        mode="edit"
+      />
+
+      {/* 削除確認ダイアログ */}
+      <ProjectDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedProject(null);
+        }}
+        onConfirm={handleDelete}
+        projectName={selectedProject?.name || ''}
+      />
     </div>
   );
 }
 
-function Header({ viewMode, onChangeView }: { viewMode: ViewMode; onChangeView: (mode: ViewMode) => void }) {
+function Header({
+  viewMode,
+  onChangeView,
+  onCreateClick,
+}: {
+  viewMode: ViewMode;
+  onChangeView: (mode: ViewMode) => void;
+  onCreateClick: () => void;
+}) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
@@ -150,7 +320,10 @@ function Header({ viewMode, onChangeView }: { viewMode: ViewMode; onChangeView: 
       </div>
       <div className="flex flex-wrap gap-3">
         <ViewToggle viewMode={viewMode} onChangeView={onChangeView} />
-        <button className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full">
+        <button
+          onClick={onCreateClick}
+          className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
+        >
           <RiAddLine className="w-4 h-4" /> 新規
         </button>
       </div>
@@ -185,10 +358,16 @@ function ProjectCard({
   project,
   overdue,
   onDuplicate,
+  onEdit,
+  onDelete,
+  onStatusChange,
 }: {
   project: Project;
   overdue: boolean;
   onDuplicate: (id: string) => void;
+  onEdit: (project: Project) => void;
+  onDelete: (project: Project) => void;
+  onStatusChange: (projectId: string, newStatus: ProjectStatus) => void;
 }) {
   return (
     <div className="bg-surface border border-white/40 rounded-3xl p-5 shadow-soft flex flex-col gap-4">
@@ -196,7 +375,10 @@ function ProjectCard({
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <RiFolderLine className="w-5 h-5 text-cloud" />
-            <span className={`text-xs ${statusStyle[project.status]}`}>{statusLabel[project.status]}</span>
+            <ProjectStatusMenu
+              currentStatus={project.status}
+              onChange={(newStatus) => onStatusChange(project.id, newStatus)}
+            />
           </div>
           <h3 className="text-lg font-semibold mt-1">{project.name}</h3>
           {project.description && (
@@ -206,15 +388,13 @@ function ProjectCard({
         <div className="flex gap-1">
           <button
             onClick={() => onDuplicate(project.id)}
-            className="p-2 rounded-full text-cloud hover:bg-cloud/20"
+            className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
             title="複製"
             aria-label="プロジェクトを複製"
           >
             <RiFileCopyLine className="w-5 h-5" />
           </button>
-          <button className="p-2 rounded-full text-cloud hover:bg-cloud/20" title="その他" aria-label="その他のオプション">
-            <RiMoreLine className="w-5 h-5" />
-          </button>
+          <ProjectActionsMenu onEdit={() => onEdit(project)} onDelete={() => onDelete(project)} />
         </div>
       </div>
 
@@ -229,11 +409,7 @@ function ProjectCard({
         <p className={`text-xs ${overdue ? 'text-accent-sand' : 'text-cloud'}`}>
           {overdue ? '⚠️ 期限切れ' : '✓ 期限内'}
         </p>
-        {project.budget && (
-          <p className="text-xs">
-            予算: ¥{project.budget.toLocaleString()}
-          </p>
-        )}
+        {project.notes && <p className="text-xs">備考: {project.notes}</p>}
       </div>
     </div>
   );
@@ -243,10 +419,16 @@ function ProjectList({
   projects,
   overdueIds,
   onDuplicate,
+  onEdit,
+  onDelete,
+  onStatusChange,
 }: {
   projects: Project[];
   overdueIds: string[];
   onDuplicate: (id: string) => void;
+  onEdit: (project: Project) => void;
+  onDelete: (project: Project) => void;
+  onStatusChange: (projectId: string, newStatus: ProjectStatus) => void;
 }) {
   return (
     <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
@@ -255,37 +437,36 @@ function ProjectList({
         <span>説明</span>
         <span>期間</span>
         <span>ステータス</span>
-        <span>予算</span>
+        <span>備考</span>
         <span>操作</span>
       </div>
       {projects.map((project) => (
         <div key={project.id} className="grid grid-cols-6 px-6 py-4 border-b border-cloud/10 text-sm items-center">
           <div className="font-medium">{project.name}</div>
-          <div className="text-cloud text-xs truncate">
-            {project.description || '—'}
-          </div>
+          <div className="text-cloud text-xs truncate">{project.description || '—'}</div>
           <div className="text-cloud text-xs">
             {project.start_date}
             {project.end_date && ` - ${project.end_date}`}
-            {overdueIds.includes(project.id) && (
-              <span className="ml-2 text-accent-sand">⚠️</span>
-            )}
+            {overdueIds.includes(project.id) && <span className="ml-2 text-accent-sand">⚠️</span>}
           </div>
-          <div className={`text-xs ${statusStyle[project.status]}`}>
-            {statusLabel[project.status]}
+          <div>
+            <ProjectStatusMenu
+              currentStatus={project.status}
+              onChange={(newStatus) => onStatusChange(project.id, newStatus)}
+              size="sm"
+            />
           </div>
-          <div className="text-cloud text-xs">
-            {project.budget ? `¥${project.budget.toLocaleString()}` : '—'}
-          </div>
+          <div className="text-cloud text-xs truncate">{project.notes || '—'}</div>
           <div className="flex gap-1">
             <button
               onClick={() => onDuplicate(project.id)}
-              className="p-1.5 rounded-full text-cloud hover:bg-cloud/20"
+              className="p-1.5 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
               title="複製"
               aria-label="プロジェクトを複製"
             >
               <RiFileCopyLine className="w-4 h-4" />
             </button>
+            <ProjectActionsMenu onEdit={() => onEdit(project)} onDelete={() => onDelete(project)} />
           </div>
         </div>
       ))}
