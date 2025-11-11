@@ -25,6 +25,10 @@ export async function PATCH(request: NextRequest) {
     // 認証チェック
     const user = await requireAuthForAPI();
 
+    if (!user) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+
     // リクエストボディ取得
     const body = await request.json();
 

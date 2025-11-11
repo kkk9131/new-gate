@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { requireAuth } from '@/lib/auth/session';
+import { requireAuthForAPI } from '@/lib/auth/session';
 import { handleAPIError } from '@/lib/utils/api-error';
 
 /**
@@ -16,7 +16,11 @@ export async function POST(
 ) {
   try {
     // 認証チェック
-    const user = await requireAuth();
+    const user = await requireAuthForAPI();
+
+    if (!user) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
 
     // パラメータ取得
     const { id } = await params;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { requireAuth } from '@/lib/auth/session';
+import { requireAuthForAPI } from '@/lib/auth/session';
 import { handleAPIError } from '@/lib/utils/api-error';
 import { z } from 'zod';
 
@@ -40,7 +40,11 @@ const createProjectSchema = z
 export async function GET(request: NextRequest) {
   try {
     // 認証チェック
-    const user = await requireAuth();
+    const user = await requireAuthForAPI();
+
+    if (!user) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
 
     // クエリパラメータ取得
     const { searchParams } = new URL(request.url);
@@ -91,7 +95,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 認証チェック
-    const user = await requireAuth();
+    const user = await requireAuthForAPI();
+
+    if (!user) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
 
     // リクエストボディ取得
     const body = await request.json();

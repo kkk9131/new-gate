@@ -26,7 +26,7 @@ export async function getUserOnServer(): Promise<User | null> {
 }
 
 /**
- * 認証を必須とするページやAPIで使用
+ * 認証を必須とするページで使用
  *
  * 未認証の場合は自動的に/loginページにリダイレクトします。
  * 認証済みの場合はユーザー情報を返します。
@@ -42,6 +42,21 @@ export async function requireAuth(): Promise<User> {
   }
 
   return user;
+}
+
+/**
+ * API Routes用の認証チェック
+ *
+ * 未認証の場合はnullを返します（リダイレクトしません）。
+ * 認証済みの場合はユーザー情報を返します。
+ *
+ * API Routesでは redirect() が使えないため、この関数を使用します。
+ * 未認証時は呼び出し側で適切なエラーレスポンスを返す必要があります。
+ *
+ * @returns ユーザー情報、または未認証の場合はnull
+ */
+export async function requireAuthForAPI(): Promise<User | null> {
+  return await getUserOnServer();
 }
 
 /**
