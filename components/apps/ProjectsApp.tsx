@@ -1,15 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   RiAddLine,
-  RiAttachmentLine,
   RiCalendarLine,
   RiFolderLine,
   RiListCheck,
   RiMoreLine,
-  RiStackLine,
   RiLayoutGridLine,
+  RiFileCopyLine,
 } from 'react-icons/ri';
 
 type ProjectStatus = 'active' | 'completed' | 'on_hold';
@@ -17,57 +16,14 @@ type ProjectStatus = 'active' | 'completed' | 'on_hold';
 type Project = {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   status: ProjectStatus;
-  progress: number;
-  startDate: string;
-  endDate: string;
-  owner: string;
-  attachments: { id: string; name: string; type: string }[];
+  start_date: string;
+  end_date: string | null;
+  budget: number | null;
+  created_at: string;
+  updated_at: string;
 };
-
-const projects: Project[] = [
-  {
-    id: 'pjt-1',
-    name: 'ウェブサイトリニューアル',
-    description: 'ブランド刷新に伴う新規デザインとCMS移行。',
-    status: 'active',
-    progress: 72,
-    startDate: '2025-09-01',
-    endDate: '2025-11-30',
-    owner: '山田花子',
-    attachments: [
-      { id: 'f1', name: '要件定義.docx', type: 'doc' },
-      { id: 'f2', name: 'ワイヤー.png', type: 'img' },
-    ],
-  },
-  {
-    id: 'pjt-2',
-    name: 'モバイルアプリ開発',
-    description: 'iOS/Android両対応のプロジェクト管理アプリ。',
-    status: 'on_hold',
-    progress: 40,
-    startDate: '2025-08-15',
-    endDate: '2025-12-20',
-    owner: '佐藤健',
-    attachments: [{ id: 'f3', name: 'UI Kit.fig', type: 'fig' }],
-  },
-  {
-    id: 'pjt-3',
-    name: 'マーケティングキャンペーン',
-    description: '年末のキャンペーン施策とLP最適化。',
-    status: 'completed',
-    progress: 100,
-    startDate: '2025-07-01',
-    endDate: '2025-09-30',
-    owner: '王 小龍',
-    attachments: [
-      { id: 'f4', name: '結果レポート.pdf', type: 'pdf' },
-      { id: 'f5', name: '素材.zip', type: 'zip' },
-      { id: 'f6', name: '広告案.xlsx', type: 'xls' },
-    ],
-  },
-];
 
 const statusLabel: Record<ProjectStatus, string> = {
   active: '進行中',
@@ -85,26 +41,101 @@ type ViewMode = 'card' | 'list';
 
 export function ProjectsApp() {
   const [viewMode, setViewMode] = useState<ViewMode>('card');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // プロジェクト一覧取得
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/projects');
+
+      if (!response.ok) {
+        throw new Error('プロジェクトの取得に失敗しました');
+      }
+
+      const result = await response.json();
+      setProjects(result.data || []);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // プロジェクト複製ハンドラー
+  const handleDuplicate = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/duplicate`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('プロジェクトの複製に失敗しました');
+      }
+
+      // 一覧を再取得
+      await fetchProjects();
+    } catch (err) {
+      console.error('Error duplicating project:', err);
+      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+    }
+  };
 
   const overdueIds = useMemo(() => {
     const today = new Date();
     return projects
-      .filter((p) => new Date(p.endDate) < today && p.progress < 100)
+      .filter((p) => p.end_date && new Date(p.end_date) < today && p.status !== 'completed')
       .map((p) => p.id);
-  }, []);
+  }, [projects]);
+
+  if (isLoading) {
+    return (
+      <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
+        <div className="text-cloud">読み込み中...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
+        <div className="text-accent-sand">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 h-full overflow-auto bg-mist text-ink space-y-6">
       <Header viewMode={viewMode} onChangeView={setViewMode} />
 
-      {viewMode === 'card' ? (
+      {projects.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-64 text-cloud">
+          <RiFolderLine className="w-16 h-16 mb-4" />
+          <p className="text-lg">プロジェクトがありません</p>
+          <p className="text-sm">「新規」ボタンからプロジェクトを作成してください</p>
+        </div>
+      ) : viewMode === 'card' ? (
         <div className="grid gap-4 lg:grid-cols-3 md:grid-cols-2">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} overdue={overdueIds.includes(project.id)} />
+            <ProjectCard
+              key={project.id}
+              project={project}
+              overdue={overdueIds.includes(project.id)}
+              onDuplicate={handleDuplicate}
+            />
           ))}
         </div>
       ) : (
-        <ProjectList projects={projects} overdueIds={overdueIds} />
+        <ProjectList projects={projects} overdueIds={overdueIds} onDuplicate={handleDuplicate} />
       )}
     </div>
   );
@@ -150,128 +181,115 @@ function ViewToggle({ viewMode, onChangeView }: { viewMode: ViewMode; onChangeVi
   );
 }
 
-function ProjectCard({ project, overdue }: { project: Project; overdue: boolean }) {
+function ProjectCard({
+  project,
+  overdue,
+  onDuplicate,
+}: {
+  project: Project;
+  overdue: boolean;
+  onDuplicate: (id: string) => void;
+}) {
   return (
     <div className="bg-surface border border-white/40 rounded-3xl p-5 shadow-soft flex flex-col gap-4">
       <div className="flex items-start justify-between">
-        <div>
+        <div className="flex-1">
           <div className="flex items-center gap-2">
             <RiFolderLine className="w-5 h-5 text-cloud" />
             <span className={`text-xs ${statusStyle[project.status]}`}>{statusLabel[project.status]}</span>
           </div>
           <h3 className="text-lg font-semibold mt-1">{project.name}</h3>
-          <p className="text-sm text-cloud line-clamp-2">{project.description}</p>
+          {project.description && (
+            <p className="text-sm text-cloud line-clamp-2 mt-1">{project.description}</p>
+          )}
         </div>
-        <button className="p-2 rounded-full text-cloud hover:bg-cloud/20">
-          <RiMoreLine className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <ProgressCircle value={project.progress} />
-        <div className="text-sm text-cloud space-y-1">
-          <p className="flex items-center gap-2">
-            <RiCalendarLine className="w-4 h-4" />
-            <span>
-              {project.startDate} - {project.endDate}
-            </span>
-          </p>
-          <p className={`text-xs ${overdue ? 'text-accent-sand' : 'text-cloud'}`}>
-            {overdue ? '期限切れ' : '期限内'}
-          </p>
-          <p>担当: {project.owner}</p>
+        <div className="flex gap-1">
+          <button
+            onClick={() => onDuplicate(project.id)}
+            className="p-2 rounded-full text-cloud hover:bg-cloud/20"
+            title="複製"
+            aria-label="プロジェクトを複製"
+          >
+            <RiFileCopyLine className="w-5 h-5" />
+          </button>
+          <button className="p-2 rounded-full text-cloud hover:bg-cloud/20" title="その他" aria-label="その他のオプション">
+            <RiMoreLine className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      <AttachmentRow attachments={project.attachments} />
+      <div className="text-sm text-cloud space-y-2">
+        <p className="flex items-center gap-2">
+          <RiCalendarLine className="w-4 h-4" />
+          <span>
+            {project.start_date}
+            {project.end_date && ` - ${project.end_date}`}
+          </span>
+        </p>
+        <p className={`text-xs ${overdue ? 'text-accent-sand' : 'text-cloud'}`}>
+          {overdue ? '⚠️ 期限切れ' : '✓ 期限内'}
+        </p>
+        {project.budget && (
+          <p className="text-xs">
+            予算: ¥{project.budget.toLocaleString()}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
 
-function ProjectList({ projects, overdueIds }: { projects: Project[]; overdueIds: string[] }) {
+function ProjectList({
+  projects,
+  overdueIds,
+  onDuplicate,
+}: {
+  projects: Project[];
+  overdueIds: string[];
+  onDuplicate: (id: string) => void;
+}) {
   return (
     <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
       <div className="grid grid-cols-6 px-6 py-3 text-xs text-cloud border-b border-cloud/20">
         <span>名称</span>
+        <span>説明</span>
         <span>期間</span>
-        <span>担当</span>
         <span>ステータス</span>
-        <span>進捗</span>
-        <span>添付</span>
+        <span>予算</span>
+        <span>操作</span>
       </div>
       {projects.map((project) => (
         <div key={project.id} className="grid grid-cols-6 px-6 py-4 border-b border-cloud/10 text-sm items-center">
           <div className="font-medium">{project.name}</div>
+          <div className="text-cloud text-xs truncate">
+            {project.description || '—'}
+          </div>
           <div className="text-cloud text-xs">
-            {project.startDate} - {project.endDate}
+            {project.start_date}
+            {project.end_date && ` - ${project.end_date}`}
+            {overdueIds.includes(project.id) && (
+              <span className="ml-2 text-accent-sand">⚠️</span>
+            )}
           </div>
-          <div className="text-cloud text-xs">{project.owner}</div>
-          <div className={`text-xs ${statusStyle[project.status]}`}>{statusLabel[project.status]}</div>
-          <div>
-            <div className="flex justify-between text-xs text-cloud">
-              <span>{project.progress}%</span>
-              <span className={overdueIds.includes(project.id) ? 'text-accent-sand' : ''}>
-                {overdueIds.includes(project.id) ? '期限切れ' : ''}
-              </span>
-            </div>
-            <div className="h-2 bg-cloud/30 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-accent-calm rounded-full"
-                style={{ width: `${project.progress}%` }}
-              />
-            </div>
+          <div className={`text-xs ${statusStyle[project.status]}`}>
+            {statusLabel[project.status]}
           </div>
-          <AttachmentRow attachments={project.attachments} compact />
+          <div className="text-cloud text-xs">
+            {project.budget ? `¥${project.budget.toLocaleString()}` : '—'}
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => onDuplicate(project.id)}
+              className="p-1.5 rounded-full text-cloud hover:bg-cloud/20"
+              title="複製"
+              aria-label="プロジェクトを複製"
+            >
+              <RiFileCopyLine className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-function AttachmentRow({ attachments, compact }: { attachments: Project['attachments']; compact?: boolean }) {
-  return (
-    <div className="flex items-center gap-2 flex-wrap text-xs">
-      {attachments.map((file) => (
-        <span key={file.id} className="px-2 py-1 rounded-full border border-cloud/30 text-cloud flex items-center gap-1">
-          <RiAttachmentLine className="w-3 h-3" />
-          {compact ? file.type.toUpperCase() : file.name}
-        </span>
-      ))}
-      <button className="px-2 py-1 rounded-full border border-dashed border-cloud/40 text-cloud flex items-center gap-1">
-        <RiStackLine className="w-3 h-3" />
-        添付
-      </button>
-    </div>
-  );
-}
-
-function ProgressCircle({ value }: { value: number }) {
-  const offset = Math.min(Math.max(value, 0), 100);
-  return (
-    <div className="relative w-16 h-16">
-      <svg className="w-16 h-16" viewBox="0 0 36 36">
-        <path
-          className="text-cloud/40"
-          stroke="currentColor"
-          strokeWidth="3"
-          fill="none"
-          d="M18 2.0845
-             a 15.9155 15.9155 0 0 1 0 31.831
-             a 15.9155 15.9155 0 0 1 0 -31.831"
-        />
-        <path
-          className="text-accent-calm"
-          strokeDasharray={`${offset}, 100`}
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-          fill="none"
-          d="M18 2.0845
-             a 15.9155 15.9155 0 0 1 0 31.831
-             a 15.9155 15.9155 0 0 1 0 -31.831"
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold">{offset}%</div>
-    </div>
-  );
-}
