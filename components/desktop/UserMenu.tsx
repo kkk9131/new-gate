@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { createClient } from '@/lib/supabase/client';
 import { RiUserLine, RiLogoutBoxLine, RiArrowDownSLine } from 'react-icons/ri';
 
 /**
@@ -41,8 +40,15 @@ export function UserMenu() {
   // ログアウト処理
   const handleLogout = async () => {
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('ログアウトに失敗しました');
+      }
+
       clearAuth();
       setIsOpen(false);
       router.push('/login');

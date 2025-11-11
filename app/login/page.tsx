@@ -54,22 +54,20 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const supabase = createClient();
-
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('/api/auth/password-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (signInError) {
-        throw signInError;
+      if (!response.ok) {
+        const { error: message } = await response.json().catch(() => ({ error: null }));
+        throw new Error(message || 'ログインに失敗しました。');
       }
 
-      if (data.user) {
-        // ログイン成功 → デスクトップUIへリダイレクト
-        router.push('/');
-        router.refresh();
-      }
+      // ログイン成功 → デスクトップUIへリダイレクト
+      router.push('/');
+      router.refresh();
     } catch (err: any) {
       console.error('ログインエラー:', err);
       setError(
