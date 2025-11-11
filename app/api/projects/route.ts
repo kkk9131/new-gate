@@ -55,7 +55,8 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('user_id', user.id)
       .eq('is_deleted', false)
-      .order('created_at', { ascending: false })
+      .order('display_order', { ascending: true }) // ドラッグ&ドロップの並び順を優先
+      .order('created_at', { ascending: false }) // 同じdisplay_orderの場合は作成日時降順
       .range(offset, offset + limit - 1);
 
     // ステータスフィルタ

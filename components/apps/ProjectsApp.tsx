@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
   RiAddLine,
   RiCalendarLine,
@@ -8,7 +8,29 @@ import {
   RiListCheck,
   RiLayoutGridLine,
   RiFileCopyLine,
+  RiDragDropLine,
+  RiCheckboxCircleLine,
+  RiDeleteBin6Line,
+  RiCloseLine,
 } from 'react-icons/ri';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { ProjectFormModal } from './projects/ProjectFormModal';
 import { ProjectDeleteDialog } from './projects/ProjectDeleteDialog';
 import { ProjectActionsMenu } from './projects/ProjectActionsMenu';
@@ -21,7 +43,11 @@ export function ProjectsApp() {
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const LIMIT = 20; // 1回の読み込み件数
 
   // モーダル・ダイアログの状態管理
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -29,20 +55,36 @@ export function ProjectsApp() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  // プロジェクト一覧取得
+  // 選択モード関連の状態管理
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
+
+  // ドラッグ&ドロップのセンサー設定
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // プロジェクト一覧取得（初回）
   const fetchProjects = async () => {
     try {
       setIsLoading(true);
       setError(null);
+      setOffset(0);
 
-      const response = await fetch('/api/projects');
+      const response = await fetch(`/api/projects?limit=${LIMIT}&offset=0`);
 
       if (!response.ok) {
         throw new Error('プロジェクトの取得に失敗しました');
       }
 
       const result = await response.json();
-      setProjects(result.data || []);
+      const data = result.data || [];
+      setProjects(data);
+      setHasMore(data.length === LIMIT);
+      setOffset(LIMIT);
     } catch (err) {
       console.error('Error fetching projects:', err);
       setError(err instanceof Error ? err.message : 'エラーが発生しました');
@@ -51,9 +93,59 @@ export function ProjectsApp() {
     }
   };
 
+  // 追加プロジェクト読み込み（無限スクロール用）
+  const loadMoreProjects = async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    try {
+      setIsLoadingMore(true);
+
+      const response = await fetch(`/api/projects?limit=${LIMIT}&offset=${offset}`);
+
+      if (!response.ok) {
+        throw new Error('プロジェクトの取得に失敗しました');
+      }
+
+      const result = await response.json();
+      const newData = result.data || [];
+
+      setProjects((prev) => [...prev, ...newData]);
+      setHasMore(newData.length === LIMIT);
+      setOffset((prev) => prev + LIMIT);
+    } catch (err) {
+      console.error('Error loading more projects:', err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  // 無限スクロール用のIntersection Observer
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMoreProjects();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [hasMore, isLoadingMore, offset]);
 
   // プロジェクト作成ハンドラー
   const handleCreate = async (formData: any) => {
@@ -152,6 +244,63 @@ export function ProjectsApp() {
     setIsDeleteDialogOpen(true);
   };
 
+  // 選択モード切り替え
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    // 選択モード終了時は選択をクリア
+    if (isSelectionMode) {
+      setSelectedProjectIds([]);
+    }
+  };
+
+  // プロジェクト選択/解除の切り替え
+  const toggleProjectSelection = (projectId: string) => {
+    setSelectedProjectIds((prev) =>
+      prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId]
+    );
+  };
+
+  // 全選択
+  const selectAllProjects = () => {
+    setSelectedProjectIds(projects.map((p) => p.id));
+  };
+
+  // 選択解除
+  const clearSelection = () => {
+    setSelectedProjectIds([]);
+  };
+
+  // 一括削除ハンドラー
+  const handleBulkDelete = async () => {
+    if (selectedProjectIds.length === 0) return;
+
+    const confirmMessage = `${selectedProjectIds.length}件のプロジェクトを削除しますか？`;
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      // 各プロジェクトを削除（並列実行）
+      const deletePromises = selectedProjectIds.map((id) =>
+        fetch(`/api/projects/${id}`, { method: 'DELETE' })
+      );
+
+      const results = await Promise.all(deletePromises);
+
+      // エラーチェック
+      const errors = results.filter((res) => !res.ok);
+      if (errors.length > 0) {
+        throw new Error(`${errors.length}件のプロジェクト削除に失敗しました`);
+      }
+
+      // 成功したら一覧を再取得
+      await fetchProjects();
+      setSelectedProjectIds([]);
+      setIsSelectionMode(false);
+    } catch (err) {
+      console.error('Error bulk deleting projects:', err);
+      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+    }
+  };
+
   // ステータス変更ハンドラー
   const handleStatusChange = async (projectId: string, newStatus: ProjectStatus) => {
     try {
@@ -170,6 +319,46 @@ export function ProjectsApp() {
     } catch (err) {
       console.error('Error updating status:', err);
       alert(err instanceof Error ? err.message : 'エラーが発生しました');
+    }
+  };
+
+  // ドラッグ終了時のハンドラー
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return; // ドロップ位置が無効、または同じ位置の場合は何もしない
+    }
+
+    const oldIndex = projects.findIndex((p) => p.id === active.id);
+    const newIndex = projects.findIndex((p) => p.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // 楽観的UI更新（即座にUIを更新）
+    const newProjects = arrayMove(projects, oldIndex, newIndex);
+    setProjects(newProjects);
+
+    // 並び順をサーバーに保存
+    try {
+      const projectIds = newProjects.map((p) => p.id);
+
+      const response = await fetch('/api/projects/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error('並び順の保存に失敗しました');
+      }
+    } catch (err) {
+      console.error('Error reordering projects:', err);
+      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      // エラー時は元の順序に戻す
+      await fetchProjects();
     }
   };
 
@@ -197,39 +386,80 @@ export function ProjectsApp() {
   }
 
   return (
-    <div className="p-6 h-full overflow-auto bg-mist text-ink space-y-6">
-      <Header viewMode={viewMode} onChangeView={setViewMode} onCreateClick={() => setIsCreateModalOpen(true)} />
-
-      {projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-cloud">
-          <RiFolderLine className="w-16 h-16 mb-4" />
-          <p className="text-lg">プロジェクトがありません</p>
-          <p className="text-sm">「新規」ボタンからプロジェクトを作成してください</p>
-        </div>
-      ) : viewMode === 'card' ? (
-        <div className="grid gap-4 lg:grid-cols-3 md:grid-cols-2">
-          {projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              overdue={overdueIds.includes(project.id)}
-              onDuplicate={handleDuplicate}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteClick}
-              onStatusChange={handleStatusChange}
-            />
-          ))}
-        </div>
-      ) : (
-        <ProjectList
-          projects={projects}
-          overdueIds={overdueIds}
-          onDuplicate={handleDuplicate}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteClick}
-          onStatusChange={handleStatusChange}
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <div className="p-6 h-full overflow-auto bg-mist text-ink space-y-6">
+        <Header
+          viewMode={viewMode}
+          onChangeView={setViewMode}
+          onCreateClick={() => setIsCreateModalOpen(true)}
+          isSelectionMode={isSelectionMode}
+          onToggleSelectionMode={toggleSelectionMode}
+          selectedCount={selectedProjectIds.length}
+          totalCount={projects.length}
+          onSelectAll={selectAllProjects}
+          onClearSelection={clearSelection}
+          onBulkDelete={handleBulkDelete}
         />
-      )}
+
+        {projects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-cloud">
+            <RiFolderLine className="w-16 h-16 mb-4" />
+            <p className="text-lg">プロジェクトがありません</p>
+            <p className="text-sm">「新規」ボタンからプロジェクトを作成してください</p>
+          </div>
+        ) : (
+          <>
+            <SortableContext items={projects.map((p) => p.id)} strategy={viewMode === 'card' ? rectSortingStrategy : verticalListSortingStrategy}>
+              {viewMode === 'card' ? (
+                <div className="grid gap-4 lg:grid-cols-3 md:grid-cols-2">
+                  {projects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      overdue={overdueIds.includes(project.id)}
+                      onDuplicate={handleDuplicate}
+                      onEdit={handleEditClick}
+                      onDelete={handleDeleteClick}
+                      onStatusChange={handleStatusChange}
+                      isSelectionMode={isSelectionMode}
+                      isSelected={selectedProjectIds.includes(project.id)}
+                      onToggleSelect={toggleProjectSelection}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <ProjectList
+                  projects={projects}
+                  overdueIds={overdueIds}
+                  onDuplicate={handleDuplicate}
+                  onEdit={handleEditClick}
+                  onDelete={handleDeleteClick}
+                  onStatusChange={handleStatusChange}
+                  isSelectionMode={isSelectionMode}
+                  selectedProjectIds={selectedProjectIds}
+                  onToggleSelect={toggleProjectSelection}
+                />
+              )}
+            </SortableContext>
+
+            {/* 無限スクロール用のトリガー要素 */}
+            <div ref={observerTarget} className="h-4" />
+
+            {/* ローディングインジケーター */}
+            {isLoadingMore && (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-cloud text-sm">読み込み中...</div>
+              </div>
+            )}
+
+            {/* すべて読み込み完了 */}
+            {!hasMore && projects.length > 0 && (
+              <div className="flex items-center justify-center py-4">
+                <div className="text-cloud text-xs">すべてのプロジェクトを表示しました</div>
+              </div>
+            )}
+          </>
+        )}
 
       {/* 新規作成モーダル */}
       <ProjectFormModal
@@ -272,7 +502,8 @@ export function ProjectsApp() {
         onConfirm={handleDelete}
         projectName={selectedProject?.name || ''}
       />
-    </div>
+      </div>
+    </DndContext>
   );
 }
 
@@ -280,25 +511,85 @@ function Header({
   viewMode,
   onChangeView,
   onCreateClick,
+  isSelectionMode,
+  onToggleSelectionMode,
+  selectedCount,
+  totalCount,
+  onSelectAll,
+  onClearSelection,
+  onBulkDelete,
 }: {
   viewMode: ViewMode;
   onChangeView: (mode: ViewMode) => void;
   onCreateClick: () => void;
+  isSelectionMode: boolean;
+  onToggleSelectionMode: () => void;
+  selectedCount: number;
+  totalCount: number;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
+  onBulkDelete: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <h2 className="text-2xl font-bold mb-1">Projects</h2>
-        <p className="text-sm text-cloud">プロジェクトを俯瞰し、AIに自然言語で操作を依頼できます</p>
+        {isSelectionMode && (
+          <p className="text-sm text-cloud">
+            {selectedCount}件 / {totalCount}件を選択中
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap gap-3">
-        <ViewToggle viewMode={viewMode} onChangeView={onChangeView} />
-        <button
-          onClick={onCreateClick}
-          className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
-        >
-          <RiAddLine className="w-4 h-4" /> 新規
-        </button>
+        {!isSelectionMode ? (
+          <>
+            <ViewToggle viewMode={viewMode} onChangeView={onChangeView} />
+            <button
+              onClick={onToggleSelectionMode}
+              className="flex items-center gap-2 px-4 py-2 bg-surface border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
+              aria-label="選択モード"
+            >
+              <RiCheckboxCircleLine className="w-4 h-4" /> 選択
+            </button>
+            <button
+              onClick={onCreateClick}
+              className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
+            >
+              <RiAddLine className="w-4 h-4" /> 新規
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={onSelectAll}
+              className="px-4 py-2 bg-surface border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors text-sm"
+              disabled={selectedCount === totalCount}
+            >
+              全選択
+            </button>
+            <button
+              onClick={onClearSelection}
+              className="px-4 py-2 bg-surface border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors text-sm"
+              disabled={selectedCount === 0}
+            >
+              選択解除
+            </button>
+            <button
+              onClick={onBulkDelete}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={selectedCount === 0}
+            >
+              <RiDeleteBin6Line className="w-4 h-4" /> 削除 ({selectedCount})
+            </button>
+            <button
+              onClick={onToggleSelectionMode}
+              className="flex items-center gap-2 px-4 py-2 bg-surface border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
+              aria-label="選択モード終了"
+            >
+              <RiCloseLine className="w-4 h-4" /> キャンセル
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -334,6 +625,9 @@ function ProjectCard({
   onEdit,
   onDelete,
   onStatusChange,
+  isSelectionMode,
+  isSelected,
+  onToggleSelect,
 }: {
   project: Project;
   overdue: boolean;
@@ -341,12 +635,52 @@ function ProjectCard({
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
   onStatusChange: (projectId: string, newStatus: ProjectStatus) => void;
+  isSelectionMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
 }) {
+  // ドラッグ&ドロップ機能のためのフック
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: project.id,
+  });
+
+  // ドラッグ中のスタイル設定
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
-    <div className="bg-surface border border-white/40 rounded-3xl p-5 shadow-soft flex flex-col gap-4">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-surface border rounded-3xl p-5 shadow-soft flex flex-col gap-4 ${
+        isSelected ? 'border-accent-sand border-2' : 'border-white/40'
+      }`}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
+            {/* 選択モード時はチェックボックス、通常時はドラッグハンドル */}
+            {isSelectionMode ? (
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => onToggleSelect(project.id)}
+                className="w-5 h-5 rounded border-cloud/30 text-accent-sand focus:ring-accent-sand cursor-pointer"
+                aria-label="プロジェクトを選択"
+              />
+            ) : (
+              <button
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-cloud/20 transition-colors"
+                aria-label="プロジェクトを並び替え"
+              >
+                <RiDragDropLine className="w-5 h-5 text-cloud" />
+              </button>
+            )}
             <RiFolderLine className="w-5 h-5 text-cloud" />
             <ProjectStatusMenu
               currentStatus={project.status}
@@ -388,6 +722,100 @@ function ProjectCard({
   );
 }
 
+// リスト行コンポーネント（ドラッグ&ドロップ対応）
+function ProjectListRow({
+  project,
+  isLast,
+  overdue,
+  onDuplicate,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  isSelectionMode,
+  isSelected,
+  onToggleSelect,
+}: {
+  project: Project;
+  isLast: boolean;
+  overdue: boolean;
+  onDuplicate: (id: string) => void;
+  onEdit: (project: Project) => void;
+  onDelete: (project: Project) => void;
+  onStatusChange: (projectId: string, newStatus: ProjectStatus) => void;
+  isSelectionMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
+}) {
+  // ドラッグ&ドロップ機能のためのフック
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: project.id,
+  });
+
+  // ドラッグ中のスタイル設定
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-4 text-sm items-center ${
+        !isLast ? 'border-b border-cloud/10' : ''
+      } ${isSelected ? 'bg-accent-sand/10' : ''}`}
+    >
+      {/* 選択モード時はチェックボックス、通常時はドラッグハンドル */}
+      {isSelectionMode ? (
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onToggleSelect(project.id)}
+          className="w-4 h-4 rounded border-cloud/30 text-accent-sand focus:ring-accent-sand cursor-pointer"
+          aria-label="プロジェクトを選択"
+        />
+      ) : (
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-cloud/20 transition-colors"
+          aria-label="プロジェクトを並び替え"
+        >
+          <RiDragDropLine className="w-4 h-4 text-cloud" />
+        </button>
+      )}
+
+      <div className="font-medium truncate">{project.name}</div>
+      <div className="text-cloud text-xs truncate">{project.description || '—'}</div>
+      <div className="text-cloud text-xs">
+        {project.start_date}
+        {project.end_date && ` - ${project.end_date}`}
+        {overdue && <span className="ml-2 text-accent-sand">⚠️</span>}
+      </div>
+      <div>
+        <ProjectStatusMenu
+          currentStatus={project.status}
+          onChange={(newStatus) => onStatusChange(project.id, newStatus)}
+          size="sm"
+        />
+      </div>
+      <div className="text-cloud text-xs truncate">{project.notes || '—'}</div>
+      <div className="flex gap-1">
+        <button
+          onClick={() => onDuplicate(project.id)}
+          className="p-1.5 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
+          title="複製"
+          aria-label="プロジェクトを複製"
+        >
+          <RiFileCopyLine className="w-4 h-4" />
+        </button>
+        <ProjectActionsMenu onEdit={() => onEdit(project)} onDelete={() => onDelete(project)} />
+      </div>
+    </div>
+  );
+}
+
 function ProjectList({
   projects,
   overdueIds,
@@ -395,6 +823,9 @@ function ProjectList({
   onEdit,
   onDelete,
   onStatusChange,
+  isSelectionMode,
+  selectedProjectIds,
+  onToggleSelect,
 }: {
   projects: Project[];
   overdueIds: string[];
@@ -402,10 +833,14 @@ function ProjectList({
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
   onStatusChange: (projectId: string, newStatus: ProjectStatus) => void;
+  isSelectionMode: boolean;
+  selectedProjectIds: string[];
+  onToggleSelect: (id: string) => void;
 }) {
   return (
     <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
-      <div className="grid grid-cols-6 px-6 py-3 text-xs text-cloud border-b border-cloud/20">
+      <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 text-xs text-cloud border-b border-cloud/20">
+        <span></span> {/* ドラッグハンドルまたはチェックボックス用の空スペース */}
         <span>名称</span>
         <span>説明</span>
         <span>期間</span>
@@ -414,39 +849,19 @@ function ProjectList({
         <span>操作</span>
       </div>
       {projects.map((project, index) => (
-        <div
+        <ProjectListRow
           key={project.id}
-          className={`grid grid-cols-6 px-6 py-4 text-sm items-center ${
-            index < projects.length - 1 ? 'border-b border-cloud/10' : ''
-          }`}
-        >
-          <div className="font-medium truncate">{project.name}</div>
-          <div className="text-cloud text-xs truncate">{project.description || '—'}</div>
-          <div className="text-cloud text-xs">
-            {project.start_date}
-            {project.end_date && ` - ${project.end_date}`}
-            {overdueIds.includes(project.id) && <span className="ml-2 text-accent-sand">⚠️</span>}
-          </div>
-          <div>
-            <ProjectStatusMenu
-              currentStatus={project.status}
-              onChange={(newStatus) => onStatusChange(project.id, newStatus)}
-              size="sm"
-            />
-          </div>
-          <div className="text-cloud text-xs truncate">{project.notes || '—'}</div>
-          <div className="flex gap-1">
-            <button
-              onClick={() => onDuplicate(project.id)}
-              className="p-1.5 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-              title="複製"
-              aria-label="プロジェクトを複製"
-            >
-              <RiFileCopyLine className="w-4 h-4" />
-            </button>
-            <ProjectActionsMenu onEdit={() => onEdit(project)} onDelete={() => onDelete(project)} />
-          </div>
-        </div>
+          project={project}
+          isLast={index === projects.length - 1}
+          overdue={overdueIds.includes(project.id)}
+          onDuplicate={onDuplicate}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+          isSelectionMode={isSelectionMode}
+          isSelected={selectedProjectIds.includes(project.id)}
+          onToggleSelect={onToggleSelect}
+        />
       ))}
     </div>
   );
