@@ -114,22 +114,22 @@ export default function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
-        <p className="text-gray-600">読み込み中...</p>
+      <div className="min-h-screen bg-mist flex items-center justify-center p-4">
+        <p className="text-cloud">読み込み中...</p>
       </div>
     );
   }
 
   if (!settings) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
-        <p className="text-gray-600">通知設定の読み込みに失敗しました</p>
+      <div className="min-h-screen bg-mist flex items-center justify-center p-4">
+        <p className="text-cloud">通知設定の読み込みに失敗しました</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-mist flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* 戻るボタン */}
         <button
@@ -142,10 +142,10 @@ export default function NotificationsPage() {
         </button>
 
         {/* 通知設定 */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-surface rounded-2xl shadow-panel p-8">
           <div className="flex items-center gap-2 mb-6">
             <RiNotificationLine className="w-6 h-6 text-accent-sand" />
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-2xl font-bold text-ink">
               通知設定
             </h2>
           </div>
@@ -155,7 +155,7 @@ export default function NotificationsPage() {
             <div
               role="alert"
               aria-live="assertive"
-              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4"
+              className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm mb-4"
             >
               {error}
             </div>
@@ -164,12 +164,12 @@ export default function NotificationsPage() {
           <div className="space-y-8">
             {/* 通知方法 */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              <h3 className="text-lg font-semibold text-ink mb-4">
                 通知方法
               </h3>
               <div className="space-y-3">
                 {/* メール通知 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notification_email}
@@ -179,15 +179,15 @@ export default function NotificationsPage() {
                     style={{ accentColor: 'rgb(213 196 170)' }}
                     className="w-5 h-5 rounded cursor-pointer"
                   />
-                  <RiMailLine className="w-5 h-5 text-gray-600" />
+                  <RiMailLine className="w-5 h-5 text-cloud" />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">メール通知</span>
-                    <p className="text-sm text-gray-600">登録メールアドレスに通知を送信</p>
+                    <span className="font-medium text-ink">メール通知</span>
+                    <p className="text-sm text-cloud">登録メールアドレスに通知を送信</p>
                   </div>
                 </label>
 
                 {/* ブラウザ通知 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notification_browser}
@@ -197,15 +197,15 @@ export default function NotificationsPage() {
                     style={{ accentColor: 'rgb(213 196 170)' }}
                     className="w-5 h-5 rounded cursor-pointer"
                   />
-                  <RiGlobalLine className="w-5 h-5 text-gray-600" />
+                  <RiGlobalLine className="w-5 h-5 text-cloud" />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">ブラウザ通知</span>
-                    <p className="text-sm text-gray-600">デスクトップ通知を表示</p>
+                    <span className="font-medium text-ink">ブラウザ通知</span>
+                    <p className="text-sm text-cloud">デスクトップ通知を表示</p>
                   </div>
                 </label>
 
                 {/* アプリ内通知 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notification_in_app}
@@ -215,15 +215,15 @@ export default function NotificationsPage() {
                     style={{ accentColor: 'rgb(213 196 170)' }}
                     className="w-5 h-5 rounded cursor-pointer"
                   />
-                  <RiNotificationLine className="w-5 h-5 text-gray-600" />
+                  <RiNotificationLine className="w-5 h-5 text-cloud" />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">アプリ内通知</span>
-                    <p className="text-sm text-gray-600">通知バッジを表示</p>
+                    <span className="font-medium text-ink">アプリ内通知</span>
+                    <p className="text-sm text-cloud">通知バッジを表示</p>
                   </div>
                 </label>
 
                 {/* 通知音 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notification_sound}
@@ -233,10 +233,10 @@ export default function NotificationsPage() {
                     style={{ accentColor: 'rgb(213 196 170)' }}
                     className="w-5 h-5 rounded cursor-pointer"
                   />
-                  <RiVolumeUpLine className="w-5 h-5 text-gray-600" />
+                  <RiVolumeUpLine className="w-5 h-5 text-cloud" />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">通知音</span>
-                    <p className="text-sm text-gray-600">通知時に音を鳴らす</p>
+                    <span className="font-medium text-ink">通知音</span>
+                    <p className="text-sm text-cloud">通知時に音を鳴らす</p>
                   </div>
                 </label>
               </div>
@@ -244,12 +244,12 @@ export default function NotificationsPage() {
 
             {/* 通知カテゴリ */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              <h3 className="text-lg font-semibold text-ink mb-4">
                 通知カテゴリ
               </h3>
               <div className="space-y-3">
                 {/* エージェントタスク成功 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notify_agent_task_success}
@@ -260,13 +260,13 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">エージェントタスク成功</span>
-                    <p className="text-sm text-gray-600">タスクが正常に完了した時</p>
+                    <span className="font-medium text-ink">エージェントタスク成功</span>
+                    <p className="text-sm text-cloud">タスクが正常に完了した時</p>
                   </div>
                 </label>
 
                 {/* エージェントタスク失敗 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notify_agent_task_failure}
@@ -277,13 +277,13 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">エージェントタスク失敗</span>
-                    <p className="text-sm text-gray-600">タスクが失敗した時</p>
+                    <span className="font-medium text-ink">エージェントタスク失敗</span>
+                    <p className="text-sm text-cloud">タスクが失敗した時</p>
                   </div>
                 </label>
 
                 {/* セキュリティアラート */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notify_security_alert}
@@ -294,13 +294,13 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">セキュリティアラート</span>
-                    <p className="text-sm text-gray-600">不審なログインや重要な変更</p>
+                    <span className="font-medium text-ink">セキュリティアラート</span>
+                    <p className="text-sm text-cloud">不審なログインや重要な変更</p>
                   </div>
                 </label>
 
                 {/* プラットフォーム更新 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notify_platform_updates}
@@ -311,13 +311,13 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">プラットフォーム更新</span>
-                    <p className="text-sm text-gray-600">新機能やメンテナンス情報</p>
+                    <span className="font-medium text-ink">プラットフォーム更新</span>
+                    <p className="text-sm text-cloud">新機能やメンテナンス情報</p>
                   </div>
                 </label>
 
                 {/* プロジェクトリマインダー */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.notify_project_reminder}
@@ -328,8 +328,8 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">プロジェクトリマインダー</span>
-                    <p className="text-sm text-gray-600">プロジェクト期限のリマインド</p>
+                    <span className="font-medium text-ink">プロジェクトリマインダー</span>
+                    <p className="text-sm text-cloud">プロジェクト期限のリマインド</p>
                   </div>
                 </label>
               </div>
@@ -337,12 +337,12 @@ export default function NotificationsPage() {
 
             {/* 通知タイミング */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              <h3 className="text-lg font-semibold text-ink mb-4">
                 通知タイミング
               </h3>
               <div className="space-y-3">
                 {/* 即時通知 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="radio"
                     name="notification_timing"
@@ -353,13 +353,13 @@ export default function NotificationsPage() {
                     className="w-5 h-5 cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">即時通知</span>
-                    <p className="text-sm text-gray-600">イベント発生時すぐに通知</p>
+                    <span className="font-medium text-ink">即時通知</span>
+                    <p className="text-sm text-cloud">イベント発生時すぐに通知</p>
                   </div>
                 </label>
 
                 {/* まとめて通知 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="radio"
                     name="notification_timing"
@@ -370,13 +370,13 @@ export default function NotificationsPage() {
                     className="w-5 h-5 cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">まとめて通知</span>
-                    <p className="text-sm text-gray-600">定期的にまとめて通知</p>
+                    <span className="font-medium text-ink">まとめて通知</span>
+                    <p className="text-sm text-cloud">定期的にまとめて通知</p>
                   </div>
                 </label>
 
                 {/* 営業時間のみ通知 */}
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
                   <input
                     type="radio"
                     name="notification_timing"
@@ -387,8 +387,8 @@ export default function NotificationsPage() {
                     className="w-5 h-5 cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-gray-800">営業時間のみ通知</span>
-                    <p className="text-sm text-gray-600">指定時間帯のみ通知（9:00-18:00）</p>
+                    <span className="font-medium text-ink">営業時間のみ通知</span>
+                    <p className="text-sm text-cloud">指定時間帯のみ通知（9:00-18:00）</p>
                   </div>
                 </label>
               </div>
