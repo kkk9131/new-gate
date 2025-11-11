@@ -2,17 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { RiCloseLine } from 'react-icons/ri';
-
-type ProjectStatus = 'planning' | 'active' | 'completed' | 'on_hold';
-
-type ProjectFormData = {
-  name: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  notes: string;
-  status: ProjectStatus;
-};
+import type { ProjectStatus, ProjectFormData } from '@/types/project';
 
 type ProjectFormModalProps = {
   isOpen: boolean;

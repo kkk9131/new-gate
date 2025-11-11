@@ -13,34 +13,7 @@ import { ProjectFormModal } from './projects/ProjectFormModal';
 import { ProjectDeleteDialog } from './projects/ProjectDeleteDialog';
 import { ProjectActionsMenu } from './projects/ProjectActionsMenu';
 import { ProjectStatusMenu } from './projects/ProjectStatusMenu';
-
-type ProjectStatus = 'planning' | 'active' | 'completed' | 'on_hold';
-
-type Project = {
-  id: string;
-  name: string;
-  description: string | null;
-  status: ProjectStatus;
-  start_date: string;
-  end_date: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-const statusLabel: Record<ProjectStatus, string> = {
-  planning: '企画',
-  active: '進行中',
-  completed: '完了',
-  on_hold: '保留',
-};
-
-const statusStyle: Record<ProjectStatus, string> = {
-  planning: 'text-ink',
-  active: 'text-ink',
-  completed: 'text-ink',
-  on_hold: 'text-ink',
-};
+import type { Project, ProjectStatus } from '@/types/project';
 
 type ViewMode = 'card' | 'list';
 

@@ -36,6 +36,48 @@ export function handleAPIError(error: any) {
 
   // Supabaseエラー
   if (error.code) {
+    // PGRST116: データが見つからない
+    if (error.code === 'PGRST116') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'NOT_FOUND',
+            message: 'データが見つかりません',
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    // 23505: UNIQUE制約違反
+    if (error.code === '23505') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'CONFLICT',
+            message: 'データがすでに存在します',
+            details: error.message,
+          },
+        },
+        { status: 409 }
+      );
+    }
+
+    // 23503: 外部キー制約違反
+    if (error.code === '23503') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'FOREIGN_KEY_VIOLATION',
+            message: '関連するデータが存在しません',
+            details: error.message,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // その他のSupabaseエラー
     return NextResponse.json(
       {
         error: {

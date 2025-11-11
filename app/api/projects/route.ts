@@ -5,14 +5,28 @@ import { handleAPIError } from '@/lib/utils/api-error';
 import { z } from 'zod';
 
 // バリデーションスキーマ
-const createProjectSchema = z.object({
-  name: z.string().min(1, '名前は必須です').max(255, '名前は255文字以内で入力してください'),
-  description: z.string().optional(),
-  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）'),
-  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）').optional(),
-  notes: z.string().optional(),
-  status: z.enum(['planning', 'active', 'completed', 'on_hold']).optional(),
-});
+const createProjectSchema = z
+  .object({
+    name: z.string().min(1, '名前は必須です').max(255, '名前は255文字以内で入力してください'),
+    description: z.string().optional(),
+    start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）'),
+    end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）').optional(),
+    notes: z.string().optional(),
+    status: z.enum(['planning', 'active', 'completed', 'on_hold']).optional(),
+  })
+  .refine(
+    (data) => {
+      // end_dateが指定されている場合、start_date以降であることをチェック
+      if (data.end_date && data.start_date) {
+        return new Date(data.end_date) >= new Date(data.start_date);
+      }
+      return true;
+    },
+    {
+      message: '終了日は開始日以降の日付を指定してください',
+      path: ['end_date'],
+    }
+  );
 
 /**
  * GET /api/projects

@@ -3,22 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { RiCheckLine } from 'react-icons/ri';
-
-type ProjectStatus = 'planning' | 'active' | 'completed' | 'on_hold';
-
-const statusLabel: Record<ProjectStatus, string> = {
-  planning: '企画',
-  active: '進行中',
-  completed: '完了',
-  on_hold: '保留',
-};
-
-const statusStyle: Record<ProjectStatus, string> = {
-  planning: 'text-ink',
-  active: 'text-ink',
-  completed: 'text-ink',
-  on_hold: 'text-ink',
-};
+import type { ProjectStatus } from '@/types/project';
+import { statusLabel, statusStyle } from '@/types/project';
 
 type ProjectStatusMenuProps = {
   currentStatus: ProjectStatus;
