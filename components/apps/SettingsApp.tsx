@@ -28,7 +28,7 @@ export function SettingsApp() {
       icon: RiNotificationLine,
       title: '通知設定',
       desc: '通知とアラートの設定',
-      onClick: () => console.log('通知設定を開く')
+      onClick: () => router.push('/settings/notifications')
     },
     {
       icon: RiLockLine,
