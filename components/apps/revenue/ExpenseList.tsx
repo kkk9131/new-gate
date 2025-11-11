@@ -8,6 +8,7 @@ import {
   RiDeleteBin6Line,
   RiWallet3Line,
 } from 'react-icons/ri';
+import { subYears, subMonths, subWeeks, format } from 'date-fns';
 import type { Expense, PeriodType } from '@/types/revenue';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { useProjectStore } from '@/store/useProjectStore';
@@ -54,26 +55,26 @@ export function ExpenseList() {
       setIsLoading(true);
       setError(null);
 
-      // 期間に応じた開始日を計算
+      // 期間に応じた開始日を計算（date-fns使用で安全な日付計算）
       const endDate = new Date();
-      const startDate = new Date();
+      let startDate: Date;
 
       switch (period) {
         case 'year':
-          startDate.setFullYear(startDate.getFullYear() - 1);
+          startDate = subYears(endDate, 1);
           break;
         case 'month':
-          startDate.setMonth(startDate.getMonth() - 1);
+          startDate = subMonths(endDate, 1);
           break;
         case 'week':
-          startDate.setDate(startDate.getDate() - 7);
+          startDate = subWeeks(endDate, 1);
           break;
       }
 
       const params = new URLSearchParams({
         limit: '100',
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
+        start_date: format(startDate, 'yyyy-MM-dd'),
+        end_date: format(endDate, 'yyyy-MM-dd'),
       });
 
       // プロジェクトフィルター
