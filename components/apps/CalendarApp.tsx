@@ -1,18 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import { RiCalendarLine, RiTimeLine, RiMapPinLine, RiAddLine, RiEdit2Line, RiDeleteBin6Line } from 'react-icons/ri';
-import { format } from 'date-fns';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import type { CalendarEvent } from '@/types/calendar';
+import type { CalendarEvent, BigCalendarEvent } from '@/types/calendar';
 import { EventFormModal } from './calendar/EventFormModal';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+// date-fns localizer設定
+const locales = { ja };
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales,
+});
 
 export function CalendarApp() {
   // 状態管理
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState<'today' | 'month' | 'week'>('today');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
