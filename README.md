@@ -69,6 +69,17 @@ new-gate/
 - `npm run build` - プロダクションビルド
 - `npm run start` - プロダクションサーバーを起動
 - `npm run lint` - ESLintを実行
+- `npm run e2e` - PlaywrightでE2Eテストを実行
+
+## 🧪 E2Eテスト
+
+Supabase認証を利用するE2EテストをPlaywrightで用意しています。
+
+1. `.env.local` などに `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY` を設定
+2. 初回のみ `npx playwright install --with-deps`
+3. `npm run e2e` でテストを実行（必要に応じて `E2E_BASE_URL` を指定可能）
+
+メール認証テストでは Service Role Key でテストユーザーを作成/削除するため、必ず検証用のSupabase環境で実行してください。
 
 ## 📚 ドキュメント
 

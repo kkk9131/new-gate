@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { AUTH_ERRORS, AUTH_SUCCESS } from '@/lib/constants/auth-errors';
@@ -14,6 +14,8 @@ import { RiLockPasswordLine } from 'react-icons/ri';
  */
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -21,21 +23,37 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
 
-  // セッション確認
+  // セッション確認（メールリンクのコードを交換）
   useEffect(() => {
-    const checkSession = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+    const params = new URLSearchParams(searchParamsString);
 
-      if (session) {
+    const exchangeCode = async () => {
+      const code = params.get('code');
+      const type = params.get('type');
+
+      if (!code || type !== 'recovery') {
+        setError('セッションが無効です。もう一度パスワードリセットをやり直してください。');
+        return;
+      }
+
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (error || !data.session) {
+          throw error;
+        }
+
         setIsValidSession(true);
-      } else {
+        setError(null);
+      } catch (err) {
+        console.error('コード交換エラー:', err);
         setError('セッションが無効です。もう一度パスワードリセットをやり直してください。');
       }
     };
 
-    checkSession();
-  }, []);
+    exchangeCode();
+  }, [searchParamsString]);
 
   /**
    * パスワードリセット処理

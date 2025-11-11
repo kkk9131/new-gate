@@ -73,3 +73,19 @@ export async function createClientWithResponse(request: Request) {
 
   return { supabase, response };
 }
+
+/**
+ * Supabaseクライアントが設定したCookieを別レスポンスへ転写
+ */
+export function applySupabaseCookies(source: NextResponse, target: NextResponse) {
+  source.cookies.getAll().forEach((cookie) => {
+    target.cookies.set(cookie.name, cookie.value, {
+      path: cookie.path || '/',
+      httpOnly: cookie.httpOnly ?? true,
+      secure: cookie.secure ?? process.env.NODE_ENV === 'production',
+      sameSite: (cookie.sameSite as 'lax' | 'strict' | 'none') || 'lax',
+      maxAge: cookie.maxAge,
+      domain: cookie.domain,
+    });
+  });
+}
