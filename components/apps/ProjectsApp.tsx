@@ -36,10 +36,10 @@ const statusLabel: Record<ProjectStatus, string> = {
 };
 
 const statusStyle: Record<ProjectStatus, string> = {
-  planning: 'text-accent-sand',
+  planning: 'text-ink',
   active: 'text-ink',
-  completed: 'text-cloud',
-  on_hold: 'text-cloud',
+  completed: 'text-ink',
+  on_hold: 'text-ink',
 };
 
 type ViewMode = 'card' | 'list';
@@ -440,9 +440,14 @@ function ProjectList({
         <span>備考</span>
         <span>操作</span>
       </div>
-      {projects.map((project) => (
-        <div key={project.id} className="grid grid-cols-6 px-6 py-4 border-b border-cloud/10 text-sm items-center">
-          <div className="font-medium">{project.name}</div>
+      {projects.map((project, index) => (
+        <div
+          key={project.id}
+          className={`grid grid-cols-6 px-6 py-4 text-sm items-center ${
+            index < projects.length - 1 ? 'border-b border-cloud/10' : ''
+          }`}
+        >
+          <div className="font-medium truncate">{project.name}</div>
           <div className="text-cloud text-xs truncate">{project.description || '—'}</div>
           <div className="text-cloud text-xs">
             {project.start_date}
