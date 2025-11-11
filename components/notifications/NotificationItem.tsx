@@ -1,15 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useNotificationStore } from '@/store/useNotificationStore';
-import type { Notification } from '@/types/notification';
+import type { Notification, NotificationType } from '@/types/notification';
 
 interface NotificationItemProps {
   notification: Notification;
 }
+
+// 通知タイプの設定（色、ラベル）
+const NOTIFICATION_TYPE_CONFIG: Record<
+  NotificationType,
+  { color: string; label: string }
+> = {
+  project_update: { color: 'bg-blue-100 text-blue-600', label: 'プロジェクト' },
+  revenue_alert: { color: 'bg-green-100 text-green-600', label: '売上' },
+  system: { color: 'bg-gray-100 text-gray-600', label: 'システム' },
+  plugin_update: { color: 'bg-purple-100 text-purple-600', label: 'プラグイン' },
+  agent_complete: { color: 'bg-indigo-100 text-indigo-600', label: 'エージェント' },
+  mention: { color: 'bg-yellow-100 text-yellow-600', label: 'メンション' },
+  reminder: { color: 'bg-orange-100 text-orange-600', label: 'リマインダー' },
+};
 
 /**
  * 個別通知アイテムコンポーネント
@@ -17,7 +32,8 @@ interface NotificationItemProps {
 export default function NotificationItem({
   notification,
 }: NotificationItemProps) {
-  const { markAsRead, removeNotification } = useNotificationStore();
+  const router = useRouter();
+  const { markAsRead, removeNotification, showToastError } = useNotificationStore();
   const [isDeleting, setIsDeleting] = useState(false);
 
   // 通知をクリックして既読にする
@@ -25,7 +41,7 @@ export default function NotificationItem({
     if (notification.read) {
       // 既読の場合はリンク先へ遷移のみ
       if (notification.link_url) {
-        window.location.href = notification.link_url;
+        router.push(notification.link_url);
       }
       return;
     }
@@ -47,10 +63,11 @@ export default function NotificationItem({
 
       // リンク先があれば遷移
       if (notification.link_url) {
-        window.location.href = notification.link_url;
+        router.push(notification.link_url);
       }
     } catch (error) {
       console.error('既読処理エラー:', error);
+      showToastError('既読処理に失敗しました');
     }
   }
 
@@ -71,53 +88,13 @@ export default function NotificationItem({
       removeNotification(notification.id);
     } catch (error) {
       console.error('削除エラー:', error);
+      showToastError('通知の削除に失敗しました');
       setIsDeleting(false);
     }
   }
 
-  // 通知タイプに応じたアイコン色を取得
-  function getTypeColor(type: string): string {
-    switch (type) {
-      case 'project_update':
-        return 'bg-blue-100 text-blue-600';
-      case 'revenue_alert':
-        return 'bg-green-100 text-green-600';
-      case 'system':
-        return 'bg-gray-100 text-gray-600';
-      case 'plugin_update':
-        return 'bg-purple-100 text-purple-600';
-      case 'agent_complete':
-        return 'bg-indigo-100 text-indigo-600';
-      case 'mention':
-        return 'bg-yellow-100 text-yellow-600';
-      case 'reminder':
-        return 'bg-orange-100 text-orange-600';
-      default:
-        return 'bg-gray-100 text-gray-600';
-    }
-  }
-
-  // 通知タイプの日本語表示
-  function getTypeLabel(type: string): string {
-    switch (type) {
-      case 'project_update':
-        return 'プロジェクト';
-      case 'revenue_alert':
-        return '売上';
-      case 'system':
-        return 'システム';
-      case 'plugin_update':
-        return 'プラグイン';
-      case 'agent_complete':
-        return 'エージェント';
-      case 'mention':
-        return 'メンション';
-      case 'reminder':
-        return 'リマインダー';
-      default:
-        return '通知';
-    }
-  }
+  // 通知タイプの設定を取得（デフォルトはsystem）
+  const typeConfig = NOTIFICATION_TYPE_CONFIG[notification.type] || NOTIFICATION_TYPE_CONFIG.system;
 
   return (
     <div
@@ -132,9 +109,9 @@ export default function NotificationItem({
       <div className="flex items-start gap-3">
         {/* 通知タイプアイコン */}
         <div
-          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${getTypeColor(notification.type)}`}
+          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${typeConfig.color}`}
         >
-          {getTypeLabel(notification.type).charAt(0)}
+          {typeConfig.label.charAt(0)}
         </div>
 
         {/* 通知内容 */}

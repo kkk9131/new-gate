@@ -20,6 +20,9 @@ interface NotificationState {
 
   // エラー状態
   error: string | null;
+
+  // 一時的なエラートースト表示用
+  toastError: string | null;
 }
 
 interface NotificationActions {
@@ -51,6 +54,10 @@ interface NotificationActions {
   // エラー状態を設定
   setError: (error: string | null) => void;
 
+  // トーストエラーを設定（3秒後に自動消去）
+  showToastError: (error: string) => void;
+  clearToastError: () => void;
+
   // 未読通知数を更新
   updateUnreadCount: () => void;
 }
@@ -64,6 +71,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   isDropdownOpen: false,
   isLoading: false,
   error: null,
+  toastError: null,
 
   // 通知一覧を設定
   setNotifications: (notifications) => {
@@ -135,6 +143,18 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   // エラー状態を設定
   setError: (error) => {
     set({ error });
+  },
+
+  // トーストエラーを表示（3秒後に自動消去）
+  showToastError: (error) => {
+    set({ toastError: error });
+    setTimeout(() => {
+      set({ toastError: null });
+    }, 3000);
+  },
+
+  clearToastError: () => {
+    set({ toastError: null });
   },
 
   // 未読通知数を更新

@@ -20,6 +20,7 @@ export default function NotificationDropdown({
     error,
     markAllAsRead,
     clearAll,
+    showToastError,
   } = useNotificationStore();
 
   // すべて既読にする処理
@@ -36,6 +37,7 @@ export default function NotificationDropdown({
       markAllAsRead();
     } catch (error) {
       console.error('既読処理エラー:', error);
+      showToastError('既読処理に失敗しました');
     }
   }
 
@@ -57,6 +59,7 @@ export default function NotificationDropdown({
       clearAll();
     } catch (error) {
       console.error('削除エラー:', error);
+      showToastError('通知の削除に失敗しました');
     }
   }
 

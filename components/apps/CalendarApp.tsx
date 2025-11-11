@@ -5,6 +5,7 @@ import { RiCalendarLine, RiTimeLine, RiMapPinLine, RiAddLine, RiEdit2Line, RiDel
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import type { CalendarEvent } from '@/types/calendar';
+import { EventFormModal } from './calendar/EventFormModal';
 
 export function CalendarApp() {
   // 状態管理
@@ -12,6 +13,9 @@ export function CalendarApp() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate] = useState(new Date());
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   // イベントデータ取得
   useEffect(() => {
@@ -71,6 +75,51 @@ export function CalendarApp() {
       console.error('Error deleting event:', err);
       alert(err instanceof Error ? err.message : 'エラーが発生しました');
     }
+  };
+
+  // イベント作成ハンドラー
+  const handleCreate = async (formData: any) => {
+    const response = await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...formData,
+        project_id: formData.project_id || undefined,
+        start_time: new Date(formData.start_time).toISOString(),
+        end_time: new Date(formData.end_time).toISOString(),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'イベントの作成に失敗しました');
+    }
+
+    await fetchTodayEvents();
+  };
+
+  // イベント更新ハンドラー
+  const handleUpdate = async (formData: any) => {
+    if (!selectedEvent) return;
+
+    const response = await fetch(`/api/events/${selectedEvent.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...formData,
+        project_id: formData.project_id || undefined,
+        start_time: new Date(formData.start_time).toISOString(),
+        end_time: new Date(formData.end_time).toISOString(),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'イベントの更新に失敗しました');
+    }
+
+    await fetchTodayEvents();
+    setSelectedEvent(null);
   };
 
   // カラーマッピング（既存のデザインを踏襲）
@@ -159,8 +208,8 @@ export function CalendarApp() {
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => {
-                    // TODO: イベント編集モーダルを開く
-                    console.log('Edit event:', event.id);
+                    setSelectedEvent(event);
+                    setIsEditModalOpen(true);
                   }}
                   className="p-2 rounded-full bg-surface/80 hover:bg-surface transition-colors"
                   aria-label="編集"
@@ -220,15 +269,46 @@ export function CalendarApp() {
 
       {/* 新規予定追加ボタン */}
       <button
-        onClick={() => {
-          // TODO: イベント作成モーダルを開く
-          console.log('Create new event');
-        }}
+        onClick={() => setIsCreateModalOpen(true)}
         className="w-full mt-6 py-3 bg-accent-sand text-ink rounded-full transition-colors hover:bg-accent-sand/80 font-medium flex items-center justify-center gap-2"
       >
         <RiAddLine className="w-5 h-5" />
         新しい予定を追加
       </button>
+
+      {/* 新規作成モーダル */}
+      <EventFormModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreate}
+        mode="create"
+      />
+
+      {/* 編集モーダル */}
+      <EventFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedEvent(null);
+        }}
+        onSubmit={handleUpdate}
+        initialData={
+          selectedEvent
+            ? {
+                title: selectedEvent.title,
+                description: selectedEvent.description || '',
+                location: selectedEvent.location || '',
+                start_time: selectedEvent.start_time,
+                end_time: selectedEvent.end_time,
+                all_day: selectedEvent.all_day,
+                project_id: selectedEvent.project_id || '',
+                category: selectedEvent.category || '',
+                color: selectedEvent.color,
+              }
+            : undefined
+        }
+        mode="edit"
+      />
     </div>
   );
 }
