@@ -52,10 +52,16 @@ export function TargetList() {
 
   // 目標作成ハンドラー
   const handleCreate = async (formData: any) => {
+    // 空文字列のproject_idを削除（全体目標の場合）
+    const submitData = {
+      ...formData,
+      project_id: formData.project_id || undefined,
+    };
+
     const response = await fetch('/api/revenue-targets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(submitData),
     });
 
     if (!response.ok) {
@@ -70,10 +76,16 @@ export function TargetList() {
   const handleUpdate = async (formData: any) => {
     if (!selectedTarget) return;
 
+    // 空文字列のproject_idを削除（全体目標の場合）
+    const submitData = {
+      ...formData,
+      project_id: formData.project_id || undefined,
+    };
+
     const response = await fetch(`/api/revenue-targets/${selectedTarget.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(submitData),
     });
 
     if (!response.ok) {

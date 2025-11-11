@@ -33,36 +33,76 @@ ChartJS.register(
   Filler
 );
 
+type PeriodType = 'year' | 'month' | 'week';
+
 /**
  * ダッシュボードコンポーネント
  * - 売上・経費・粗利のサマリー表示
  * - 目標達成状況
  * - 月次推移グラフ（Chart.js）
+ * - 期間フィルター（年間・月間・週間）
+ * - プロジェクトフィルター
  */
 export function RevenueDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<PeriodType>('month');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+
+  // プロジェクト一覧取得
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch('/api/projects?limit=100');
+      if (response.ok) {
+        const result = await response.json();
+        setProjects(result.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    }
+  };
 
   // ダッシュボードデータ取得
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [period, selectedProjectId]);
 
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // 直近6ヶ月のデータを取得
+      // 期間に応じた開始日を計算
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 5);
+
+      switch (period) {
+        case 'year':
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+        case 'month':
+          startDate.setMonth(startDate.getMonth() - 1);
+          break;
+        case 'week':
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+      }
 
       const params = new URLSearchParams({
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0],
       });
+
+      // プロジェクトフィルター
+      if (selectedProjectId) {
+        params.append('project_id', selectedProjectId);
+      }
 
       const response = await fetch(`/api/dashboard?${params}`);
 
@@ -106,6 +146,63 @@ export function RevenueDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* フィルターエリア */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-surface border border-white/40 rounded-2xl p-4 shadow-soft">
+        {/* 期間フィルター */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPeriod('year')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              period === 'year'
+                ? 'bg-accent-sand text-ink'
+                : 'bg-mist text-cloud hover:bg-cloud/20'
+            }`}
+          >
+            年間
+          </button>
+          <button
+            onClick={() => setPeriod('month')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              period === 'month'
+                ? 'bg-accent-sand text-ink'
+                : 'bg-mist text-cloud hover:bg-cloud/20'
+            }`}
+          >
+            月間
+          </button>
+          <button
+            onClick={() => setPeriod('week')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              period === 'week'
+                ? 'bg-accent-sand text-ink'
+                : 'bg-mist text-cloud hover:bg-cloud/20'
+            }`}
+          >
+            週間
+          </button>
+        </div>
+
+        {/* プロジェクトフィルター */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="project-filter" className="text-sm text-cloud whitespace-nowrap">
+            プロジェクト:
+          </label>
+          <select
+            id="project-filter"
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            className="px-3 py-2 bg-mist border border-cloud/30 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
+          >
+            <option value="">全体</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* サマリーカード */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
