@@ -27,7 +27,6 @@ export async function PATCH() {
       .eq('read', false); // 未読のものだけ更新
 
     if (error) {
-      console.error('通知一括既読エラー:', error);
       return NextResponse.json(
         { error: '通知の更新に失敗しました' },
         { status: 500 }
@@ -36,7 +35,6 @@ export async function PATCH() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('通知一括既読API エラー:', error);
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }

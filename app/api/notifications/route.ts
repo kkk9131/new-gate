@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
     const { data: notifications, error } = await query;
 
     if (error) {
-      console.error('通知取得エラー:', error);
       return NextResponse.json(
         { error: '通知の取得に失敗しました' },
         { status: 500 }
@@ -61,7 +60,6 @@ export async function GET(request: NextRequest) {
       unread_count: unreadCount || 0,
     });
   } catch (error) {
-    console.error('通知API エラー:', error);
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }
@@ -94,7 +92,6 @@ export async function DELETE() {
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('通知削除エラー:', error);
       return NextResponse.json(
         { error: '通知の削除に失敗しました' },
         { status: 500 }
@@ -103,7 +100,6 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('通知削除API エラー:', error);
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }
