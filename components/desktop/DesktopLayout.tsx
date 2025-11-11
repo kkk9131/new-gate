@@ -8,6 +8,9 @@ import { Dock } from './Dock';
 import { WindowManager } from './WindowManager';
 import { SplitMode } from './SplitMode';
 import { UserMenu } from './UserMenu';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import TestNotificationButton from '@/components/notifications/TestNotificationButton';
+import BrowserNotificationPrompt from '@/components/notifications/BrowserNotificationPrompt';
 import {
   RiMoonLine,
   RiSunLine,
@@ -100,6 +103,9 @@ export function DesktopLayout() {
             )}
           </button>
 
+          {/* 通知アイコン */}
+          <NotificationBell />
+
           {/* ユーザーメニュー */}
           <UserMenu />
         </div>
@@ -126,6 +132,12 @@ export function DesktopLayout() {
 
       {/* 分割モード */}
       <SplitMode />
+
+      {/* テスト用通知ボタン */}
+      <TestNotificationButton />
+
+      {/* ブラウザ通知許可プロンプト */}
+      <BrowserNotificationPrompt />
     </div>
   );
 }
