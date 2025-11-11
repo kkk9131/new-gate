@@ -1,13 +1,47 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { RiUserLine, RiNotificationLine, RiLockLine, RiPaletteLine } from 'react-icons/ri';
+import { IconType } from 'react-icons';
+
+/**
+ * 設定セクションの型定義
+ */
+interface SettingSection {
+  icon: IconType;
+  title: string;
+  desc: string;
+  onClick: () => void;
+}
 
 export function SettingsApp() {
-  const sections = [
-    { icon: RiUserLine, title: 'プロフィール', desc: 'アカウント情報の管理' },
-    { icon: RiNotificationLine, title: '通知設定', desc: '通知とアラートの設定' },
-    { icon: RiLockLine, title: 'セキュリティ', desc: 'パスワードとセキュリティ' },
-    { icon: RiPaletteLine, title: 'テーマ設定', desc: '外観とカスタマイズ' },
+  const router = useRouter();
+
+  const sections: SettingSection[] = [
+    {
+      icon: RiUserLine,
+      title: 'プロフィール',
+      desc: 'アカウント情報の管理',
+      onClick: () => router.push('/profile')
+    },
+    {
+      icon: RiNotificationLine,
+      title: '通知設定',
+      desc: '通知とアラートの設定',
+      onClick: () => router.push('/settings/notifications')
+    },
+    {
+      icon: RiLockLine,
+      title: 'セキュリティ',
+      desc: 'パスワードとセキュリティ',
+      onClick: () => console.log('セキュリティ設定を開く')
+    },
+    {
+      icon: RiPaletteLine,
+      title: 'テーマ設定',
+      desc: '外観とカスタマイズ',
+      onClick: () => console.log('テーマ設定を開く')
+    },
   ];
 
   return (
@@ -21,6 +55,7 @@ export function SettingsApp() {
           return (
             <button
               key={i}
+              onClick={section.onClick}
               className="w-full bg-surface border border-white/40 p-4 rounded-2xl shadow-sm shadow-black/5 hover:shadow-black/10 transition-all text-left group"
             >
               <div className="flex items-center gap-4">
