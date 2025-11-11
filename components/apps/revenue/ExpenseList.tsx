@@ -8,10 +8,9 @@ import {
   RiDeleteBin6Line,
   RiWallet3Line,
 } from 'react-icons/ri';
-import type { Expense } from '@/types/revenue';
+import type { Expense, PeriodType } from '@/types/revenue';
 import { ExpenseFormModal } from './ExpenseFormModal';
-
-type PeriodType = 'year' | 'month' | 'week';
+import { useProjectStore } from '@/store/useProjectStore';
 
 /**
  * 経費一覧コンポーネント
@@ -29,24 +28,21 @@ export function ExpenseList() {
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [period, setPeriod] = useState<PeriodType>('month');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+
+  // Zustand storeからプロジェクト一覧を取得
+  const { projects, fetchProjects, error: projectError } = useProjectStore();
 
   // プロジェクト一覧取得
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
-  const fetchProjects = async () => {
-    try {
-      const response = await fetch('/api/projects?limit=100');
-      if (response.ok) {
-        const result = await response.json();
-        setProjects(result.data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching projects:', err);
+  // プロジェクト取得エラー表示
+  useEffect(() => {
+    if (projectError) {
+      setError(projectError);
     }
-  };
+  }, [projectError]);
 
   // 経費データ取得
   useEffect(() => {
@@ -203,31 +199,34 @@ export function ExpenseList() {
         <div className="flex gap-2">
           <button
             onClick={() => setPeriod('year')}
+            disabled={isLoading}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               period === 'year'
                 ? 'bg-accent-sand text-ink'
                 : 'bg-mist text-cloud hover:bg-cloud/20'
-            }`}
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             年間
           </button>
           <button
             onClick={() => setPeriod('month')}
+            disabled={isLoading}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               period === 'month'
                 ? 'bg-accent-sand text-ink'
                 : 'bg-mist text-cloud hover:bg-cloud/20'
-            }`}
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             月間
           </button>
           <button
             onClick={() => setPeriod('week')}
+            disabled={isLoading}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               period === 'week'
                 ? 'bg-accent-sand text-ink'
                 : 'bg-mist text-cloud hover:bg-cloud/20'
-            }`}
+            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             週間
           </button>
@@ -242,7 +241,10 @@ export function ExpenseList() {
             id="project-filter"
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="px-3 py-2 bg-mist border border-cloud/30 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
+            disabled={isLoading}
+            className={`px-3 py-2 bg-mist border border-cloud/30 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             <option value="">全体</option>
             {projects.map((project) => (

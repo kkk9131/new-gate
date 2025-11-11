@@ -92,3 +92,16 @@ export interface DashboardData {
     }
   >;
 }
+
+/**
+ * 期間フィルタータイプ（年間・月間・週間）
+ */
+export type PeriodType = 'year' | 'month' | 'week';
+
+/**
+ * プロジェクト情報の型定義（簡易版）
+ */
+export interface Project {
+  id: string;
+  name: string;
+}
