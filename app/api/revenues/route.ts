@@ -9,7 +9,7 @@ const createRevenueSchema = z.object({
   project_id: z.string().uuid().optional(),
   amount: z.number().min(0, '金額は0以上で入力してください'),
   tax_amount: z.number().min(0, '税額は0以上で入力してください').optional(),
-  payment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）'),
+  revenue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）'),
   description: z.string().optional(),
   category: z.string().optional(),
 });
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       .select('*, projects(name)')
       .eq('user_id', user.id)
       .eq('is_deleted', false)
-      .order('payment_date', { ascending: false })
+      .order('revenue_date', { ascending: false })
       .range(offset, offset + limit - 1);
 
     // プロジェクトIDフィルタ
@@ -59,12 +59,12 @@ export async function GET(request: NextRequest) {
 
     // 開始日フィルタ
     if (startDate) {
-      query = query.gte('payment_date', startDate);
+      query = query.gte('revenue_date', startDate);
     }
 
     // 終了日フィルタ
     if (endDate) {
-      query = query.lte('payment_date', endDate);
+      query = query.lte('revenue_date', endDate);
     }
 
     const { data, error } = await query;
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
  *   project_id?: string,
  *   amount: number,
  *   tax_amount?: number,
- *   payment_date: string (YYYY-MM-DD),
+ *   revenue_date: string (YYYY-MM-DD),
  *   description?: string,
  *   category?: string
  * }
