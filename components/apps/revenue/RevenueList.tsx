@@ -1,0 +1,243 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import {
+  RiAddLine,
+  RiCalendarLine,
+  RiEdit2Line,
+  RiDeleteBin6Line,
+  RiMoneyDollarCircleLine,
+} from 'react-icons/ri';
+import type { Revenue } from '@/types/revenue';
+import { RevenueFormModal } from './RevenueFormModal';
+
+/**
+ * 売上一覧コンポーネント
+ * - 売上データの一覧表示
+ * - 新規作成・編集・削除機能
+ */
+export function RevenueList() {
+  const [revenues, setRevenues] = useState<Revenue[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedRevenue, setSelectedRevenue] = useState<Revenue | null>(null);
+
+  // 売上データ取得
+  useEffect(() => {
+    fetchRevenues();
+  }, []);
+
+  const fetchRevenues = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/revenues?limit=50');
+
+      if (!response.ok) {
+        throw new Error('売上データの取得に失敗しました');
+      }
+
+      const result = await response.json();
+      setRevenues(result.data || []);
+    } catch (err) {
+      console.error('Error fetching revenues:', err);
+      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 売上作成ハンドラー
+  const handleCreate = async (formData: any) => {
+    const response = await fetch('/api/revenues', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || '売上の作成に失敗しました');
+    }
+
+    await fetchRevenues();
+  };
+
+  // 売上更新ハンドラー
+  const handleUpdate = async (formData: any) => {
+    if (!selectedRevenue) return;
+
+    const response = await fetch(`/api/revenues/${selectedRevenue.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || '売上の更新に失敗しました');
+    }
+
+    await fetchRevenues();
+    setSelectedRevenue(null);
+  };
+
+  // 売上削除ハンドラー
+  const handleDelete = async (revenue: Revenue) => {
+    if (!confirm(`「${revenue.description || '売上'}」を削除しますか？`)) return;
+
+    try {
+      const response = await fetch(`/api/revenues/${revenue.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('売上の削除に失敗しました');
+      }
+
+      await fetchRevenues();
+    } catch (err) {
+      console.error('Error deleting revenue:', err);
+      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-cloud">読み込み中...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-accent-sand">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold">売上一覧</h3>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
+        >
+          <RiAddLine className="w-4 h-4" /> 新規
+        </button>
+      </div>
+
+      {/* 一覧 */}
+      {revenues.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-64 text-cloud">
+          <RiMoneyDollarCircleLine className="w-16 h-16 mb-4" />
+          <p className="text-lg">売上データがありません</p>
+          <p className="text-sm">「新規」ボタンから売上を登録してください</p>
+        </div>
+      ) : (
+        <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-cloud/20">
+                  <th className="px-6 py-3 text-left text-xs text-cloud">日付</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">金額</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">プロジェクト</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">カテゴリ</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">説明</th>
+                  <th className="px-6 py-3 text-right text-xs text-cloud">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {revenues.map((revenue, index) => (
+                  <tr
+                    key={revenue.id}
+                    className={`${index !== revenues.length - 1 ? 'border-b border-cloud/10' : ''}`}
+                  >
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <RiCalendarLine className="w-4 h-4 text-cloud" />
+                        {revenue.revenue_date}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-semibold">
+                      ¥{revenue.amount.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-cloud">
+                      {revenue.projects?.name || '未割当'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-cloud">{revenue.category || '—'}</td>
+                    <td className="px-6 py-4 text-sm text-cloud truncate max-w-xs">
+                      {revenue.description || '—'}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedRevenue(revenue);
+                            setIsEditModalOpen(true);
+                          }}
+                          className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
+                          title="編集"
+                          aria-label="売上を編集"
+                        >
+                          <RiEdit2Line className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(revenue)}
+                          className="p-2 rounded-full text-cloud hover:bg-red-50 hover:text-red-500 transition-colors"
+                          title="削除"
+                          aria-label="売上を削除"
+                        >
+                          <RiDeleteBin6Line className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* 新規作成モーダル */}
+      <RevenueFormModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreate}
+        mode="create"
+      />
+
+      {/* 編集モーダル */}
+      <RevenueFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedRevenue(null);
+        }}
+        onSubmit={handleUpdate}
+        initialData={
+          selectedRevenue
+            ? {
+                amount: selectedRevenue.amount,
+                revenue_date: selectedRevenue.revenue_date,
+                description: selectedRevenue.description || '',
+                category: selectedRevenue.category || '',
+                project_id: selectedRevenue.project_id || '',
+                tax_included: selectedRevenue.tax_included,
+              }
+            : undefined
+        }
+        mode="edit"
+      />
+    </div>
+  );
+}

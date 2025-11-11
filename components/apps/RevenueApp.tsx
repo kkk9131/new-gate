@@ -1,83 +1,96 @@
 'use client';
 
-import { RiMoneyDollarCircleLine, RiArrowUpLine, RiArrowDownLine } from 'react-icons/ri';
+import { useState } from 'react';
+import {
+  RiDashboardLine,
+  RiMoneyDollarCircleLine,
+  RiWallet3Line,
+  RiFlagLine,
+} from 'react-icons/ri';
+import { RevenueDashboard } from './revenue/RevenueDashboard';
+import { RevenueList } from './revenue/RevenueList';
+import { ExpenseList } from './revenue/ExpenseList';
+import { TargetList } from './revenue/TargetList';
 
+type TabType = 'dashboard' | 'revenues' | 'expenses' | 'targets';
+
+/**
+ * Revenue管理アプリのメインコンポーネント
+ * - ダッシュボード: 売上・経費・粗利の集計とグラフ表示
+ * - 売上一覧: 売上データの管理
+ * - 経費一覧: 経費データの管理
+ * - 目標一覧: 売上目標の設定と進捗管理
+ */
 export function RevenueApp() {
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月'];
-  const revenues = [650, 720, 680, 850, 920, 850];
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   return (
-    <div className="p-6 h-full overflow-auto bg-mist text-ink">
-      <h2 className="text-2xl font-bold mb-6">Revenue</h2>
+    <div className="p-6 h-full overflow-auto bg-mist text-ink space-y-6">
+      {/* ヘッダー */}
+      <Header />
 
-      {/* 今月の売上サマリー */}
-      <div className="bg-surface border border-white/40 p-6 rounded-2xl shadow-sm shadow-black/5 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 bg-accent-warm/30 rounded-2xl flex items-center justify-center">
-              <RiMoneyDollarCircleLine className="w-7 h-7 text-ink" />
-            </div>
-            <div>
-              <p className="text-sm text-cloud">今月の売上</p>
-              <p className="text-3xl font-bold">¥850,000</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 text-accent-warm">
-            <RiArrowUpLine className="w-5 h-5" />
-            <span className="font-semibold">+8.5%</span>
-          </div>
-        </div>
+      {/* タブ切り替え */}
+      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {/* 簡易グラフ */}
-        <div className="flex items-end gap-2 h-32">
-          {revenues.map((revenue, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-2">
-              <div
-                className="w-full bg-cloud/30 rounded-t-3xl relative"
-                style={{ height: `${(revenue / 1000) * 100}%` }}
-              >
-                <div className="absolute inset-0 bg-accent-warm/70 rounded-t-3xl" />
-              </div>
-              <span className="text-xs text-cloud">{months[i]}</span>
-            </div>
-          ))}
-        </div>
+      {/* タブコンテンツ */}
+      <div className="mt-6">
+        {activeTab === 'dashboard' && <RevenueDashboard />}
+        {activeTab === 'revenues' && <RevenueList />}
+        {activeTab === 'expenses' && <ExpenseList />}
+        {activeTab === 'targets' && <TargetList />}
       </div>
+    </div>
+  );
+}
 
-      {/* 最近の取引 */}
-      <div className="bg-surface border border-white/40 p-4 rounded-2xl shadow-sm shadow-black/5">
-        <h3 className="text-lg font-semibold mb-4">最近の取引</h3>
-        <div className="space-y-3">
-          {[
-            { title: 'Webサイト制作', amount: 250000, type: 'income' },
-            { title: 'サーバー費用', amount: -15000, type: 'expense' },
-            { title: 'コンサルティング', amount: 180000, type: 'income' },
-          ].map((transaction, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between p-3 rounded-xl transition-colors hover:bg-cloud/10"
-            >
-              <span className="text-sm">{transaction.title}</span>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`font-semibold ${
-                    transaction.type === 'income'
-                      ? 'text-accent-warm'
-                      : 'text-accent-warm/70'
-                  }`}
-                >
-                  {transaction.amount > 0 ? '+' : ''}¥{Math.abs(transaction.amount).toLocaleString()}
-                </span>
-                {transaction.type === 'income' ? (
-                  <RiArrowUpLine className="w-4 h-4 text-accent-warm" />
-                ) : (
-                  <RiArrowDownLine className="w-4 h-4 text-accent-warm/70" />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+/**
+ * ヘッダーコンポーネント
+ */
+function Header() {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <h2 className="text-2xl font-bold mb-1">Revenue</h2>
+        <p className="text-sm text-cloud">売上・経費管理と目標達成状況</p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * タブナビゲーションコンポーネント
+ */
+function TabNavigation({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
+}) {
+  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'dashboard', label: 'ダッシュボード', icon: <RiDashboardLine className="w-5 h-5" /> },
+    { id: 'revenues', label: '売上', icon: <RiMoneyDollarCircleLine className="w-5 h-5" /> },
+    { id: 'expenses', label: '経費', icon: <RiWallet3Line className="w-5 h-5" /> },
+    { id: 'targets', label: '目標', icon: <RiFlagLine className="w-5 h-5" /> },
+  ];
+
+  return (
+    <div className="flex gap-2 border-b border-cloud/20 pb-2">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => onTabChange(tab.id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
+            activeTab === tab.id
+              ? 'bg-surface text-ink font-semibold border-b-2 border-accent-sand'
+              : 'text-cloud hover:text-ink hover:bg-cloud/10'
+          }`}
+          aria-label={tab.label}
+        >
+          {tab.icon}
+          <span>{tab.label}</span>
+        </button>
+      ))}
     </div>
   );
 }
