@@ -539,33 +539,251 @@ interface AuthState {
 
 ---
 
-## Phase 5: API実装 - プロジェクト管理 📦
+## Phase 5: MVPアプリAPI実装（設定・プロジェクト・売上） 🚀
 
 ### 目標
-プロジェクト管理のCRUD API実装
+デフォルトアプリ（Settings, Projects, Revenue）の全API実装
+
+### 実装順序
+1. **共通エラーハンドリング** - すべてのAPIで使用
+2. **設定API** - ユーザー設定・アプリ設定（GET/PATCH）
+3. **プロジェクトAPI** - CRUD操作
+4. **売上API** - CRUD操作 + 集計機能
+
+---
 
 ### タスク
 
-#### 4.1 プロジェクト一覧取得API
+#### 5.1 エラーハンドリング共通化（最優先）
 
-- [ ] `app/api/projects/route.ts` - GETハンドラー
+- [ ] `lib/utils/api-error.ts` - エラーハンドラー作成
+```typescript
+import { NextResponse } from 'next/server';
+
+export function handleAPIError(error: any) {
+  console.error('API Error:', error);
+
+  // 認証エラー
+  if (error.message === 'UNAUTHORIZED') {
+    return NextResponse.json(
+      {
+        error: {
+          code: 'UNAUTHORIZED',
+          message: '認証が必要です',
+        },
+      },
+      { status: 401 }
+    );
+  }
+
+  // バリデーションエラー
+  if (error.name === 'ZodError') {
+    return NextResponse.json(
+      {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: '入力値が不正です',
+          details: error.errors,
+        },
+      },
+      { status: 400 }
+    );
+  }
+
+  // Supabaseエラー
+  if (error.code) {
+    return NextResponse.json(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      },
+      { status: 500 }
+    );
+  }
+
+  // その他のエラー
+  return NextResponse.json(
+    {
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'サーバーエラーが発生しました',
+      },
+    },
+    { status: 500 }
+  );
+}
+```
+
+---
+
+### 🔧 設定API実装
+
+#### 5.2 ユーザー設定API
+
+- [ ] `app/api/settings/user/route.ts` - GET/PATCHハンドラー
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuth } from '@/lib/auth/server';
+import { handleAPIError } from '@/lib/utils/api-error';
+import { z } from 'zod';
 
+// バリデーションスキーマ
+const updateUserSettingsSchema = z.object({
+  language: z.enum(['ja', 'en']).optional(),
+  theme: z.enum(['light', 'dark', 'system']).optional(),
+  timezone: z.string().optional(),
+  notifications_enabled: z.boolean().optional(),
+  email_notifications: z.boolean().optional(),
+});
+
+// GET: ユーザー設定取得
 export async function GET(request: NextRequest) {
   try {
-    // 認証チェック
     const user = await requireAuth();
+    const supabase = createClient();
 
-    // クエリパラメータ取得
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+
+// PATCH: ユーザー設定更新
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const body = await request.json();
+
+    // バリデーション
+    const validated = updateUserSettingsSchema.parse(body);
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('user_settings')
+      .update(validated)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+```
+
+#### 5.3 アプリ設定API
+
+- [ ] `app/api/settings/app/route.ts` - GET/PATCHハンドラー
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/server';
+import { handleAPIError } from '@/lib/utils/api-error';
+import { z } from 'zod';
+
+// バリデーションスキーマ
+const updateAppSettingsSchema = z.object({
+  default_currency: z.string().length(3).optional(),
+  date_format: z.string().optional(),
+  fiscal_year_start: z.string().regex(/^\d{2}-\d{2}$/).optional(),
+  tax_rate: z.number().min(0).max(100).optional(),
+  business_name: z.string().max(255).optional(),
+  business_address: z.string().optional(),
+});
+
+// GET: アプリ設定取得
+export async function GET(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+
+// PATCH: アプリ設定更新
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const body = await request.json();
+
+    // バリデーション
+    const validated = updateAppSettingsSchema.parse(body);
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('app_settings')
+      .update(validated)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+```
+
+---
+
+### 📦 プロジェクトAPI実装
+
+#### 5.4 プロジェクトAPI（CRUD操作）
+
+- [ ] `app/api/projects/route.ts` - GET/POSTハンドラー
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/server';
+import { handleAPIError } from '@/lib/utils/api-error';
+import { z } from 'zod';
+
+// バリデーションスキーマ
+const createProjectSchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().optional(),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  budget: z.number().min(0),
+  status: z.enum(['active', 'completed', 'on_hold']).optional(),
+});
+
+// GET: プロジェクト一覧取得
+export async function GET(request: NextRequest) {
+  try {
+    const user = await requireAuth();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // データ取得
     const supabase = createClient();
     let query = supabase
       .from('projects')
@@ -580,6 +798,77 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, error } = await query;
+    if (error) throw error;
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+
+// POST: プロジェクト作成
+export async function POST(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const body = await request.json();
+
+    // バリデーション
+    const validated = createProjectSchema.parse(body);
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({
+        ...validated,
+        user_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ data }, { status: 201 });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+```
+
+#### 5.5 プロジェクト詳細・更新・削除API
+
+- [ ] `app/api/projects/[id]/route.ts` - GET/PATCH/DELETEハンドラー
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/server';
+import { handleAPIError } from '@/lib/utils/api-error';
+import { z } from 'zod';
+
+const updateProjectSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().optional(),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  budget: z.number().min(0).optional(),
+  status: z.enum(['active', 'completed', 'on_hold']).optional(),
+});
+
+// GET: プロジェクト詳細取得
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await requireAuth();
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', params.id)
+      .eq('user_id', user.id)
+      .eq('is_deleted', false)
+      .single();
 
     if (error) throw error;
 
@@ -588,126 +877,305 @@ export async function GET(request: NextRequest) {
     return handleAPIError(error);
   }
 }
-```
 
-#### 4.2 プロジェクト作成API
+// PATCH: プロジェクト更新
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await requireAuth();
+    const body = await request.json();
+    const validated = updateProjectSchema.parse(body);
 
-- [ ] `app/api/projects/route.ts` - POSTハンドラー
-- [ ] バリデーションスキーマ作成（Zod）
-```typescript
-import { z } from 'zod';
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('projects')
+      .update(validated)
+      .eq('id', params.id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
 
-export const createProjectSchema = z.object({
-  name: z.string().min(1).max(255),
-  description: z.string().optional(),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  budget: z.number().min(0),
-  status: z.enum(['active', 'completed', 'on_hold']).optional(),
-});
-```
+    if (error) throw error;
 
-#### 4.3 プロジェクト詳細取得API
-
-- [ ] `app/api/projects/[id]/route.ts` - GETハンドラー
-
-#### 4.4 プロジェクト更新API
-
-- [ ] `app/api/projects/[id]/route.ts` - PATCHハンドラー
-
-#### 4.5 プロジェクト削除API
-
-- [ ] `app/api/projects/[id]/route.ts` - DELETEハンドラー（ソフトデリート）
-
-#### 4.6 エラーハンドリング共通化
-
-- [ ] `lib/utils/api-error.ts`
-```typescript
-export function handleAPIError(error: any) {
-  console.error('API Error:', error);
-
-  if (error.message === 'UNAUTHORIZED') {
-    return new Response(
-      JSON.stringify({
-        error: {
-          code: 'UNAUTHORIZED',
-          message: '認証が必要です'
-        }
-      }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
-    );
+    return NextResponse.json({ data });
+  } catch (error) {
+    return handleAPIError(error);
   }
+}
 
-  // その他のエラー...
+// DELETE: プロジェクト削除（ソフトデリート）
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await requireAuth();
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from('projects')
+      .update({ is_deleted: true })
+      .eq('id', params.id)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ message: '削除しました' });
+  } catch (error) {
+    return handleAPIError(error);
+  }
 }
 ```
 
-### 完了条件（AIエージェント統合対応）
-
-- [ ] プロジェクト一覧が取得できる
-- [ ] プロジェクトが作成できる
-- [ ] プロジェクト詳細が取得できる
-- [ ] プロジェクトが更新できる
-- [ ] プロジェクトが削除できる
-- [ ] すべてのAPIでRLSが正しく動作する
-- [ ] **AIエージェント統合**: Agent BuilderでAPIをツールとして登録
-
 ---
 
-## Phase 6: API実装 - 設定・売上 ⚙️💰
+### 💰 売上API実装
 
-### 目標
-設定管理・売上確認APIの実装
+#### 5.6 売上API（CRUD操作）
 
-### タスク
+- [ ] `app/api/revenues/route.ts` - GET/POSTハンドラー
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/server';
+import { handleAPIError } from '@/lib/utils/api-error';
+import { z } from 'zod';
 
-#### 5.1 ユーザー設定API
+// バリデーションスキーマ
+const createRevenueSchema = z.object({
+  project_id: z.string().uuid().optional(),
+  amount: z.number().min(0),
+  tax_amount: z.number().min(0).optional(),
+  payment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  description: z.string().optional(),
+  category: z.string().optional(),
+});
 
-- [ ] `app/api/settings/user/route.ts` - GET/PATCHハンドラー
-- [ ] バリデーションスキーマ作成
+// GET: 売上一覧取得
+export async function GET(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const { searchParams } = new URL(request.url);
 
-#### 5.2 アプリ設定API
+    // フィルタリングパラメータ
+    const projectId = searchParams.get('project_id');
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
-- [ ] `app/api/settings/app/route.ts` - GET/PATCHハンドラー
-- [ ] バリデーションスキーマ作成
+    const supabase = createClient();
+    let query = supabase
+      .from('revenues')
+      .select('*, projects(name)')
+      .eq('user_id', user.id)
+      .eq('is_deleted', false)
+      .order('payment_date', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-#### 5.3 売上一覧取得API
+    if (projectId) {
+      query = query.eq('project_id', projectId);
+    }
 
-- [ ] `app/api/revenues/route.ts` - GETハンドラー
-- [ ] 期間フィルタリング実装
-- [ ] プロジェクトフィルタリング実装
+    if (startDate) {
+      query = query.gte('payment_date', startDate);
+    }
 
-#### 5.4 売上登録API
+    if (endDate) {
+      query = query.lte('payment_date', endDate);
+    }
 
-- [ ] `app/api/revenues/route.ts` - POSTハンドラー
-- [ ] バリデーションスキーマ作成
-- [ ] 税額自動計算ロジック
+    const { data, error } = await query;
+    if (error) throw error;
 
-#### 5.5 売上詳細取得API
+    return NextResponse.json({ data });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
 
-- [ ] `app/api/revenues/[id]/route.ts` - GETハンドラー
+// POST: 売上登録
+export async function POST(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const body = await request.json();
 
-#### 5.6 売上更新API
+    // バリデーション
+    const validated = createRevenueSchema.parse(body);
 
-- [ ] `app/api/revenues/[id]/route.ts` - PATCHハンドラー
+    // 税額自動計算（指定がない場合）
+    if (!validated.tax_amount) {
+      // app_settingsからtax_rateを取得
+      const supabase = createClient();
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('tax_rate')
+        .eq('user_id', user.id)
+        .single();
 
-#### 5.7 売上削除API
+      const taxRate = settings?.tax_rate || 10; // デフォルト10%
+      validated.tax_amount = Math.floor(validated.amount * (taxRate / 100));
+    }
 
-- [ ] `app/api/revenues/[id]/route.ts` - DELETEハンドラー
+    const { data, error } = await supabase
+      .from('revenues')
+      .insert({
+        ...validated,
+        user_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ data }, { status: 201 });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+```
+
+#### 5.7 売上詳細・更新・削除API
+
+- [ ] `app/api/revenues/[id]/route.ts` - GET/PATCH/DELETEハンドラー
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/server';
+import { handleAPIError } from '@/lib/utils/api-error';
+import { z } from 'zod';
+
+const updateRevenueSchema = z.object({
+  project_id: z.string().uuid().optional(),
+  amount: z.number().min(0).optional(),
+  tax_amount: z.number().min(0).optional(),
+  payment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  description: z.string().optional(),
+  category: z.string().optional(),
+});
+
+// GET, PATCH, DELETE handlers...
+// （プロジェクトAPIと同様の実装）
+```
 
 #### 5.8 売上集計API
 
 - [ ] `app/api/revenues/summary/route.ts` - GETハンドラー
-- [ ] 期間集計ロジック実装
-- [ ] 月別グループ化実装
-- [ ] プロジェクト別グループ化実装
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/server';
+import { handleAPIError } from '@/lib/utils/api-error';
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
+    const groupBy = searchParams.get('group_by'); // 'month' or 'project'
+
+    const supabase = createClient();
+
+    // 期間集計
+    let query = supabase
+      .from('revenues')
+      .select('amount, tax_amount, payment_date, project_id, projects(name)')
+      .eq('user_id', user.id)
+      .eq('is_deleted', false);
+
+    if (startDate) {
+      query = query.gte('payment_date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('payment_date', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // グループ化処理
+    if (groupBy === 'month') {
+      // 月別集計
+      const monthly = data.reduce((acc, item) => {
+        const month = item.payment_date.substring(0, 7); // YYYY-MM
+        if (!acc[month]) {
+          acc[month] = { amount: 0, tax_amount: 0, count: 0 };
+        }
+        acc[month].amount += item.amount;
+        acc[month].tax_amount += item.tax_amount;
+        acc[month].count += 1;
+        return acc;
+      }, {});
+
+      return NextResponse.json({ data: monthly });
+    } else if (groupBy === 'project') {
+      // プロジェクト別集計
+      const byProject = data.reduce((acc, item) => {
+        const projectId = item.project_id || 'no_project';
+        if (!acc[projectId]) {
+          acc[projectId] = {
+            project_name: item.projects?.name || '未割当',
+            amount: 0,
+            tax_amount: 0,
+            count: 0,
+          };
+        }
+        acc[projectId].amount += item.amount;
+        acc[projectId].tax_amount += item.tax_amount;
+        acc[projectId].count += 1;
+        return acc;
+      }, {});
+
+      return NextResponse.json({ data: byProject });
+    }
+
+    // 総計のみ
+    const total = data.reduce(
+      (acc, item) => ({
+        amount: acc.amount + item.amount,
+        tax_amount: acc.tax_amount + item.tax_amount,
+        count: acc.count + 1,
+      }),
+      { amount: 0, tax_amount: 0, count: 0 }
+    );
+
+    return NextResponse.json({ data: total });
+  } catch (error) {
+    return handleAPIError(error);
+  }
+}
+```
+
+---
 
 ### 完了条件（AIエージェント統合対応）
 
+**設定API**:
 - [ ] ユーザー設定の取得・更新ができる
 - [ ] アプリ設定の取得・更新ができる
-- [ ] 売上の全CRUD操作ができる
-- [ ] 売上集計が正しく計算される
+
+**プロジェクトAPI**:
+- [ ] プロジェクト一覧が取得できる
+- [ ] プロジェクトが作成できる
+- [ ] プロジェクト詳細が取得できる
+- [ ] プロジェクトが更新できる
+- [ ] プロジェクトが削除できる（ソフトデリート）
+
+**売上API**:
+- [ ] 売上一覧が取得できる（期間・プロジェクトフィルタ対応）
+- [ ] 売上が登録できる（税額自動計算）
+- [ ] 売上詳細が取得できる
+- [ ] 売上が更新できる
+- [ ] 売上が削除できる
+- [ ] 売上集計ができる（月別・プロジェクト別・総計）
+
+**共通**:
+- [ ] すべてのAPIでRLSが正しく動作する
+- [ ] エラーハンドリングが適切に実装されている
 - [ ] **AIエージェント統合**: Agent BuilderでAPIをツールとして登録
 
 ---
