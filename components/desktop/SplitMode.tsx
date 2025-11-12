@@ -22,8 +22,9 @@ import { AppIcon } from './AppIcon';
 import { BaseWindow } from './BaseWindow';
 import { appComponents } from './appRegistry';
 
-const SPLIT_WINDOW_MIN_WIDTH = 300;
-const SPLIT_WINDOW_MIN_HEIGHT = 200;
+// レスポンシブ対応：モバイルでは最小サイズを小さく
+const SPLIT_WINDOW_MIN_WIDTH = 280;  // モバイル: 280px
+const SPLIT_WINDOW_MIN_HEIGHT = 250; // モバイル: 250px
 
 export function SplitMode() {
   const splitMode = useDesktopStore((state) => state.splitMode);
@@ -59,7 +60,7 @@ export function SplitMode() {
   // 2分割レイアウト
   if (splitMode === 2) {
     return (
-      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
+      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
@@ -82,7 +83,7 @@ export function SplitMode() {
   // 3分割レイアウト（左50% + 右上25% + 右下25%）
   if (splitMode === 3) {
     return (
-      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
+      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
@@ -116,7 +117,7 @@ export function SplitMode() {
   // 4分割レイアウト（2x2グリッド）
   if (splitMode === 4) {
     return (
-      <div className="fixed top-16 left-0 right-0 bottom-0 z-[50] bg-mist grid grid-cols-2 grid-rows-2">
+      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist grid grid-cols-2 grid-rows-2">
         {/* 左上画面 */}
         <SplitScreen
           screenId="topLeft"
@@ -199,7 +200,7 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
   return (
     <div className={`relative overflow-hidden ${className}`}>
       {/* デスクトップエリア：アイコングリッド */}
-      <div className="h-full overflow-auto p-4">
+      <div className="h-full overflow-auto p-2 md:p-4">
         <DndContext
           id={`split-screen-${screenId}`}
           sensors={sensors}
@@ -207,7 +208,7 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={apps.map((app: App) => app.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3">
               {apps.map((app: App) => (
                 <AppIcon
                   key={app.id}
@@ -291,7 +292,7 @@ function ScreenWindow({
       onResize={handleResize}
       minWidth={SPLIT_WINDOW_MIN_WIDTH}
       minHeight={SPLIT_WINDOW_MIN_HEIGHT}
-      titleBarClassName="window-drag-handle flex items-center justify-between px-3 py-2 bg-surface text-ink border-b border-accent-sand/60 cursor-move select-none text-sm"
+      titleBarClassName="window-drag-handle flex items-center justify-between px-2 md:px-3 py-1.5 md:py-2 bg-surface text-ink border-b border-accent-sand/60 cursor-move select-none text-xs md:text-sm"
       bodyClassName="flex-1 overflow-auto"
     />
   );

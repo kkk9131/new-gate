@@ -57,14 +57,14 @@ export function SettingsApp() {
       <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">{t.settings.title}</h2>
 
       {/* 設定項目一覧 */}
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {sections.map((section, i) => {
           const Icon = section.icon;
           return (
             <button
               key={i}
               onClick={section.onClick}
-              className="w-full bg-surface border border-white/40 p-4 rounded-2xl shadow-sm shadow-black/5 hover:shadow-black/10 transition-all text-left group"
+              className="w-full bg-surface border border-white/40 p-3 md:p-4 rounded-2xl shadow-sm shadow-black/5 hover:shadow-black/10 transition-all text-left group"
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cloud/20 text-ink">

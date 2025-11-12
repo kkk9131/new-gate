@@ -373,7 +373,7 @@ export function ProjectsApp() {
 
   if (isLoading) {
     return (
-      <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
+      <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
         <div className="text-cloud">{t.projects.loading}</div>
       </div>
     );
@@ -381,7 +381,7 @@ export function ProjectsApp() {
 
   if (error) {
     return (
-      <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
+      <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
         <div className="text-accent-sand">{error}</div>
       </div>
     );
@@ -389,7 +389,7 @@ export function ProjectsApp() {
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <div className="p-6 h-full overflow-auto bg-mist text-ink space-y-6">
+      <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink space-y-4 md:space-y-6">
         <Header
           viewMode={viewMode}
           onChangeView={setViewMode}
@@ -413,7 +413,7 @@ export function ProjectsApp() {
           <>
             <SortableContext items={projects.map((p) => p.id)} strategy={viewMode === 'card' ? rectSortingStrategy : verticalListSortingStrategy}>
               {viewMode === 'card' ? (
-                <div className="grid gap-4 lg:grid-cols-3 md:grid-cols-2">
+                <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   {projects.map((project) => (
                     <ProjectCard
                       key={project.id}
@@ -535,9 +535,9 @@ function Header({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <h2 className="text-2xl font-bold mb-1">{t.projects.title}</h2>
+        <h2 className="text-xl md:text-2xl font-bold mb-1">{t.projects.title}</h2>
         {isSelectionMode && (
           <p className="text-sm text-cloud">
             {t.projects.selectedCount.replace('{count}', String(selectedCount)).replace('{total}', String(totalCount))}
@@ -771,7 +771,7 @@ function ProjectListRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-4 text-sm items-center ${
+      className={`grid md:grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] grid-cols-[auto_1fr_auto] gap-2 md:gap-4 px-3 md:px-6 py-3 md:py-4 text-sm items-center ${
         !isLast ? 'border-b border-cloud/10' : ''
       } ${isSelected ? 'bg-accent-sand/10' : ''}`}
     >
@@ -796,20 +796,20 @@ function ProjectListRow({
       )}
 
       <div className="font-medium truncate">{project.name}</div>
-      <div className="text-cloud text-xs truncate">{project.description || '—'}</div>
-      <div className="text-cloud text-xs">
+      <div className="hidden md:block text-cloud text-xs truncate">{project.description || '—'}</div>
+      <div className="hidden md:block text-cloud text-xs">
         {project.start_date}
         {project.end_date && ` - ${project.end_date}`}
         {overdue && <span className="ml-2 text-accent-sand">⚠️</span>}
       </div>
-      <div>
+      <div className="hidden md:block">
         <ProjectStatusMenu
           currentStatus={project.status}
           onChange={(newStatus) => onStatusChange(project.id, newStatus)}
           size="sm"
         />
       </div>
-      <div className="text-cloud text-xs truncate">{project.notes || '—'}</div>
+      <div className="hidden md:block text-cloud text-xs truncate">{project.notes || '—'}</div>
       <div className="flex gap-1">
         <button
           onClick={() => onDuplicate(project.id)}
@@ -850,13 +850,13 @@ function ProjectList({
 
   return (
     <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
-      <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 text-xs text-cloud border-b border-cloud/20">
+      <div className="grid md:grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] grid-cols-[auto_1fr_auto] gap-2 md:gap-4 px-3 md:px-6 py-3 text-xs text-cloud border-b border-cloud/20">
         <span></span> {/* ドラッグハンドルまたはチェックボックス用の空スペース */}
         <span>{t.projects.name}</span>
-        <span>{t.projects.description}</span>
-        <span>{t.projects.period}</span>
-        <span>{t.projects.status}</span>
-        <span>{t.projects.notesColumn}</span>
+        <span className="hidden md:block">{t.projects.description}</span>
+        <span className="hidden md:block">{t.projects.period}</span>
+        <span className="hidden md:block">{t.projects.status}</span>
+        <span className="hidden md:block">{t.projects.notesColumn}</span>
         <span>{t.projects.actions}</span>
       </div>
       {projects.map((project, index) => (
