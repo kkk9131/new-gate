@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Rnd } from 'react-rnd';
 import { useDesktopStore, type App } from '@/store/desktopStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
