@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { RiCheckLine } from 'react-icons/ri';
 import type { ProjectStatus } from '@/types/project';
-import { statusLabel, statusStyle } from '@/types/project';
+import { statusStyle } from '@/types/project';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 type ProjectStatusMenuProps = {
   currentStatus: ProjectStatus;
@@ -13,6 +14,7 @@ type ProjectStatusMenuProps = {
 };
 
 export function ProjectStatusMenu({ currentStatus, onChange, size = 'md' }: ProjectStatusMenuProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [mounted, setMounted] = useState(false);
@@ -20,6 +22,22 @@ export function ProjectStatusMenu({ currentStatus, onChange, size = 'md' }: Proj
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const statuses: ProjectStatus[] = ['planning', 'active', 'completed', 'on_hold'];
+
+  // ステータスラベルを翻訳から取得
+  const getStatusLabel = (status: ProjectStatus): string => {
+    switch (status) {
+      case 'planning':
+        return t.projects.statusPlanning;
+      case 'active':
+        return t.projects.statusActive;
+      case 'completed':
+        return t.projects.statusCompleted;
+      case 'on_hold':
+        return t.projects.statusOnHold;
+      default:
+        return status;
+    }
+  };
 
   // クライアントサイドでマウント済みかチェック
   useEffect(() => {
@@ -84,7 +102,7 @@ export function ProjectStatusMenu({ currentStatus, onChange, size = 'md' }: Proj
             status === currentStatus ? 'bg-mist/30' : ''
           }`}
         >
-          <span className={statusStyle[status]}>{statusLabel[status]}</span>
+          <span className={statusStyle[status]}>{getStatusLabel(status)}</span>
           {status === currentStatus && <RiCheckLine className="w-4 h-4 text-accent-sand" />}
         </button>
       ))}
@@ -99,7 +117,7 @@ export function ProjectStatusMenu({ currentStatus, onChange, size = 'md' }: Proj
         className={`${buttonClass} rounded-full ${statusStyle[currentStatus]} bg-mist hover:bg-cloud/20 transition-colors border border-cloud/30`}
         type="button"
       >
-        {statusLabel[currentStatus]}
+        {getStatusLabel(currentStatus)}
       </button>
 
       {mounted && typeof document !== 'undefined' && createPortal(dropdownMenu, document.body)}

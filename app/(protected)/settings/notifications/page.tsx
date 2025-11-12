@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RiArrowLeftLine, RiNotificationLine, RiMailLine, RiGlobalLine, RiVolumeUpLine } from 'react-icons/ri';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 /**
  * 通知設定の型定義
@@ -35,6 +36,7 @@ interface NotificationSettings {
  */
 export default function NotificationsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,21 +51,21 @@ export default function NotificationsPage() {
         const response = await fetch('/api/settings/notifications');
 
         if (!response.ok) {
-          throw new Error('通知設定の取得に失敗しました');
+          throw new Error(t.notifications.loadFailed);
         }
 
         const data = await response.json();
         setSettings(data);
       } catch (err: any) {
         console.error('通知設定取得エラー:', err);
-        setError(err.message || '通知設定の取得に失敗しました');
+        setError(err.message || t.notifications.loadFailed);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSettings();
-  }, []);
+  }, [t]);
 
   /**
    * 通知設定を更新（楽観的更新）
@@ -115,7 +117,7 @@ export default function NotificationsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-mist flex items-center justify-center p-4">
-        <p className="text-cloud">読み込み中...</p>
+        <p className="text-cloud">{t.common.loading}</p>
       </div>
     );
   }
@@ -123,7 +125,7 @@ export default function NotificationsPage() {
   if (!settings) {
     return (
       <div className="min-h-screen bg-mist flex items-center justify-center p-4">
-        <p className="text-cloud">通知設定の読み込みに失敗しました</p>
+        <p className="text-cloud">{t.notifications.loadFailed}</p>
       </div>
     );
   }
@@ -138,7 +140,7 @@ export default function NotificationsPage() {
           className="mb-4 flex items-center gap-2 text-ink hover:text-accent-sand transition-colors font-medium"
         >
           <RiArrowLeftLine className="w-5 h-5" />
-          <span>デスクトップに戻る</span>
+          <span>{t.common.backToDesktop}</span>
         </button>
 
         {/* 通知設定 */}
@@ -146,7 +148,7 @@ export default function NotificationsPage() {
           <div className="flex items-center gap-2 mb-6">
             <RiNotificationLine className="w-6 h-6 text-accent-sand" />
             <h2 className="text-2xl font-bold text-ink">
-              通知設定
+              {t.notifications.title}
             </h2>
           </div>
 
@@ -165,7 +167,7 @@ export default function NotificationsPage() {
             {/* 通知方法 */}
             <div>
               <h3 className="text-lg font-semibold text-ink mb-4">
-                通知方法
+                {t.notifications.notificationMethods}
               </h3>
               <div className="space-y-3">
                 {/* メール通知 */}
@@ -181,7 +183,7 @@ export default function NotificationsPage() {
                   />
                   <RiMailLine className="w-5 h-5 text-cloud" />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">メール通知</span>
+                    <span className="font-medium text-ink">{t.notifications.emailNotifications}</span>
                     <p className="text-sm text-cloud">登録メールアドレスに通知を送信</p>
                   </div>
                 </label>
@@ -199,7 +201,7 @@ export default function NotificationsPage() {
                   />
                   <RiGlobalLine className="w-5 h-5 text-cloud" />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">ブラウザ通知</span>
+                    <span className="font-medium text-ink">{t.notifications.browserNotifications}</span>
                     <p className="text-sm text-cloud">デスクトップ通知を表示</p>
                   </div>
                 </label>
@@ -217,7 +219,7 @@ export default function NotificationsPage() {
                   />
                   <RiNotificationLine className="w-5 h-5 text-cloud" />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">アプリ内通知</span>
+                    <span className="font-medium text-ink">{t.notifications.inAppNotifications}</span>
                     <p className="text-sm text-cloud">通知バッジを表示</p>
                   </div>
                 </label>
@@ -235,7 +237,7 @@ export default function NotificationsPage() {
                   />
                   <RiVolumeUpLine className="w-5 h-5 text-cloud" />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">通知音</span>
+                    <span className="font-medium text-ink">{t.notifications.soundNotifications}</span>
                     <p className="text-sm text-cloud">通知時に音を鳴らす</p>
                   </div>
                 </label>
@@ -245,7 +247,7 @@ export default function NotificationsPage() {
             {/* 通知カテゴリ */}
             <div>
               <h3 className="text-lg font-semibold text-ink mb-4">
-                通知カテゴリ
+                {t.notifications.notificationCategories}
               </h3>
               <div className="space-y-3">
                 {/* エージェントタスク成功 */}
@@ -260,7 +262,7 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">エージェントタスク成功</span>
+                    <span className="font-medium text-ink">{t.notifications.agentTaskSuccess}</span>
                     <p className="text-sm text-cloud">タスクが正常に完了した時</p>
                   </div>
                 </label>
@@ -277,7 +279,7 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">エージェントタスク失敗</span>
+                    <span className="font-medium text-ink">{t.notifications.agentTaskFailure}</span>
                     <p className="text-sm text-cloud">タスクが失敗した時</p>
                   </div>
                 </label>
@@ -294,7 +296,7 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">セキュリティアラート</span>
+                    <span className="font-medium text-ink">{t.notifications.securityAlerts}</span>
                     <p className="text-sm text-cloud">不審なログインや重要な変更</p>
                   </div>
                 </label>
@@ -311,7 +313,7 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">プラットフォーム更新</span>
+                    <span className="font-medium text-ink">{t.notifications.platformUpdates}</span>
                     <p className="text-sm text-cloud">新機能やメンテナンス情報</p>
                   </div>
                 </label>
@@ -328,7 +330,7 @@ export default function NotificationsPage() {
                     className="w-5 h-5 rounded cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">プロジェクトリマインダー</span>
+                    <span className="font-medium text-ink">{t.notifications.projectReminders}</span>
                     <p className="text-sm text-cloud">プロジェクト期限のリマインド</p>
                   </div>
                 </label>
@@ -338,7 +340,7 @@ export default function NotificationsPage() {
             {/* 通知タイミング */}
             <div>
               <h3 className="text-lg font-semibold text-ink mb-4">
-                通知タイミング
+                {t.notifications.notificationTiming}
               </h3>
               <div className="space-y-3">
                 {/* 即時通知 */}
@@ -353,7 +355,7 @@ export default function NotificationsPage() {
                     className="w-5 h-5 cursor-pointer"
                   />
                   <div className="flex-1">
-                    <span className="font-medium text-ink">即時通知</span>
+                    <span className="font-medium text-ink">{t.notifications.immediate}</span>
                     <p className="text-sm text-cloud">イベント発生時すぐに通知</p>
                   </div>
                 </label>
@@ -371,7 +373,7 @@ export default function NotificationsPage() {
                       className="w-5 h-5 cursor-pointer"
                     />
                     <div className="flex-1">
-                      <span className="font-medium text-ink">まとめて通知</span>
+                      <span className="font-medium text-ink">{t.notifications.batched}</span>
                       <p className="text-sm text-cloud">定期的にまとめて通知</p>
                     </div>
                   </label>
@@ -380,7 +382,7 @@ export default function NotificationsPage() {
                   {settings.notification_timing === 'batched' && (
                     <div className="px-4 pb-4 pt-2 border-t border-white/10">
                       <label className="flex items-center gap-3">
-                        <span className="text-sm text-cloud">通知間隔:</span>
+                        <span className="text-sm text-cloud">{t.notifications.batchInterval}:</span>
                         <input
                           type="number"
                           min="1"
@@ -413,7 +415,7 @@ export default function NotificationsPage() {
                       className="w-5 h-5 cursor-pointer"
                     />
                     <div className="flex-1">
-                      <span className="font-medium text-ink">営業時間のみ通知</span>
+                      <span className="font-medium text-ink">{t.notifications.businessHoursOnly}</span>
                       <p className="text-sm text-cloud">指定時間帯のみ通知</p>
                     </div>
                   </label>
@@ -422,7 +424,7 @@ export default function NotificationsPage() {
                   {settings.notification_timing === 'business_hours' && (
                     <div className="px-4 pb-4 pt-2 border-t border-white/10 space-y-3">
                       <label className="flex items-center gap-3">
-                        <span className="text-sm text-cloud w-16">開始:</span>
+                        <span className="text-sm text-cloud w-16">{t.notifications.businessHoursStart}:</span>
                         <input
                           type="time"
                           value={settings.notification_business_hours_start}
@@ -433,7 +435,7 @@ export default function NotificationsPage() {
                         />
                       </label>
                       <label className="flex items-center gap-3">
-                        <span className="text-sm text-cloud w-16">終了:</span>
+                        <span className="text-sm text-cloud w-16">{t.notifications.businessHoursEnd}:</span>
                         <input
                           type="time"
                           value={settings.notification_business_hours_end}

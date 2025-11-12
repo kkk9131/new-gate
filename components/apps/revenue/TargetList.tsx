@@ -8,6 +8,7 @@ import {
   RiDeleteBin6Line,
   RiFlagLine,
 } from 'react-icons/ri';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import type { RevenueTarget } from '@/types/revenue';
 import { TargetFormModal } from './TargetFormModal';
 
@@ -17,6 +18,7 @@ import { TargetFormModal } from './TargetFormModal';
  * - 新規作成・編集・削除機能
  */
 export function TargetList() {
+  const { t } = useTranslation();
   const [targets, setTargets] = useState<RevenueTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,14 +39,14 @@ export function TargetList() {
       const response = await fetch('/api/revenue-targets?limit=50');
 
       if (!response.ok) {
-        throw new Error('目標データの取得に失敗しました');
+        throw new Error(t.revenue.fetchErrorTarget);
       }
 
       const result = await response.json();
       setTargets(result.data || []);
     } catch (err) {
       console.error('Error fetching targets:', err);
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t.revenue.error);
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +68,7 @@ export function TargetList() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || '目標の作成に失敗しました');
+      throw new Error(error.error?.message || t.revenue.createErrorTarget);
     }
 
     await fetchTargets();
@@ -90,7 +92,7 @@ export function TargetList() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || '目標の更新に失敗しました');
+      throw new Error(error.error?.message || t.revenue.updateErrorTarget);
     }
 
     await fetchTargets();
@@ -99,7 +101,11 @@ export function TargetList() {
 
   // 目標削除ハンドラー
   const handleDelete = async (target: RevenueTarget) => {
-    if (!confirm(`「${target.title}」を削除しますか？`)) return;
+    const confirmMessage = t.revenue.deleteConfirmTarget.replace(
+      '{item}',
+      target.title
+    );
+    if (!confirm(confirmMessage)) return;
 
     try {
       const response = await fetch(`/api/revenue-targets/${target.id}`, {
@@ -107,13 +113,13 @@ export function TargetList() {
       });
 
       if (!response.ok) {
-        throw new Error('目標の削除に失敗しました');
+        throw new Error(t.revenue.deleteErrorTarget);
       }
 
       await fetchTargets();
     } catch (err) {
       console.error('Error deleting target:', err);
-      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      alert(err instanceof Error ? err.message : t.revenue.error);
     }
   };
 
@@ -128,7 +134,7 @@ export function TargetList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-cloud">読み込み中...</div>
+        <div className="text-cloud">{t.revenue.loading}</div>
       </div>
     );
   }
@@ -145,12 +151,12 @@ export function TargetList() {
     <div className="space-y-6">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">目標一覧</h3>
+        <h3 className="text-xl font-semibold">{t.revenue.targetList}</h3>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
         >
-          <RiAddLine className="w-4 h-4" /> 新規
+          <RiAddLine className="w-4 h-4" /> {t.revenue.new}
         </button>
       </div>
 
@@ -158,8 +164,8 @@ export function TargetList() {
       {targets.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-cloud">
           <RiFlagLine className="w-16 h-16 mb-4" />
-          <p className="text-lg">目標データがありません</p>
-          <p className="text-sm">「新規」ボタンから目標を設定してください</p>
+          <p className="text-lg">{t.revenue.noTargets}</p>
+          <p className="text-sm">{t.revenue.createTargetHint}</p>
         </div>
       ) : (
         <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
@@ -167,12 +173,12 @@ export function TargetList() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-cloud/20">
-                  <th className="px-6 py-3 text-left text-xs text-cloud">タイトル</th>
-                  <th className="px-6 py-3 text-left text-xs text-cloud">目標金額</th>
-                  <th className="px-6 py-3 text-left text-xs text-cloud">期間</th>
-                  <th className="px-6 py-3 text-left text-xs text-cloud">プロジェクト</th>
-                  <th className="px-6 py-3 text-left text-xs text-cloud">ステータス</th>
-                  <th className="px-6 py-3 text-right text-xs text-cloud">操作</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.title}</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.targetAmount}</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.period}</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.project}</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.status}</th>
+                  <th className="px-6 py-3 text-right text-xs text-cloud">{t.revenue.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,16 +200,16 @@ export function TargetList() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-cloud">
-                      {target.projects?.name || '全体'}
+                      {target.projects?.name || t.revenue.all}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       {isActive(target) ? (
                         <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                          進行中
+                          {t.revenue.active}
                         </span>
                       ) : (
                         <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                          期間外
+                          {t.revenue.inactive}
                         </span>
                       )}
                     </td>
@@ -215,16 +221,16 @@ export function TargetList() {
                             setIsEditModalOpen(true);
                           }}
                           className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-                          title="編集"
-                          aria-label="目標を編集"
+                          title={t.revenue.edit}
+                          aria-label={t.revenue.editTarget}
                         >
                           <RiEdit2Line className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(target)}
                           className="p-2 rounded-full text-cloud hover:bg-red-50 hover:text-red-500 transition-colors"
-                          title="削除"
-                          aria-label="目標を削除"
+                          title={t.revenue.delete}
+                          aria-label={t.revenue.deleteTarget}
                         >
                           <RiDeleteBin6Line className="w-4 h-4" />
                         </button>

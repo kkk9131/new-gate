@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { RiCloseLine } from 'react-icons/ri';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 type ExpenseFormData = {
   amount: number;
@@ -32,6 +33,7 @@ export function ExpenseFormModal({
   initialData,
   mode,
 }: ExpenseFormModalProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<ExpenseFormData>({
     amount: 0,
     expense_date: new Date().toISOString().split('T')[0],
@@ -100,13 +102,13 @@ export function ExpenseFormModal({
     try {
       // バリデーション
       if (formData.amount <= 0) {
-        throw new Error('金額は0より大きい値を入力してください');
+        throw new Error(t.revenue.amountGreaterThanZero);
       }
 
       await onSubmit(formData);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t.revenue.error);
     } finally {
       setIsSubmitting(false);
     }
@@ -120,12 +122,12 @@ export function ExpenseFormModal({
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-cloud/20 flex-shrink-0">
           <h3 className="text-lg font-bold text-ink">
-            {mode === 'create' ? '経費新規登録' : '経費編集'}
+            {mode === 'create' ? t.revenue.createExpenseTitle : t.revenue.editExpenseTitle}
           </h3>
           <button
             onClick={onClose}
             className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-            aria-label="閉じる"
+            aria-label={t.revenue.close}
           >
             <RiCloseLine className="w-4 h-4" />
           </button>
@@ -142,7 +144,7 @@ export function ExpenseFormModal({
           {/* 金額 */}
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-ink mb-2">
-              金額 <span className="text-accent-sand">*</span>
+              {t.revenue.amount} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="amount"
@@ -159,7 +161,7 @@ export function ExpenseFormModal({
           {/* 日付 */}
           <div>
             <label htmlFor="expense_date" className="block text-sm font-medium text-ink mb-2">
-              経費日 <span className="text-accent-sand">*</span>
+              {t.revenue.expenseDate} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="expense_date"
@@ -174,7 +176,7 @@ export function ExpenseFormModal({
           {/* プロジェクト */}
           <div>
             <label htmlFor="project_id" className="block text-sm font-medium text-ink mb-2">
-              プロジェクト
+              {t.revenue.project}
             </label>
             <select
               id="project_id"
@@ -182,7 +184,7 @@ export function ExpenseFormModal({
               onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
-              <option value="">未割当</option>
+              <option value="">{t.revenue.unassigned}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -194,7 +196,7 @@ export function ExpenseFormModal({
           {/* カテゴリ */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-ink mb-2">
-              カテゴリ
+              {t.revenue.category}
             </label>
             <select
               id="category"
@@ -202,28 +204,28 @@ export function ExpenseFormModal({
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
-              <option value="">未分類</option>
-              <option value="交通費">交通費</option>
-              <option value="通信費">通信費</option>
-              <option value="消耗品費">消耗品費</option>
-              <option value="外注費">外注費</option>
-              <option value="広告費">広告費</option>
-              <option value="接待交際費">接待交際費</option>
-              <option value="その他">その他</option>
+              <option value="">{t.revenue.uncategorized}</option>
+              <option value="交通費">{t.revenue.categoryTransportation}</option>
+              <option value="通信費">{t.revenue.categoryCommunication}</option>
+              <option value="消耗品費">{t.revenue.categorySupplies}</option>
+              <option value="外注費">{t.revenue.categoryOutsourcing}</option>
+              <option value="広告費">{t.revenue.categoryAdvertising}</option>
+              <option value="接待交際費">{t.revenue.categoryEntertainment}</option>
+              <option value="その他">{t.revenue.categoryOther}</option>
             </select>
           </div>
 
           {/* 説明 */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-ink mb-2">
-              説明
+              {t.revenue.description}
             </label>
             <textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder="経費の詳細を入力してください"
+              placeholder={t.revenue.expensePlaceholder}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand resize-none"
             />
           </div>
@@ -238,7 +240,7 @@ export function ExpenseFormModal({
               className="w-4 h-4 rounded border-cloud/30 text-accent-sand focus:ring-accent-sand"
             />
             <label htmlFor="tax_included" className="text-sm text-ink">
-              税込み
+              {t.revenue.taxIncluded}
             </label>
           </div>
 
@@ -250,14 +252,14 @@ export function ExpenseFormModal({
               className="px-6 py-2 bg-mist border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
               disabled={isSubmitting}
             >
-              キャンセル
+              {t.revenue.cancel}
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting}
             >
-              {isSubmitting ? '保存中...' : mode === 'create' ? '登録' : '更新'}
+              {isSubmitting ? t.revenue.saving : mode === 'create' ? t.revenue.register : t.revenue.update}
             </button>
           </div>
         </form>

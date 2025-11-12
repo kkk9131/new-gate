@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { RiCloseLine } from 'react-icons/ri';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 type RevenueFormData = {
   amount: number;
@@ -32,6 +33,7 @@ export function RevenueFormModal({
   initialData,
   mode,
 }: RevenueFormModalProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<RevenueFormData>({
     amount: 0,
     revenue_date: new Date().toISOString().split('T')[0],
@@ -100,13 +102,13 @@ export function RevenueFormModal({
     try {
       // バリデーション
       if (formData.amount <= 0) {
-        throw new Error('金額は0より大きい値を入力してください');
+        throw new Error(t.revenue.amountGreaterThanZero);
       }
 
       await onSubmit(formData);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t.revenue.error);
     } finally {
       setIsSubmitting(false);
     }
@@ -120,12 +122,12 @@ export function RevenueFormModal({
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-cloud/20 flex-shrink-0">
           <h3 className="text-lg font-bold text-ink">
-            {mode === 'create' ? '売上新規登録' : '売上編集'}
+            {mode === 'create' ? t.revenue.createRevenueTitle : t.revenue.editRevenueTitle}
           </h3>
           <button
             onClick={onClose}
             className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-            aria-label="閉じる"
+            aria-label={t.revenue.close}
           >
             <RiCloseLine className="w-4 h-4" />
           </button>
@@ -142,7 +144,7 @@ export function RevenueFormModal({
           {/* 金額 */}
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-ink mb-2">
-              金額 <span className="text-accent-sand">*</span>
+              {t.revenue.amount} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="amount"
@@ -159,7 +161,7 @@ export function RevenueFormModal({
           {/* 日付 */}
           <div>
             <label htmlFor="revenue_date" className="block text-sm font-medium text-ink mb-2">
-              売上日 <span className="text-accent-sand">*</span>
+              {t.revenue.revenueDate} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="revenue_date"
@@ -174,7 +176,7 @@ export function RevenueFormModal({
           {/* プロジェクト */}
           <div>
             <label htmlFor="project_id" className="block text-sm font-medium text-ink mb-2">
-              プロジェクト
+              {t.revenue.project}
             </label>
             <select
               id="project_id"
@@ -182,7 +184,7 @@ export function RevenueFormModal({
               onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
-              <option value="">未割当</option>
+              <option value="">{t.revenue.unassigned}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -194,14 +196,14 @@ export function RevenueFormModal({
           {/* カテゴリ */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-ink mb-2">
-              カテゴリ
+              {t.revenue.category}
             </label>
             <input
               id="category"
               type="text"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              placeholder="例: コンサルティング、制作費"
+              placeholder={t.revenue.categoryPlaceholder}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             />
           </div>
@@ -209,14 +211,14 @@ export function RevenueFormModal({
           {/* 説明 */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-ink mb-2">
-              説明
+              {t.revenue.description}
             </label>
             <textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder="売上の詳細を入力してください"
+              placeholder={t.revenue.revenuePlaceholder}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand resize-none"
             />
           </div>
@@ -231,7 +233,7 @@ export function RevenueFormModal({
               className="w-4 h-4 rounded border-cloud/30 text-accent-sand focus:ring-accent-sand"
             />
             <label htmlFor="tax_included" className="text-sm text-ink">
-              税込み
+              {t.revenue.taxIncluded}
             </label>
           </div>
 
@@ -243,14 +245,14 @@ export function RevenueFormModal({
               className="px-6 py-2 bg-mist border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
               disabled={isSubmitting}
             >
-              キャンセル
+              {t.revenue.cancel}
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting}
             >
-              {isSubmitting ? '保存中...' : mode === 'create' ? '登録' : '更新'}
+              {isSubmitting ? t.revenue.saving : mode === 'create' ? t.revenue.register : t.revenue.update}
             </button>
           </div>
         </form>

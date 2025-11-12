@@ -7,6 +7,7 @@ import {
   RiWallet3Line,
   RiFlagLine,
 } from 'react-icons/ri';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import { RevenueDashboard } from './revenue/RevenueDashboard';
 import { RevenueList } from './revenue/RevenueList';
 import { ExpenseList } from './revenue/ExpenseList';
@@ -47,11 +48,13 @@ export function RevenueApp() {
  * ヘッダーコンポーネント
  */
 function Header() {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold mb-1">Revenue</h2>
-        <p className="text-sm text-cloud">売上・経費管理と目標達成状況</p>
+        <h2 className="text-xl md:text-2xl font-bold mb-1">{t.revenue.title}</h2>
+        <p className="text-sm text-cloud">{t.revenue.descriptionText}</p>
       </div>
     </div>
   );
@@ -67,11 +70,13 @@ function TabNavigation({
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
 }) {
+  const { t } = useTranslation();
+
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'dashboard', label: 'ダッシュボード', icon: <RiDashboardLine className="w-5 h-5" /> },
-    { id: 'revenues', label: '売上', icon: <RiMoneyDollarCircleLine className="w-5 h-5" /> },
-    { id: 'expenses', label: '経費', icon: <RiWallet3Line className="w-5 h-5" /> },
-    { id: 'targets', label: '目標', icon: <RiFlagLine className="w-5 h-5" /> },
+    { id: 'dashboard', label: t.revenue.dashboard, icon: <RiDashboardLine className="w-5 h-5" /> },
+    { id: 'revenues', label: t.revenue.revenues, icon: <RiMoneyDollarCircleLine className="w-5 h-5" /> },
+    { id: 'expenses', label: t.revenue.expenses, icon: <RiWallet3Line className="w-5 h-5" /> },
+    { id: 'targets', label: t.revenue.targets, icon: <RiFlagLine className="w-5 h-5" /> },
   ];
 
   return (

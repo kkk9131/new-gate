@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { RiCloseLine } from 'react-icons/ri';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 type TargetFormData = {
   title: string;
@@ -31,6 +32,7 @@ export function TargetFormModal({
   initialData,
   mode,
 }: TargetFormModalProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<TargetFormData>({
     title: '',
     target_amount: 0,
@@ -99,22 +101,22 @@ export function TargetFormModal({
     try {
       // バリデーション
       if (!formData.title) {
-        throw new Error('タイトルを入力してください');
+        throw new Error(t.revenue.titleRequired);
       }
       if (formData.target_amount <= 0) {
-        throw new Error('目標金額は0より大きい値を入力してください');
+        throw new Error(t.revenue.targetAmountGreaterThanZero);
       }
       if (!formData.end_date) {
-        throw new Error('終了日を入力してください');
+        throw new Error(t.revenue.endDateRequired);
       }
       if (new Date(formData.end_date) < new Date(formData.start_date)) {
-        throw new Error('終了日は開始日以降の日付を指定してください');
+        throw new Error(t.revenue.endDateAfterStartDate);
       }
 
       await onSubmit(formData);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t.revenue.error);
     } finally {
       setIsSubmitting(false);
     }
@@ -128,12 +130,12 @@ export function TargetFormModal({
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-cloud/20 flex-shrink-0">
           <h3 className="text-lg font-bold text-ink">
-            {mode === 'create' ? '目標新規設定' : '目標編集'}
+            {mode === 'create' ? t.revenue.createTargetTitle : t.revenue.editTargetTitle}
           </h3>
           <button
             onClick={onClose}
             className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-            aria-label="閉じる"
+            aria-label={t.revenue.close}
           >
             <RiCloseLine className="w-4 h-4" />
           </button>
@@ -150,14 +152,14 @@ export function TargetFormModal({
           {/* タイトル */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-ink mb-2">
-              タイトル <span className="text-accent-sand">*</span>
+              {t.revenue.title} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="title"
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="例: 2025年1月目標"
+              placeholder={t.revenue.targetTitlePlaceholder}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
               required
             />
@@ -166,7 +168,7 @@ export function TargetFormModal({
           {/* 目標金額 */}
           <div>
             <label htmlFor="target_amount" className="block text-sm font-medium text-ink mb-2">
-              目標金額 <span className="text-accent-sand">*</span>
+              {t.revenue.targetAmount} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="target_amount"
@@ -183,7 +185,7 @@ export function TargetFormModal({
           {/* 開始日 */}
           <div>
             <label htmlFor="start_date" className="block text-sm font-medium text-ink mb-2">
-              開始日 <span className="text-accent-sand">*</span>
+              {t.revenue.startDate} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="start_date"
@@ -198,7 +200,7 @@ export function TargetFormModal({
           {/* 終了日 */}
           <div>
             <label htmlFor="end_date" className="block text-sm font-medium text-ink mb-2">
-              終了日 <span className="text-accent-sand">*</span>
+              {t.revenue.endDate} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="end_date"
@@ -213,7 +215,7 @@ export function TargetFormModal({
           {/* プロジェクト */}
           <div>
             <label htmlFor="project_id" className="block text-sm font-medium text-ink mb-2">
-              プロジェクト
+              {t.revenue.project}
             </label>
             <select
               id="project_id"
@@ -221,7 +223,7 @@ export function TargetFormModal({
               onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
-              <option value="">全体目標</option>
+              <option value="">{t.revenue.allTarget}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -233,14 +235,14 @@ export function TargetFormModal({
           {/* 説明 */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-ink mb-2">
-              説明
+              {t.revenue.description}
             </label>
             <textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder="目標の詳細を入力してください"
+              placeholder={t.revenue.targetPlaceholder}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand resize-none"
             />
           </div>
@@ -253,14 +255,14 @@ export function TargetFormModal({
               className="px-6 py-2 bg-mist border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
               disabled={isSubmitting}
             >
-              キャンセル
+              {t.revenue.cancel}
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting}
             >
-              {isSubmitting ? '保存中...' : mode === 'create' ? '登録' : '更新'}
+              {isSubmitting ? t.revenue.saving : mode === 'create' ? t.revenue.register : t.revenue.update}
             </button>
           </div>
         </form>

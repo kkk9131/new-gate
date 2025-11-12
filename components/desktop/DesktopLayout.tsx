@@ -45,7 +45,7 @@ export function DesktopLayout() {
 
   if (!isMobileReady) {
     return (
-      <div className="h-screen bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800" aria-busy />
+      <div className="h-screen overflow-hidden bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800 transition-colors duration-300" />
     );
   }
 

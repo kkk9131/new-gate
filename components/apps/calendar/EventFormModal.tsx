@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { RiCloseLine } from 'react-icons/ri';
 import { EVENT_CATEGORIES } from '@/types/calendar';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 type EventFormData = {
   title: string;
@@ -37,6 +38,7 @@ export function EventFormModal({
   initialData,
   mode,
 }: EventFormModalProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<EventFormData>({
     title: '',
     description: '',
@@ -118,17 +120,17 @@ export function EventFormModal({
     try {
       // バリデーション
       if (!formData.title.trim()) {
-        throw new Error('タイトルを入力してください');
+        throw new Error(t.calendar.titleRequired);
       }
 
       if (new Date(formData.end_time) < new Date(formData.start_time)) {
-        throw new Error('終了時刻は開始時刻より後にしてください');
+        throw new Error(t.calendar.endAfterStart);
       }
 
       await onSubmit(formData);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t.calendar.error);
     } finally {
       setIsSubmitting(false);
     }
@@ -142,12 +144,12 @@ export function EventFormModal({
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-cloud/20">
           <h3 className="text-xl font-bold text-ink">
-            {mode === 'create' ? 'イベント新規作成' : 'イベント編集'}
+            {mode === 'create' ? t.calendar.createEventTitle : t.calendar.editEventTitle}
           </h3>
           <button
             onClick={onClose}
             className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-            aria-label="閉じる"
+            aria-label={t.calendar.close}
           >
             <RiCloseLine className="w-5 h-5" />
           </button>
@@ -164,7 +166,7 @@ export function EventFormModal({
           {/* タイトル */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-ink mb-2">
-              タイトル <span className="text-accent-sand">*</span>
+              {t.calendar.eventTitle} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="title"
@@ -173,7 +175,7 @@ export function EventFormModal({
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
               required
-              placeholder="イベントのタイトル"
+              placeholder={t.calendar.titlePlaceholder}
             />
           </div>
 
@@ -187,14 +189,14 @@ export function EventFormModal({
               className="w-4 h-4 rounded border-cloud/30 text-accent-sand focus:ring-accent-sand"
             />
             <label htmlFor="all_day" className="text-sm text-ink">
-              終日イベント
+              {t.calendar.allDayEvent}
             </label>
           </div>
 
           {/* 開始時刻 */}
           <div>
             <label htmlFor="start_time" className="block text-sm font-medium text-ink mb-2">
-              開始 <span className="text-accent-sand">*</span>
+              {t.calendar.startTime} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="start_time"
@@ -214,7 +216,7 @@ export function EventFormModal({
           {/* 終了時刻 */}
           <div>
             <label htmlFor="end_time" className="block text-sm font-medium text-ink mb-2">
-              終了 <span className="text-accent-sand">*</span>
+              {t.calendar.endTime} <span className="text-accent-sand">*</span>
             </label>
             <input
               id="end_time"
@@ -234,7 +236,7 @@ export function EventFormModal({
           {/* 場所 */}
           <div>
             <label htmlFor="location" className="block text-sm font-medium text-ink mb-2">
-              場所
+              {t.calendar.location}
             </label>
             <input
               id="location"
@@ -242,14 +244,14 @@ export function EventFormModal({
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
-              placeholder="オンライン、会議室など"
+              placeholder={t.calendar.locationPlaceholder}
             />
           </div>
 
           {/* プロジェクト */}
           <div>
             <label htmlFor="project_id" className="block text-sm font-medium text-ink mb-2">
-              プロジェクト
+              {t.calendar.project}
             </label>
             <select
               id="project_id"
@@ -257,7 +259,7 @@ export function EventFormModal({
               onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
-              <option value="">未割当</option>
+              <option value="">{t.calendar.unassigned}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -269,7 +271,7 @@ export function EventFormModal({
           {/* カテゴリ */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-ink mb-2">
-              カテゴリ
+              {t.calendar.category}
             </label>
             <select
               id="category"
@@ -286,7 +288,7 @@ export function EventFormModal({
               }}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
-              <option value="">未分類</option>
+              <option value="">{t.calendar.uncategorized}</option>
               {EVENT_CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value}>
                   {cat.label}
@@ -298,7 +300,7 @@ export function EventFormModal({
           {/* 色 */}
           <div>
             <label htmlFor="color" className="block text-sm font-medium text-ink mb-2">
-              色
+              {t.calendar.color}
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -315,14 +317,14 @@ export function EventFormModal({
           {/* 説明 */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-ink mb-2">
-              説明
+              {t.calendar.description}
             </label>
             <textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder="イベントの詳細を入力してください"
+              placeholder={t.calendar.descriptionPlaceholder}
               className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand resize-none"
             />
           </div>
@@ -335,14 +337,14 @@ export function EventFormModal({
               className="px-6 py-2 bg-mist border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
               disabled={isSubmitting}
             >
-              キャンセル
+              {t.calendar.cancel}
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting}
             >
-              {isSubmitting ? '保存中...' : mode === 'create' ? '作成' : '更新'}
+              {isSubmitting ? t.calendar.saving : mode === 'create' ? t.calendar.create : t.calendar.update}
             </button>
           </div>
         </form>

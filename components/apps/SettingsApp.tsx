@@ -1,8 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { RiUserLine, RiNotificationLine, RiLockLine, RiPaletteLine } from 'react-icons/ri';
+import { RiUserLine, RiNotificationLine, RiLockLine, RiPaletteLine, RiGlobalLine } from 'react-icons/ri';
 import { IconType } from 'react-icons';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 /**
  * 設定セクションの型定義
@@ -16,37 +17,44 @@ interface SettingSection {
 
 export function SettingsApp() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const sections: SettingSection[] = [
     {
       icon: RiUserLine,
-      title: 'プロフィール',
-      desc: 'アカウント情報の管理',
+      title: t.settings.profile,
+      desc: t.settings.profileDesc,
       onClick: () => router.push('/profile')
     },
     {
       icon: RiNotificationLine,
-      title: '通知設定',
-      desc: '通知とアラートの設定',
+      title: t.settings.notifications,
+      desc: t.settings.notificationsDesc,
       onClick: () => router.push('/settings/notifications')
     },
     {
+      icon: RiGlobalLine,
+      title: t.settings.language,
+      desc: t.settings.languageDesc,
+      onClick: () => router.push('/settings/language')
+    },
+    {
       icon: RiLockLine,
-      title: 'セキュリティ',
-      desc: 'パスワードとセキュリティ',
-      onClick: () => console.log('セキュリティ設定を開く')
+      title: t.settings.security,
+      desc: t.settings.securityDesc,
+      onClick: () => router.push('/settings/security')
     },
     {
       icon: RiPaletteLine,
-      title: 'テーマ設定',
-      desc: '外観とカスタマイズ',
+      title: t.settings.theme,
+      desc: t.settings.themeDesc,
       onClick: () => console.log('テーマ設定を開く')
     },
   ];
 
   return (
     <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink">
-      <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Settings</h2>
+      <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">{t.settings.title}</h2>
 
       {/* 設定項目一覧 */}
       <div className="space-y-3 md:space-y-4">
