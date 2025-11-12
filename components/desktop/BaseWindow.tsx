@@ -51,7 +51,7 @@ export function BaseWindow({
   bodyClassName = 'flex-1 overflow-hidden',
 }: BaseWindowProps) {
   // モバイル判定（カスタムフック使用）
-  const isMobile = useIsMobile();
+  const { isMobile } = useIsMobile();
 
   // モバイル時は常に全画面、デスクトップ時は通常のロジック
   const size = useMemo(

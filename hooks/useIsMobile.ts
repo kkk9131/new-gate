@@ -5,13 +5,25 @@ import { useEffect, useState } from 'react';
  *
  * @param breakpoint - モバイル判定のブレークポイント（デフォルト: 768px）
  * @returns isMobile - 現在の画面幅がブレークポイント未満かどうか
+ * @returns isReady - クライアント環境での判定が完了したかどうか
  *
  * @example
- * const isMobile = useIsMobile(); // 768px未満でtrue
- * const isTablet = useIsMobile(1024); // 1024px未満でtrue
+ * const { isMobile } = useIsMobile(); // 768px未満でtrue
+ * const { isMobile: isTablet } = useIsMobile(1024); // 1024px未満でtrue
  */
-export function useIsMobile(breakpoint = 768): boolean {
-  const [isMobile, setIsMobile] = useState(false);
+interface UseIsMobileResult {
+  isMobile: boolean;
+  isReady: boolean;
+}
+
+const RESIZE_DEBOUNCE_MS = 150;
+
+export function useIsMobile(breakpoint = 768): UseIsMobileResult {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < breakpoint;
+  });
+  const [isReady, setIsReady] = useState(() => typeof window !== 'undefined');
 
   useEffect(() => {
     // SSR対応: windowが存在しない場合は早期リターン
@@ -19,17 +31,31 @@ export function useIsMobile(breakpoint = 768): boolean {
 
     const checkMobile = () => {
       setIsMobile(window.innerWidth < breakpoint);
+      setIsReady(true);
+    };
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const handleResize = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(checkMobile, RESIZE_DEBOUNCE_MS);
     };
 
     // 初期チェック
     checkMobile();
 
     // リサイズイベントリスナー登録
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener('resize', handleResize);
 
     // クリーンアップ
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      window.removeEventListener('resize', handleResize);
+    };
   }, [breakpoint]);
 
-  return isMobile;
+  return { isMobile, isReady };
 }

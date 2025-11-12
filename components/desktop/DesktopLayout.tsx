@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Rnd } from 'react-rnd';
 import { useDesktopStore, type App } from '@/store/desktopStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { appIconMap } from './AppIcon';
+import { AppLauncherIcon } from './AppLauncherIcon';
 import { Dock } from './Dock';
 import { WindowManager } from './WindowManager';
 import { SplitMode } from './SplitMode';
@@ -21,6 +21,9 @@ import {
   RiArrowGoBackLine,
 } from 'react-icons/ri';
 
+// モバイル時のグリッド設定を定数化してマジックナンバーを回避
+const MOBILE_ICON_GRID_CLASS = 'grid gap-3 pb-20 grid-cols-2 sm:grid-cols-3 min-[560px]:grid-cols-4';
+
 export function DesktopLayout() {
   const apps = useDesktopStore((state) => state.apps);
   const updateAppPosition = useDesktopStore((state) => state.updateAppPosition);
@@ -32,13 +35,19 @@ export function DesktopLayout() {
   const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
 
   // レスポンシブ対応：カスタムフックでモバイル判定
-  const isMobile = useIsMobile();
+  const { isMobile, isReady: isMobileReady } = useIsMobile();
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
     if (typeof window === 'undefined') return;
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
+
+  if (!isMobileReady) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800" aria-busy />
+    );
+  }
 
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
@@ -118,7 +127,7 @@ export function DesktopLayout() {
       <main className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-auto p-3 md:p-6 lg:p-8 relative">
         {isMobile ? (
           /* モバイル：グリッドレイアウト */
-          <div className="grid grid-cols-4 gap-3 pb-20">
+          <div className={MOBILE_ICON_GRID_CLASS}>
             {apps.map((app) => (
               <MobileAppIcon
                 key={app.id}
@@ -163,16 +172,7 @@ interface DesktopIconProps {
 }
 
 function DesktopIcon({ app, onOpen, onPositionChange }: DesktopIconProps) {
-  const IconComponent = appIconMap[app.icon] || appIconMap['RiFolder'];
   const position = app.position ?? { x: 0, y: 0 };
-
-  const handleDoubleClick = () => onOpen(app.id);
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleDoubleClick();
-    }
-  };
 
   return (
     <Rnd
@@ -184,23 +184,17 @@ function DesktopIcon({ app, onOpen, onPositionChange }: DesktopIconProps) {
       onDragStop={(e, data) => onPositionChange(app.id, { x: data.x, y: data.y })}
       className="absolute"
     >
-      <div
-        onDoubleClick={handleDoubleClick}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
-        role="button"
-        aria-label={`${app.name}アプリを起動`}
-        className="flex flex-col items-center justify-center p-2 md:p-4 cursor-pointer select-none group"
-      >
-        <div
-          className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-surface shadow-panel flex items-center justify-center transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl"
-        >
-          <IconComponent className={`w-6 h-6 md:w-8 md:h-8 ${app.color} transition-transform group-hover:scale-110`} />
-        </div>
-        <span className="mt-1 md:mt-2 text-xs md:text-sm font-medium text-ink group-hover:text-ink transition-colors">
-          {app.name}
-        </span>
-      </div>
+      <AppLauncherIcon
+        name={app.name}
+        icon={app.icon}
+        color={app.color}
+        onActivate={() => onOpen(app.id)}
+        activation="double"
+        containerClassName="p-2 md:p-4"
+        iconWrapperClassName="w-12 h-12 md:w-16 md:h-16 group-hover:scale-110 group-hover:shadow-xl"
+        iconClassName="w-6 h-6 md:w-8 md:h-8 transition-transform group-hover:scale-110"
+        labelClassName="mt-1 md:mt-2 text-xs md:text-sm font-medium text-ink group-hover:text-ink transition-colors"
+      />
     </Rnd>
   );
 }
@@ -212,33 +206,17 @@ interface MobileAppIconProps {
 }
 
 function MobileAppIcon({ app, onOpen }: MobileAppIconProps) {
-  const IconComponent = appIconMap[app.icon] || appIconMap['RiFolder'];
-
-  const handleClick = () => onOpen(app.id);
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleClick();
-    }
-  };
-
   return (
-    <div
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      role="button"
-      aria-label={`${app.name}アプリを起動`}
-      className="flex flex-col items-center justify-center p-2 cursor-pointer select-none group"
-    >
-      <div
-        className="w-12 h-12 rounded-2xl bg-surface shadow-panel flex items-center justify-center transition-all duration-200 active:scale-95"
-      >
-        <IconComponent className={`w-6 h-6 ${app.color}`} />
-      </div>
-      <span className="mt-1 text-xs font-medium text-ink text-center line-clamp-2">
-        {app.name}
-      </span>
-    </div>
+    <AppLauncherIcon
+      name={app.name}
+      icon={app.icon}
+      color={app.color}
+      onActivate={() => onOpen(app.id)}
+      activation="single"
+      containerClassName="p-2"
+      iconWrapperClassName="w-12 h-12 active:scale-95"
+      iconClassName="w-6 h-6"
+      labelClassName="mt-1 text-xs font-medium text-ink text-center line-clamp-2"
+    />
   );
 }
