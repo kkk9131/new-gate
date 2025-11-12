@@ -96,7 +96,6 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (createError) {
-        console.error('通知設定の作成エラー:', createError);
         return NextResponse.json(
           { error: '通知設定の作成に失敗しました' },
           { status: 500 }
@@ -107,7 +106,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (error) {
-      console.error('通知設定の取得エラー:', error);
       return NextResponse.json(
         { error: '通知設定の取得に失敗しました' },
         { status: 500 }
@@ -116,7 +114,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(settings, { status: 200 });
   } catch (error) {
-    console.error('通知設定API予期しないエラー:', error);
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }
@@ -226,7 +223,6 @@ export async function PATCH(request: NextRequest) {
           .single();
 
         if (createError) {
-          console.error('通知設定の作成エラー:', createError);
           return NextResponse.json(
             { error: '通知設定の作成に失敗しました' },
             { status: 500 }
@@ -242,7 +238,6 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      console.error('通知設定の更新エラー:', error);
       return NextResponse.json(
         { error: '通知設定の更新に失敗しました' },
         { status: 500 }
@@ -257,7 +252,6 @@ export async function PATCH(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('通知設定API予期しないエラー:', error);
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }

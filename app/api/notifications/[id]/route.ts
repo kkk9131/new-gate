@@ -37,7 +37,6 @@ export async function PATCH(
       .single();
 
     if (error) {
-      console.error('通知更新エラー:', error);
       return NextResponse.json(
         { error: '通知の更新に失敗しました' },
         { status: 500 }
@@ -53,7 +52,6 @@ export async function PATCH(
 
     return NextResponse.json({ notification: data });
   } catch (error) {
-    console.error('通知更新API エラー:', error);
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }
@@ -91,7 +89,6 @@ export async function DELETE(
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('通知削除エラー:', error);
       return NextResponse.json(
         { error: '通知の削除に失敗しました' },
         { status: 500 }
@@ -100,7 +97,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('通知削除API エラー:', error);
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }
