@@ -20,6 +20,7 @@ import {
   Filler,
 } from 'chart.js';
 import { subYears, subMonths, subWeeks, format } from 'date-fns';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import type { DashboardData, PeriodType } from '@/types/revenue';
 import { useProjectStore } from '@/store/useProjectStore';
 
@@ -44,6 +45,7 @@ ChartJS.register(
  * - プロジェクトフィルター
  */
 export function RevenueDashboard() {
+  const { t } = useTranslation();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +122,7 @@ export function RevenueDashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-cloud">読み込み中...</div>
+        <div className="text-cloud">{t.revenue.loading}</div>
       </div>
     );
   }
@@ -136,7 +138,7 @@ export function RevenueDashboard() {
   if (!data) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-cloud">データがありません</div>
+        <div className="text-cloud">{t.revenue.noData}</div>
       </div>
     );
   }
@@ -156,7 +158,7 @@ export function RevenueDashboard() {
                 : 'bg-mist text-cloud hover:bg-cloud/20'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            年間
+            {t.revenue.yearly}
           </button>
           <button
             onClick={() => setPeriod('month')}
@@ -167,7 +169,7 @@ export function RevenueDashboard() {
                 : 'bg-mist text-cloud hover:bg-cloud/20'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            月間
+            {t.revenue.monthly}
           </button>
           <button
             onClick={() => setPeriod('week')}
@@ -178,14 +180,14 @@ export function RevenueDashboard() {
                 : 'bg-mist text-cloud hover:bg-cloud/20'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            週間
+            {t.revenue.weekly}
           </button>
         </div>
 
         {/* プロジェクトフィルター */}
         <div className="flex items-center gap-2">
           <label htmlFor="project-filter" className="text-sm text-cloud whitespace-nowrap">
-            プロジェクト:
+            {t.revenue.project}:
           </label>
           <select
             id="project-filter"
@@ -196,7 +198,7 @@ export function RevenueDashboard() {
               isLoading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            <option value="">全体</option>
+            <option value="">{t.revenue.all}</option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
@@ -209,29 +211,29 @@ export function RevenueDashboard() {
       {/* サマリーカード */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
-          title="合計売上"
+          title={t.revenue.totalRevenue}
           value={`¥${data.summary.total_revenue.toLocaleString()}`}
           icon={<RiMoneyDollarCircleLine className="w-6 h-6" />}
           bgColor="bg-accent-sand/20"
         />
         <SummaryCard
-          title="合計経費"
+          title={t.revenue.totalExpense}
           value={`¥${data.summary.total_expense.toLocaleString()}`}
           icon={<RiWallet3Line className="w-6 h-6" />}
           bgColor="bg-cloud/20"
         />
         <SummaryCard
-          title="粗利"
+          title={t.revenue.grossProfit}
           value={`¥${data.summary.gross_profit.toLocaleString()}`}
-          subtitle={`粗利率: ${data.summary.gross_profit_rate}%`}
+          subtitle={t.revenue.grossProfitRate.replace('{rate}', String(data.summary.gross_profit_rate))}
           icon={<RiPieChartLine className="w-6 h-6" />}
           bgColor="bg-accent-warm/20"
         />
         {data.target && (
           <SummaryCard
-            title="目標達成率"
+            title={t.revenue.achievementRate}
             value={`${data.target.achievement_rate.toFixed(1)}%`}
-            subtitle={`目標: ¥${data.target.target_amount.toLocaleString()}`}
+            subtitle={t.revenue.targetAmount.replace('{amount}', `¥${data.target.target_amount.toLocaleString()}`)}
             icon={<RiFlagLine className="w-6 h-6" />}
             bgColor="bg-indigo-100"
           />
@@ -240,7 +242,7 @@ export function RevenueDashboard() {
 
       {/* 月次推移グラフ */}
       <div className="bg-surface border border-white/40 rounded-3xl p-6 shadow-soft">
-        <h3 className="text-lg font-semibold mb-4">月次推移</h3>
+        <h3 className="text-lg font-semibold mb-4">{t.revenue.monthlyTrend}</h3>
         <MonthlyChart monthly={data.monthly} />
       </div>
     </div>
@@ -281,17 +283,21 @@ function SummaryCard({
  * 月次推移グラフコンポーネント（Chart.js）
  */
 function MonthlyChart({ monthly }: { monthly: Record<string, { revenue: number; expense: number; gross_profit: number }> }) {
+  const { t } = useTranslation();
+
   // データを月順にソート
   const sortedMonths = Object.keys(monthly).sort();
 
   const chartData = {
     labels: sortedMonths.map((month) => {
       const [year, m] = month.split('-');
-      return `${year}年${parseInt(m)}月`;
+      return t.revenue.yearMonth
+        .replace('{year}', year)
+        .replace('{month}', String(parseInt(m)));
     }),
     datasets: [
       {
-        label: '売上',
+        label: t.revenue.revenueLabel,
         data: sortedMonths.map((month) => monthly[month].revenue),
         borderColor: 'rgb(245, 158, 11)',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -299,7 +305,7 @@ function MonthlyChart({ monthly }: { monthly: Record<string, { revenue: number; 
         tension: 0.4,
       },
       {
-        label: '経費',
+        label: t.revenue.expenseLabel,
         data: sortedMonths.map((month) => monthly[month].expense),
         borderColor: 'rgb(156, 163, 175)',
         backgroundColor: 'rgba(156, 163, 175, 0.1)',
@@ -307,7 +313,7 @@ function MonthlyChart({ monthly }: { monthly: Record<string, { revenue: number; 
         tension: 0.4,
       },
       {
-        label: '粗利',
+        label: t.revenue.profitLabel,
         data: sortedMonths.map((month) => monthly[month].gross_profit),
         borderColor: 'rgb(239, 68, 68)',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',

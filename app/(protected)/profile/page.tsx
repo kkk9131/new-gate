@@ -6,6 +6,9 @@ import { useAuthStore } from '@/store/authStore';
 import { createClient } from '@/lib/supabase/client';
 import { AUTH_ERRORS, AUTH_SUCCESS } from '@/lib/constants/auth-errors';
 import { RiArrowLeftLine, RiLockPasswordLine } from 'react-icons/ri';
+import { useTranslation } from '@/lib/hooks/useTranslation';
+import { useLanguageSettings } from '@/lib/hooks/useLanguageSettings';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 /**
  * プロフィール編集ページ
@@ -15,6 +18,8 @@ import { RiArrowLeftLine, RiLockPasswordLine } from 'react-icons/ri';
 export default function ProfilePage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const { t } = useTranslation();
+  const { settings: languageSettings } = useLanguageSettings();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -97,19 +102,15 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
-        <p className="text-gray-600">読み込み中...</p>
+        <p className="text-gray-600">{t.common.loading}</p>
       </div>
     );
   }
 
-  // 作成日のフォーマット
+  // 作成日のフォーマット（ユーザーの言語設定に従う）
   const createdDate = user.created_at
-    ? new Date(user.created_at).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : '不明';
+    ? formatDate(new Date(user.created_at), languageSettings)
+    : t.profile.unknownDate;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
@@ -121,20 +122,20 @@ export default function ProfilePage() {
           className="mb-4 flex items-center gap-2 text-ink hover:text-accent-sand transition-colors font-medium"
         >
           <RiArrowLeftLine className="w-5 h-5" />
-          <span>デスクトップに戻る</span>
+          <span>{t.common.backToDesktop}</span>
         </button>
 
         {/* プロフィール情報 */}
         <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            プロフィール情報
+            {t.profile.title}
           </h2>
 
           <div className="space-y-4">
             {/* メールアドレス */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                メールアドレス
+                {t.profile.email}
               </label>
               <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
                 {user.email}
@@ -144,7 +145,7 @@ export default function ProfilePage() {
             {/* ユーザーID */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ユーザーID
+                {t.profile.userId}
               </label>
               <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 font-mono text-sm">
                 {user.id}
@@ -154,7 +155,7 @@ export default function ProfilePage() {
             {/* 作成日 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                アカウント作成日
+                {t.profile.accountCreated}
               </label>
               <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
                 {createdDate}
@@ -168,7 +169,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2 mb-6">
             <RiLockPasswordLine className="w-6 h-6 text-accent-sand" />
             <h2 className="text-2xl font-bold text-gray-800">
-              パスワード変更
+              {t.profile.passwordChange}
             </h2>
           </div>
 
@@ -201,7 +202,7 @@ export default function ProfilePage() {
                 htmlFor="currentPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                現在のパスワード
+                {t.profile.currentPassword}
               </label>
               <input
                 id="currentPassword"
@@ -211,11 +212,11 @@ export default function ProfilePage() {
                 required
                 autoComplete="current-password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-sand focus:border-transparent transition-all"
-                placeholder="現在のパスワードを入力"
+                placeholder={t.profile.currentPasswordPlaceholder}
                 disabled={isLoading}
               />
               <p className="mt-1 text-xs text-gray-500">
-                ※ セキュリティのため、現在のパスワードを入力してください
+                {t.profile.securityNote}
               </p>
             </div>
 
@@ -225,7 +226,7 @@ export default function ProfilePage() {
                 htmlFor="newPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                新しいパスワード
+                {t.profile.newPassword}
               </label>
               <input
                 id="newPassword"
@@ -235,11 +236,11 @@ export default function ProfilePage() {
                 required
                 autoComplete="new-password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-sand focus:border-transparent transition-all"
-                placeholder="6文字以上で入力"
+                placeholder={t.profile.newPasswordPlaceholder}
                 disabled={isLoading}
               />
               <p className="mt-1 text-xs text-gray-500">
-                ※ 6文字以上で入力してください
+                {t.profile.passwordMinLength}
               </p>
             </div>
 
@@ -249,7 +250,7 @@ export default function ProfilePage() {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                新しいパスワード（確認）
+                {t.profile.confirmPassword}
               </label>
               <input
                 id="confirmPassword"
@@ -259,7 +260,7 @@ export default function ProfilePage() {
                 required
                 autoComplete="new-password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-sand focus:border-transparent transition-all"
-                placeholder="もう一度入力"
+                placeholder={t.profile.confirmPasswordPlaceholder}
                 disabled={isLoading}
               />
             </div>
@@ -270,7 +271,7 @@ export default function ProfilePage() {
               disabled={isLoading}
               className="w-full bg-accent-sand text-ink font-semibold py-3 px-4 rounded-xl hover:bg-accent-sand/80 focus:outline-none focus:ring-2 focus:ring-accent-sand focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-soft hover:shadow-panel"
             >
-              {isLoading ? '変更中...' : 'パスワードを変更'}
+              {isLoading ? t.profile.changing : t.profile.changePassword}
             </button>
           </form>
         </div>

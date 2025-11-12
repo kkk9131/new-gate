@@ -36,10 +36,12 @@ import { ProjectDeleteDialog } from './projects/ProjectDeleteDialog';
 import { ProjectActionsMenu } from './projects/ProjectActionsMenu';
 import { ProjectStatusMenu } from './projects/ProjectStatusMenu';
 import type { Project, ProjectStatus } from '@/types/project';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 type ViewMode = 'card' | 'list';
 
 export function ProjectsApp() {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,7 +79,7 @@ export function ProjectsApp() {
       const response = await fetch(`/api/projects?limit=${LIMIT}&offset=0`);
 
       if (!response.ok) {
-        throw new Error('プロジェクトの取得に失敗しました');
+        throw new Error(t.projects.fetchError);
       }
 
       const result = await response.json();
@@ -87,7 +89,7 @@ export function ProjectsApp() {
       setOffset(LIMIT);
     } catch (err) {
       console.error('Error fetching projects:', err);
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t.projects.error);
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +105,7 @@ export function ProjectsApp() {
       const response = await fetch(`/api/projects?limit=${LIMIT}&offset=${offset}`);
 
       if (!response.ok) {
-        throw new Error('プロジェクトの取得に失敗しました');
+        throw new Error(t.projects.fetchError);
       }
 
       const result = await response.json();
@@ -164,7 +166,7 @@ export function ProjectsApp() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || 'プロジェクトの作成に失敗しました');
+      throw new Error(error.error?.message || t.projects.createError);
     }
 
     await fetchProjects();
@@ -189,7 +191,7 @@ export function ProjectsApp() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || 'プロジェクトの更新に失敗しました');
+      throw new Error(error.error?.message || t.projects.updateError);
     }
 
     await fetchProjects();
@@ -206,7 +208,7 @@ export function ProjectsApp() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || 'プロジェクトの削除に失敗しました');
+      throw new Error(error.error?.message || t.projects.deleteError);
     }
 
     await fetchProjects();
@@ -221,14 +223,14 @@ export function ProjectsApp() {
       });
 
       if (!response.ok) {
-        throw new Error('プロジェクトの複製に失敗しました');
+        throw new Error(t.projects.duplicateError);
       }
 
       // 一覧を再取得
       await fetchProjects();
     } catch (err) {
       console.error('Error duplicating project:', err);
-      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      alert(err instanceof Error ? err.message : t.projects.error);
     }
   };
 
@@ -274,7 +276,7 @@ export function ProjectsApp() {
   const handleBulkDelete = async () => {
     if (selectedProjectIds.length === 0) return;
 
-    const confirmMessage = `${selectedProjectIds.length}件のプロジェクトを削除しますか？`;
+    const confirmMessage = t.projects.bulkDeleteConfirm.replace('{count}', String(selectedProjectIds.length));
     if (!confirm(confirmMessage)) return;
 
     try {
@@ -288,7 +290,7 @@ export function ProjectsApp() {
       // エラーチェック
       const errors = results.filter((res) => !res.ok);
       if (errors.length > 0) {
-        throw new Error(`${errors.length}件のプロジェクト削除に失敗しました`);
+        throw new Error(t.projects.bulkDeleteError.replace('{count}', String(errors.length)));
       }
 
       // 成功したら一覧を再取得
@@ -297,7 +299,7 @@ export function ProjectsApp() {
       setIsSelectionMode(false);
     } catch (err) {
       console.error('Error bulk deleting projects:', err);
-      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      alert(err instanceof Error ? err.message : t.projects.error);
     }
   };
 
@@ -312,13 +314,13 @@ export function ProjectsApp() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || 'ステータスの更新に失敗しました');
+        throw new Error(error.error?.message || t.projects.statusUpdateError);
       }
 
       await fetchProjects();
     } catch (err) {
       console.error('Error updating status:', err);
-      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      alert(err instanceof Error ? err.message : t.projects.error);
     }
   };
 
@@ -352,11 +354,11 @@ export function ProjectsApp() {
       });
 
       if (!response.ok) {
-        throw new Error('並び順の保存に失敗しました');
+        throw new Error(t.projects.reorderError);
       }
     } catch (err) {
       console.error('Error reordering projects:', err);
-      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      alert(err instanceof Error ? err.message : t.projects.error);
       // エラー時は元の順序に戻す
       await fetchProjects();
     }
@@ -372,7 +374,7 @@ export function ProjectsApp() {
   if (isLoading) {
     return (
       <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
-        <div className="text-cloud">読み込み中...</div>
+        <div className="text-cloud">{t.projects.loading}</div>
       </div>
     );
   }
@@ -404,8 +406,8 @@ export function ProjectsApp() {
         {projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-cloud">
             <RiFolderLine className="w-16 h-16 mb-4" />
-            <p className="text-lg">プロジェクトがありません</p>
-            <p className="text-sm">「新規」ボタンからプロジェクトを作成してください</p>
+            <p className="text-lg">{t.projects.noProjects}</p>
+            <p className="text-sm">{t.projects.noProjectsHint}</p>
           </div>
         ) : (
           <>
@@ -448,14 +450,14 @@ export function ProjectsApp() {
             {/* ローディングインジケーター */}
             {isLoadingMore && (
               <div className="flex items-center justify-center py-8">
-                <div className="text-cloud text-sm">読み込み中...</div>
+                <div className="text-cloud text-sm">{t.projects.loadingMore}</div>
               </div>
             )}
 
             {/* すべて読み込み完了 */}
             {!hasMore && projects.length > 0 && (
               <div className="flex items-center justify-center py-4">
-                <div className="text-cloud text-xs">すべてのプロジェクトを表示しました</div>
+                <div className="text-cloud text-xs">{t.projects.allLoaded}</div>
               </div>
             )}
           </>
@@ -530,13 +532,15 @@ function Header({
   onClearSelection: () => void;
   onBulkDelete: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <h2 className="text-2xl font-bold mb-1">Projects</h2>
+        <h2 className="text-2xl font-bold mb-1">{t.projects.title}</h2>
         {isSelectionMode && (
           <p className="text-sm text-cloud">
-            {selectedCount}件 / {totalCount}件を選択中
+            {t.projects.selectedCount.replace('{count}', String(selectedCount)).replace('{total}', String(totalCount))}
           </p>
         )}
       </div>
@@ -547,15 +551,15 @@ function Header({
             <button
               onClick={onToggleSelectionMode}
               className="flex items-center gap-2 px-4 py-2 bg-surface border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
-              aria-label="選択モード"
+              aria-label={t.projects.selectionMode}
             >
-              <RiCheckboxCircleLine className="w-4 h-4" /> 選択
+              <RiCheckboxCircleLine className="w-4 h-4" /> {t.projects.select}
             </button>
             <button
               onClick={onCreateClick}
               className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
             >
-              <RiAddLine className="w-4 h-4" /> 新規
+              <RiAddLine className="w-4 h-4" /> {t.projects.new}
             </button>
           </>
         ) : (
@@ -565,28 +569,28 @@ function Header({
               className="px-4 py-2 bg-surface border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors text-sm"
               disabled={selectedCount === totalCount}
             >
-              全選択
+              {t.projects.selectAll}
             </button>
             <button
               onClick={onClearSelection}
               className="px-4 py-2 bg-surface border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors text-sm"
               disabled={selectedCount === 0}
             >
-              選択解除
+              {t.projects.clearSelection}
             </button>
             <button
               onClick={onBulkDelete}
               className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={selectedCount === 0}
             >
-              <RiDeleteBin6Line className="w-4 h-4" /> 削除 ({selectedCount})
+              <RiDeleteBin6Line className="w-4 h-4" /> {t.projects.deleteWithCount.replace('{count}', String(selectedCount))}
             </button>
             <button
               onClick={onToggleSelectionMode}
               className="flex items-center gap-2 px-4 py-2 bg-surface border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
-              aria-label="選択モード終了"
+              aria-label={t.projects.selectionModeEnd}
             >
-              <RiCloseLine className="w-4 h-4" /> キャンセル
+              <RiCloseLine className="w-4 h-4" /> {t.common.cancel}
             </button>
           </>
         )}
@@ -596,6 +600,7 @@ function Header({
 }
 
 function ViewToggle({ viewMode, onChangeView }: { viewMode: ViewMode; onChangeView: (mode: ViewMode) => void }) {
+  const { t } = useTranslation();
   const items: { mode: ViewMode; icon: React.ReactNode }[] = [
     { mode: 'card', icon: <RiLayoutGridLine className="w-4 h-4" /> },
     { mode: 'list', icon: <RiListCheck className="w-4 h-4" /> },
@@ -609,7 +614,7 @@ function ViewToggle({ viewMode, onChangeView }: { viewMode: ViewMode; onChangeVi
           className={`px-3 py-2 flex items-center justify-center ${
             viewMode === mode ? 'bg-ink text-white' : 'text-ink'
           }`}
-          aria-label={mode === 'card' ? 'カード表示' : 'リスト表示'}
+          aria-label={mode === 'card' ? t.projects.cardView : t.projects.listView}
         >
           {icon}
         </button>
@@ -639,6 +644,8 @@ function ProjectCard({
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
+
   // ドラッグ&ドロップ機能のためのフック
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: project.id,
@@ -669,14 +676,14 @@ function ProjectCard({
                 checked={isSelected}
                 onChange={() => onToggleSelect(project.id)}
                 className="w-5 h-5 rounded border-cloud/30 text-accent-sand focus:ring-accent-sand cursor-pointer"
-                aria-label="プロジェクトを選択"
+                aria-label={t.projects.selectProject}
               />
             ) : (
               <button
                 {...attributes}
                 {...listeners}
                 className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-cloud/20 transition-colors"
-                aria-label="プロジェクトを並び替え"
+                aria-label={t.projects.sortProject}
               >
                 <RiDragDropLine className="w-5 h-5 text-cloud" />
               </button>
@@ -696,8 +703,8 @@ function ProjectCard({
           <button
             onClick={() => onDuplicate(project.id)}
             className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-            title="複製"
-            aria-label="プロジェクトを複製"
+            title={t.projects.duplicate}
+            aria-label={t.projects.duplicateProject}
           >
             <RiFileCopyLine className="w-5 h-5" />
           </button>
@@ -714,9 +721,9 @@ function ProjectCard({
           </span>
         </p>
         <p className={`text-xs ${overdue ? 'text-accent-sand' : 'text-cloud'}`}>
-          {overdue ? '⚠️ 期限切れ' : '✓ 期限内'}
+          {overdue ? t.projects.overdue : t.projects.onTime}
         </p>
-        {project.notes && <p className="text-xs">備考: {project.notes}</p>}
+        {project.notes && <p className="text-xs">{t.projects.notes} {project.notes}</p>}
       </div>
     </div>
   );
@@ -746,6 +753,8 @@ function ProjectListRow({
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
+
   // ドラッグ&ドロップ機能のためのフック
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: project.id,
@@ -773,14 +782,14 @@ function ProjectListRow({
           checked={isSelected}
           onChange={() => onToggleSelect(project.id)}
           className="w-4 h-4 rounded border-cloud/30 text-accent-sand focus:ring-accent-sand cursor-pointer"
-          aria-label="プロジェクトを選択"
+          aria-label={t.projects.selectProject}
         />
       ) : (
         <button
           {...attributes}
           {...listeners}
           className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-cloud/20 transition-colors"
-          aria-label="プロジェクトを並び替え"
+          aria-label={t.projects.sortProject}
         >
           <RiDragDropLine className="w-4 h-4 text-cloud" />
         </button>
@@ -805,8 +814,8 @@ function ProjectListRow({
         <button
           onClick={() => onDuplicate(project.id)}
           className="p-1.5 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-          title="複製"
-          aria-label="プロジェクトを複製"
+          title={t.projects.duplicate}
+          aria-label={t.projects.duplicateProject}
         >
           <RiFileCopyLine className="w-4 h-4" />
         </button>
@@ -837,16 +846,18 @@ function ProjectList({
   selectedProjectIds: string[];
   onToggleSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
       <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 text-xs text-cloud border-b border-cloud/20">
         <span></span> {/* ドラッグハンドルまたはチェックボックス用の空スペース */}
-        <span>名称</span>
-        <span>説明</span>
-        <span>期間</span>
-        <span>ステータス</span>
-        <span>備考</span>
-        <span>操作</span>
+        <span>{t.projects.name}</span>
+        <span>{t.projects.description}</span>
+        <span>{t.projects.period}</span>
+        <span>{t.projects.status}</span>
+        <span>{t.projects.notesColumn}</span>
+        <span>{t.projects.actions}</span>
       </div>
       {projects.map((project, index) => (
         <ProjectListRow

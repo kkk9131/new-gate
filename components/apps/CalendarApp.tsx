@@ -4,13 +4,15 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Calendar, dateFnsLocalizer, View as BigCalendarView } from 'react-big-calendar';
 import { RiCalendarLine, RiTimeLine, RiMapPinLine, RiAddLine, RiEdit2Line, RiDeleteBin6Line } from 'react-icons/ri';
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, startOfWeek as getStartOfWeek, endOfWeek as getEndOfWeek } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import { ja, enUS } from 'date-fns/locale';
 import type { CalendarEvent, BigCalendarEvent } from '@/types/calendar';
 import { EventFormModal } from './calendar/EventFormModal';
+import { useTranslation } from '@/lib/hooks/useTranslation';
+import { useLanguageSettings } from '@/lib/hooks/useLanguageSettings';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-// date-fns localizer設定
-const locales = { ja };
+// date-fns localizer設定（日本語と英語の両方をサポート）
+const locales = { ja, en: enUS };
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -20,6 +22,12 @@ const localizer = dateFnsLocalizer({
 });
 
 export function CalendarApp() {
+  const { t } = useTranslation();
+  const { uiLanguage } = useLanguageSettings();
+
+  // 言語設定に応じたロケールを選択
+  const currentLocale = uiLanguage === 'ja' ? ja : enUS;
+
   // 状態管理
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,12 +62,12 @@ export function CalendarApp() {
         // 月の最初から最後 + 前後の週
         const monthStart = startOfMonth(currentDate);
         const monthEnd = endOfMonth(currentDate);
-        startDate = getStartOfWeek(monthStart, { locale: ja });
-        endDate = getEndOfWeek(monthEnd, { locale: ja });
+        startDate = getStartOfWeek(monthStart, { locale: currentLocale });
+        endDate = getEndOfWeek(monthEnd, { locale: currentLocale });
       } else {
         // 週
-        startDate = getStartOfWeek(currentDate, { locale: ja });
-        endDate = getEndOfWeek(currentDate, { locale: ja });
+        startDate = getStartOfWeek(currentDate, { locale: currentLocale });
+        endDate = getEndOfWeek(currentDate, { locale: currentLocale });
       }
 
       const params = new URLSearchParams({
@@ -71,14 +79,14 @@ export function CalendarApp() {
       const response = await fetch(`/api/events?${params}`);
 
       if (!response.ok) {
-        throw new Error('イベントデータの取得に失敗しました');
+        throw new Error(t.calendar.fetchError);
       }
 
       const result = await response.json();
       setEvents(result.data || []);
     } catch (err) {
       console.error('Error fetching events:', err);
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t.calendar.error);
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +94,8 @@ export function CalendarApp() {
 
   // イベント削除ハンドラー
   const handleDelete = async (eventId: string, title: string) => {
-    if (!confirm(`「${title}」を削除しますか？`)) return;
+    const confirmMessage = t.calendar.deleteConfirm.replace('{title}', title);
+    if (!confirm(confirmMessage)) return;
 
     try {
       const response = await fetch(`/api/events/${eventId}`, {
@@ -94,13 +103,13 @@ export function CalendarApp() {
       });
 
       if (!response.ok) {
-        throw new Error('イベントの削除に失敗しました');
+        throw new Error(t.calendar.deleteError);
       }
 
       await fetchEvents();
     } catch (err) {
       console.error('Error deleting event:', err);
-      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      alert(err instanceof Error ? err.message : t.calendar.error);
     }
   };
 
@@ -119,7 +128,7 @@ export function CalendarApp() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'イベントの作成に失敗しました');
+      throw new Error(error.error || t.calendar.createError);
     }
 
     await fetchEvents();
@@ -142,7 +151,7 @@ export function CalendarApp() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'イベントの更新に失敗しました');
+      throw new Error(error.error || t.calendar.updateError);
     }
 
     await fetchEvents();
@@ -203,7 +212,7 @@ export function CalendarApp() {
 
   // 時刻フォーマット（今日ビュー用）
   const formatTime = (startTime: string, endTime: string, allDay: boolean) => {
-    if (allDay) return '終日';
+    if (allDay) return t.calendar.allDay;
     const start = new Date(startTime);
     const end = new Date(endTime);
     return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
@@ -212,7 +221,7 @@ export function CalendarApp() {
   if (isLoading) {
     return (
       <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
-        <div className="text-cloud">読み込み中...</div>
+        <div className="text-cloud">{t.calendar.loading}</div>
       </div>
     );
   }
@@ -229,12 +238,12 @@ export function CalendarApp() {
     <div className="p-6 h-full overflow-auto bg-mist text-ink">
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Calendar</h2>
+        <h2 className="text-2xl font-bold">{t.calendar.title}</h2>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
         >
-          <RiAddLine className="w-4 h-4" /> 新規イベント
+          <RiAddLine className="w-4 h-4" /> {t.calendar.newEvent}
         </button>
       </div>
 
@@ -248,7 +257,7 @@ export function CalendarApp() {
               : 'bg-mist text-cloud border border-cloud/30 hover:bg-cloud/10'
           }`}
         >
-          今日
+          {t.calendar.today}
         </button>
         <button
           onClick={() => {
@@ -261,7 +270,7 @@ export function CalendarApp() {
               : 'bg-mist text-cloud border border-cloud/30 hover:bg-cloud/10'
           }`}
         >
-          月
+          {t.calendar.month}
         </button>
         <button
           onClick={() => {
@@ -274,7 +283,7 @@ export function CalendarApp() {
               : 'bg-mist text-cloud border border-cloud/30 hover:bg-cloud/10'
           }`}
         >
-          週
+          {t.calendar.week}
         </button>
       </div>
 
@@ -286,14 +295,14 @@ export function CalendarApp() {
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 bg-accent-bloom/30 rounded-2xl flex flex-col items-center justify-center">
                 <span className="text-xs text-cloud font-medium">
-                  {format(currentDate, 'M月', { locale: ja })}
+                  {format(currentDate, uiLanguage === 'ja' ? 'M月' : 'MMM', { locale: currentLocale })}
                 </span>
                 <span className="text-2xl font-bold">{format(currentDate, 'd')}</span>
               </div>
               <div>
-                <p className="text-sm text-cloud">今日</p>
+                <p className="text-sm text-cloud">{t.calendar.today}</p>
                 <p className="text-xl font-bold">
-                  {format(currentDate, 'yyyy年M月d日（E）', { locale: ja })}
+                  {format(currentDate, uiLanguage === 'ja' ? 'yyyy年M月d日（E）' : 'EEE, MMM d, yyyy', { locale: currentLocale })}
                 </p>
               </div>
             </div>
@@ -302,14 +311,14 @@ export function CalendarApp() {
           {/* イベント一覧 */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">今日の予定</h3>
+              <h3 className="text-lg font-semibold">{t.calendar.todaysSchedule}</h3>
               <span className="text-sm text-cloud">{events.length}件</span>
             </div>
 
             {events.length === 0 ? (
               <div className="bg-surface border border-white/40 p-8 rounded-2xl text-center text-cloud">
                 <RiCalendarLine className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>今日の予定はありません</p>
+                <p>{t.calendar.noSchedule}</p>
               </div>
             ) : (
               events.map((event) => (
@@ -325,16 +334,16 @@ export function CalendarApp() {
                         setIsEditModalOpen(true);
                       }}
                       className="p-2 rounded-full bg-surface/80 hover:bg-surface transition-colors"
-                      aria-label="編集"
-                      title="編集"
+                      aria-label={t.calendar.edit}
+                      title={t.calendar.edit}
                     >
                       <RiEdit2Line className="w-4 h-4 text-cloud" />
                     </button>
                     <button
                       onClick={() => handleDelete(event.id, event.title)}
                       className="p-2 rounded-full bg-surface/80 hover:bg-red-50 hover:text-red-500 transition-colors"
-                      aria-label="削除"
-                      title="削除"
+                      aria-label={t.calendar.delete}
+                      title={t.calendar.delete}
                     >
                       <RiDeleteBin6Line className="w-4 h-4" />
                     </button>
@@ -401,13 +410,13 @@ export function CalendarApp() {
             eventPropGetter={eventStyleGetter}
             culture="ja"
             messages={{
-              next: '次へ',
-              previous: '前へ',
-              today: '今日',
-              month: '月',
-              week: '週',
-              day: '日',
-              agenda: 'アジェンダ',
+              next: t.calendar.next,
+              previous: t.calendar.previous,
+              today: t.calendar.today,
+              month: t.calendar.month,
+              week: t.calendar.week,
+              day: t.calendar.day,
+              agenda: t.calendar.agenda,
               date: '日付',
               time: '時間',
               event: 'イベント',

@@ -12,8 +12,9 @@ import {
   RiDownloadLine,
   RiLogoutBoxLine,
 } from 'react-icons/ri';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
+import { useLanguageSettings } from '@/lib/hooks/useLanguageSettings';
+import { formatDateTime } from '@/lib/utils/dateFormat';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 
 /**
  * セッション情報の型定義
@@ -52,6 +53,10 @@ interface LoginHistory {
  */
 export default function SecurityPage() {
   const router = useRouter();
+
+  // 言語設定を取得
+  const { settings: languageSettings, isLoading: isLoadingLanguage } = useLanguageSettings();
+  const { t } = useTranslation();
 
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [loginHistory, setLoginHistory] = useState<LoginHistory[]>([]);
@@ -98,7 +103,7 @@ export default function SecurityPage() {
    * 個別セッションをログアウト
    */
   const handleLogoutSession = async (sessionId: string) => {
-    if (!confirm('このセッションをログアウトしますか？')) return;
+    if (!confirm(t.security.logoutSessionConfirm)) return;
 
     try {
       const response = await fetch(`/api/settings/security/sessions/${sessionId}`, {
@@ -119,7 +124,7 @@ export default function SecurityPage() {
    * 全セッションからログアウト
    */
   const handleLogoutAllSessions = async () => {
-    if (!confirm('全デバイスからログアウトしますか？（現在のセッションを除く）')) return;
+    if (!confirm(t.security.logoutAllConfirm)) return;
 
     try {
       const response = await fetch('/api/settings/security/sessions/logout-all', {
@@ -165,27 +170,27 @@ export default function SecurityPage() {
    * ログイン履歴をCSVエクスポート
    */
   const handleExportHistory = () => {
-    // CSVヘッダー
+    // CSVヘッダー（ユーザーの言語設定に従う）
     const headers = [
-      'ログイン日時',
-      'IPアドレス',
-      '国',
-      '都市',
-      'デバイス',
-      'ブラウザ',
-      'ステータス',
-      '失敗理由',
+      languageSettings.ui_language === 'ja' ? 'ログイン日時' : 'Login Date',
+      languageSettings.ui_language === 'ja' ? 'IPアドレス' : 'IP Address',
+      languageSettings.ui_language === 'ja' ? '国' : 'Country',
+      languageSettings.ui_language === 'ja' ? '都市' : 'City',
+      languageSettings.ui_language === 'ja' ? 'デバイス' : 'Device',
+      languageSettings.ui_language === 'ja' ? 'ブラウザ' : 'Browser',
+      languageSettings.ui_language === 'ja' ? 'ステータス' : 'Status',
+      languageSettings.ui_language === 'ja' ? '失敗理由' : 'Failure Reason',
     ];
 
-    // CSVボディ
+    // CSVボディ（ユーザーの日付フォーマット設定に従う）
     const rows = loginHistory.map((entry) => [
-      format(new Date(entry.login_at), 'yyyy-MM-dd HH:mm:ss', { locale: ja }),
+      formatDateTime(entry.login_at, languageSettings),
       entry.ip_address || '-',
       entry.country || '-',
       entry.city || '-',
       entry.device_name || '-',
       entry.browser_name || '-',
-      entry.status === 'success' ? '成功' : '失敗',
+      entry.status === 'success' ? t.security.success : t.security.failed,
       entry.failure_reason || '-',
     ]);
 
@@ -200,10 +205,10 @@ export default function SecurityPage() {
     const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
-    // ダウンロード
+    // ダウンロード（ファイル名もユーザーの日付フォーマットに従う）
     const link = document.createElement('a');
     link.href = url;
-    link.download = `login_history_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`;
+    link.download = `login_history_${formatDateTime(new Date(), languageSettings).replace(/[/:]/g, '-').replace(/\s/g, '_')}.csv`;
     link.click();
 
     URL.revokeObjectURL(url);
@@ -224,10 +229,10 @@ export default function SecurityPage() {
       ? loginHistory
       : loginHistory.filter((entry) => entry.status === historyFilter);
 
-  if (isLoading) {
+  if (isLoading || isLoadingLanguage) {
     return (
       <div className="min-h-screen bg-mist flex items-center justify-center p-4">
-        <p className="text-cloud">読み込み中...</p>
+        <p className="text-cloud">{t.common.loading}</p>
       </div>
     );
   }
@@ -242,14 +247,14 @@ export default function SecurityPage() {
           className="mb-4 flex items-center gap-2 text-ink hover:text-accent-sand transition-colors font-medium"
         >
           <RiArrowLeftLine className="w-5 h-5" />
-          <span>デスクトップに戻る</span>
+          <span>{t.common.backToDesktop}</span>
         </button>
 
         {/* セキュリティ設定 */}
         <div className="bg-surface rounded-2xl shadow-panel p-8">
           <div className="flex items-center gap-2 mb-6">
             <RiLockLine className="w-6 h-6 text-accent-sand" />
-            <h2 className="text-2xl font-bold text-ink">セキュリティ設定</h2>
+            <h2 className="text-2xl font-bold text-ink">{t.security.title}</h2>
           </div>
 
           {/* エラーメッセージ */}
@@ -266,10 +271,10 @@ export default function SecurityPage() {
           <div className="space-y-8">
             {/* アクティブセッション */}
             <div>
-              <h3 className="text-lg font-semibold text-ink mb-4">アクティブセッション</h3>
+              <h3 className="text-lg font-semibold text-ink mb-4">{t.security.activeSessions}</h3>
               <div className="space-y-3">
                 {sessions.length === 0 ? (
-                  <p className="text-cloud text-sm">アクティブなセッションはありません</p>
+                  <p className="text-cloud text-sm">{t.security.noActiveSessions}</p>
                 ) : (
                   sessions.map((session) => (
                     <div
@@ -290,32 +295,30 @@ export default function SecurityPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-ink">
-                            {session.device_name || '不明なデバイス'} -{' '}
-                            {session.browser_name || '不明なブラウザ'}
+                            {session.device_name || t.security.unknownDevice} -{' '}
+                            {session.browser_name || t.security.unknownBrowser}
                           </span>
                           {session.is_current && (
                             <span className="px-2 py-0.5 bg-accent-sand/20 text-accent-sand text-xs font-medium rounded">
-                              現在のデバイス
+                              {t.security.currentDevice}
                             </span>
                           )}
                         </div>
                         <div className="text-sm text-cloud space-y-0.5">
                           <div className="flex items-center gap-2">
                             <RiGlobalLine className="w-3.5 h-3.5" />
-                            <span>IPアドレス: {session.ip_address || '不明'}</span>
+                            <span>{t.security.ipAddress}: {session.ip_address || t.security.unknown}</span>
                           </div>
                           <div>
                             {session.city && session.country
                               ? `${session.city}, ${session.country}`
-                              : '位置情報不明'}
+                              : t.security.locationUnknown}
                           </div>
                           <div className="flex items-center gap-2">
                             <RiTimeLine className="w-3.5 h-3.5" />
                             <span>
-                              最終アクセス:{' '}
-                              {format(new Date(session.last_activity_at), 'yyyy/MM/dd HH:mm', {
-                                locale: ja,
-                              })}
+                              {t.security.lastAccess}:{' '}
+                              {formatDateTime(session.last_activity_at, languageSettings)}
                             </span>
                           </div>
                         </div>
@@ -329,7 +332,7 @@ export default function SecurityPage() {
                           className="px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
                         >
                           <RiLogoutBoxLine className="w-4 h-4" />
-                          <span>ログアウト</span>
+                          <span>{t.security.logout}</span>
                         </button>
                       )}
                     </div>
@@ -343,7 +346,7 @@ export default function SecurityPage() {
                     onClick={handleLogoutAllSessions}
                     className="w-full px-4 py-2.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-medium transition-colors"
                   >
-                    全デバイスからログアウト
+                    {t.security.logoutAll}
                   </button>
                 )}
               </div>
@@ -352,7 +355,7 @@ export default function SecurityPage() {
             {/* ログイン履歴 */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-ink">ログイン履歴</h3>
+                <h3 className="text-lg font-semibold text-ink">{t.security.loginHistory}</h3>
                 {loginHistory.length > 0 && (
                   <button
                     type="button"
@@ -360,7 +363,7 @@ export default function SecurityPage() {
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-sand/10 text-accent-sand hover:bg-accent-sand/20 rounded-lg text-sm font-medium transition-colors"
                   >
                     <RiDownloadLine className="w-4 h-4" />
-                    <span>CSVエクスポート</span>
+                    <span>{t.security.exportCSV}</span>
                   </button>
                 )}
               </div>
@@ -376,7 +379,7 @@ export default function SecurityPage() {
                       : 'bg-surface-strong text-cloud hover:bg-mist'
                   }`}
                 >
-                  すべて
+                  {t.security.all}
                 </button>
                 <button
                   type="button"
@@ -387,7 +390,7 @@ export default function SecurityPage() {
                       : 'bg-surface-strong text-cloud hover:bg-mist'
                   }`}
                 >
-                  成功
+                  {t.security.success}
                 </button>
                 <button
                   type="button"
@@ -398,14 +401,14 @@ export default function SecurityPage() {
                       : 'bg-surface-strong text-cloud hover:bg-mist'
                   }`}
                 >
-                  失敗
+                  {t.security.failed}
                 </button>
               </div>
 
               {/* ログイン履歴一覧 */}
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {filteredHistory.length === 0 ? (
-                  <p className="text-cloud text-sm">ログイン履歴はありません</p>
+                  <p className="text-cloud text-sm">{t.security.noLoginHistory}</p>
                 ) : (
                   filteredHistory.map((entry) => (
                     <div
@@ -414,9 +417,7 @@ export default function SecurityPage() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium text-ink">
-                          {format(new Date(entry.login_at), 'yyyy/MM/dd HH:mm:ss', {
-                            locale: ja,
-                          })}
+                          {formatDateTime(entry.login_at, languageSettings)}
                         </span>
                         <span
                           className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -425,22 +426,22 @@ export default function SecurityPage() {
                               : 'bg-red-500/20 text-red-500'
                           }`}
                         >
-                          {entry.status === 'success' ? '成功' : '失敗'}
+                          {entry.status === 'success' ? t.security.success : t.security.failed}
                         </span>
                       </div>
                       <div className="text-cloud space-y-0.5">
                         <div>
-                          {entry.ip_address || '不明なIP'} |{' '}
-                          {entry.device_name || '不明なデバイス'} -{' '}
-                          {entry.browser_name || '不明なブラウザ'}
+                          {entry.ip_address || t.security.unknownIP} |{' '}
+                          {entry.device_name || t.security.unknownDevice} -{' '}
+                          {entry.browser_name || t.security.unknownBrowser}
                         </div>
                         <div>
                           {entry.city && entry.country
                             ? `${entry.city}, ${entry.country}`
-                            : '位置情報不明'}
+                            : t.security.locationUnknown}
                         </div>
                         {entry.status === 'failed' && entry.failure_reason && (
-                          <div className="text-red-500">理由: {entry.failure_reason}</div>
+                          <div className="text-red-500">{t.security.reason}: {entry.failure_reason}</div>
                         )}
                       </div>
                     </div>
@@ -451,15 +452,15 @@ export default function SecurityPage() {
 
             {/* 自動ログアウト設定 */}
             <div>
-              <h3 className="text-lg font-semibold text-ink mb-4">自動ログアウト</h3>
+              <h3 className="text-lg font-semibold text-ink mb-4">{t.security.autoLogout}</h3>
               <div className="space-y-2">
                 {[
-                  { label: '30分', value: 30 },
-                  { label: '1時間', value: 60 },
-                  { label: '3時間', value: 180 },
-                  { label: '6時間', value: 360 },
-                  { label: '24時間', value: 1440 },
-                  { label: '無効', value: null },
+                  { label: t.security.minutes30, value: 30 },
+                  { label: t.security.hour1, value: 60 },
+                  { label: t.security.hours3, value: 180 },
+                  { label: t.security.hours6, value: 360 },
+                  { label: t.security.hours24, value: 1440 },
+                  { label: t.security.disabled, value: null },
                 ].map((option) => (
                   <label
                     key={option.value ?? 'null'}
@@ -478,7 +479,7 @@ export default function SecurityPage() {
                 ))}
               </div>
               <p className="text-sm text-cloud mt-2">
-                一定時間操作がない場合、自動的にログアウトします
+                {t.security.autoLogoutDesc}
               </p>
             </div>
           </div>

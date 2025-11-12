@@ -9,6 +9,7 @@ import {
   RiWallet3Line,
 } from 'react-icons/ri';
 import { subYears, subMonths, subWeeks, format } from 'date-fns';
+import { useTranslation } from '@/lib/hooks/useTranslation';
 import type { Expense, PeriodType } from '@/types/revenue';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { useProjectStore } from '@/store/useProjectStore';
@@ -21,6 +22,7 @@ import { useProjectStore } from '@/store/useProjectStore';
  * - プロジェクトフィルター
  */
 export function ExpenseList() {
+  const { t } = useTranslation();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,14 +87,14 @@ export function ExpenseList() {
       const response = await fetch(`/api/expenses?${params}`);
 
       if (!response.ok) {
-        throw new Error('経費データの取得に失敗しました');
+        throw new Error(t.revenue.fetchErrorExpense);
       }
 
       const result = await response.json();
       setExpenses(result.data || []);
     } catch (err) {
       console.error('Error fetching expenses:', err);
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t.revenue.error);
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +116,7 @@ export function ExpenseList() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || '経費の作成に失敗しました');
+      throw new Error(error.error?.message || t.revenue.createErrorExpense);
     }
 
     await fetchExpenses();
@@ -138,7 +140,7 @@ export function ExpenseList() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error?.message || '経費の更新に失敗しました');
+      throw new Error(error.error?.message || t.revenue.updateErrorExpense);
     }
 
     await fetchExpenses();
@@ -147,7 +149,11 @@ export function ExpenseList() {
 
   // 経費削除ハンドラー
   const handleDelete = async (expense: Expense) => {
-    if (!confirm(`「${expense.description || '経費'}」を削除しますか？`)) return;
+    const confirmMessage = t.revenue.deleteConfirmExpense.replace(
+      '{item}',
+      expense.description || t.revenue.expenseItem
+    );
+    if (!confirm(confirmMessage)) return;
 
     try {
       const response = await fetch(`/api/expenses/${expense.id}`, {
@@ -155,20 +161,20 @@ export function ExpenseList() {
       });
 
       if (!response.ok) {
-        throw new Error('経費の削除に失敗しました');
+        throw new Error(t.revenue.deleteErrorExpense);
       }
 
       await fetchExpenses();
     } catch (err) {
       console.error('Error deleting expense:', err);
-      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      alert(err instanceof Error ? err.message : t.revenue.error);
     }
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-cloud">読み込み中...</div>
+        <div className="text-cloud">{t.revenue.loading}</div>
       </div>
     );
   }
@@ -185,12 +191,12 @@ export function ExpenseList() {
     <div className="space-y-6">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">経費一覧</h3>
+        <h3 className="text-xl font-semibold">{t.revenue.expenseList}</h3>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
         >
-          <RiAddLine className="w-4 h-4" /> 新規
+          <RiAddLine className="w-4 h-4" /> {t.revenue.new}
         </button>
       </div>
 
@@ -207,7 +213,7 @@ export function ExpenseList() {
                 : 'bg-mist text-cloud hover:bg-cloud/20'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            年間
+            {t.revenue.yearly}
           </button>
           <button
             onClick={() => setPeriod('month')}
@@ -218,7 +224,7 @@ export function ExpenseList() {
                 : 'bg-mist text-cloud hover:bg-cloud/20'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            月間
+            {t.revenue.monthly}
           </button>
           <button
             onClick={() => setPeriod('week')}
@@ -229,14 +235,14 @@ export function ExpenseList() {
                 : 'bg-mist text-cloud hover:bg-cloud/20'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            週間
+            {t.revenue.weekly}
           </button>
         </div>
 
         {/* プロジェクトフィルター */}
         <div className="flex items-center gap-2">
           <label htmlFor="project-filter" className="text-sm text-cloud whitespace-nowrap">
-            プロジェクト:
+            {t.revenue.project}:
           </label>
           <select
             id="project-filter"
@@ -247,7 +253,7 @@ export function ExpenseList() {
               isLoading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            <option value="">全体</option>
+            <option value="">{t.revenue.all}</option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
@@ -261,8 +267,8 @@ export function ExpenseList() {
       {expenses.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-cloud">
           <RiWallet3Line className="w-16 h-16 mb-4" />
-          <p className="text-lg">経費データがありません</p>
-          <p className="text-sm">「新規」ボタンから経費を登録してください</p>
+          <p className="text-lg">{t.revenue.noExpenses}</p>
+          <p className="text-sm">{t.revenue.createExpenseHint}</p>
         </div>
       ) : (
         <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
@@ -270,12 +276,12 @@ export function ExpenseList() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-cloud/20">
-                  <th className="px-6 py-3 text-left text-xs text-cloud">日付</th>
-                  <th className="px-6 py-3 text-left text-xs text-cloud">金額</th>
-                  <th className="px-6 py-3 text-left text-xs text-cloud">プロジェクト</th>
-                  <th className="px-6 py-3 text-left text-xs text-cloud">カテゴリ</th>
-                  <th className="px-6 py-3 text-left text-xs text-cloud">説明</th>
-                  <th className="px-6 py-3 text-right text-xs text-cloud">操作</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.expenseDate}</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.amount}</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.project}</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.category}</th>
+                  <th className="px-6 py-3 text-left text-xs text-cloud">{t.revenue.description}</th>
+                  <th className="px-6 py-3 text-right text-xs text-cloud">{t.revenue.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -294,7 +300,7 @@ export function ExpenseList() {
                       ¥{expense.amount.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-sm text-cloud">
-                      {expense.projects?.name || '未割当'}
+                      {expense.projects?.name || t.revenue.unassigned}
                     </td>
                     <td className="px-6 py-4 text-sm text-cloud">{expense.category || '—'}</td>
                     <td className="px-6 py-4 text-sm text-cloud truncate max-w-xs">
@@ -308,16 +314,16 @@ export function ExpenseList() {
                             setIsEditModalOpen(true);
                           }}
                           className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
-                          title="編集"
-                          aria-label="経費を編集"
+                          title={t.revenue.edit}
+                          aria-label={t.revenue.editExpense}
                         >
                           <RiEdit2Line className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(expense)}
                           className="p-2 rounded-full text-cloud hover:bg-red-50 hover:text-red-500 transition-colors"
-                          title="削除"
-                          aria-label="経費を削除"
+                          title={t.revenue.delete}
+                          aria-label={t.revenue.deleteExpense}
                         >
                           <RiDeleteBin6Line className="w-4 h-4" />
                         </button>
