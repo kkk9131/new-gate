@@ -359,38 +359,93 @@ export default function NotificationsPage() {
                 </label>
 
                 {/* まとめて通知 */}
-                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
-                  <input
-                    type="radio"
-                    name="notification_timing"
-                    value="batched"
-                    checked={settings.notification_timing === 'batched'}
-                    onChange={() => updateSettings({ notification_timing: 'batched' })}
-                    style={{ accentColor: 'rgb(213 196 170)' }}
-                    className="w-5 h-5 cursor-pointer"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-ink">まとめて通知</span>
-                    <p className="text-sm text-cloud">定期的にまとめて通知</p>
-                  </div>
-                </label>
+                <div className="bg-surface-strong rounded-xl overflow-hidden">
+                  <label className="flex items-center gap-3 p-4 hover:bg-mist transition-colors cursor-pointer">
+                    <input
+                      type="radio"
+                      name="notification_timing"
+                      value="batched"
+                      checked={settings.notification_timing === 'batched'}
+                      onChange={() => updateSettings({ notification_timing: 'batched' })}
+                      style={{ accentColor: 'rgb(213 196 170)' }}
+                      className="w-5 h-5 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-ink">まとめて通知</span>
+                      <p className="text-sm text-cloud">定期的にまとめて通知</p>
+                    </div>
+                  </label>
+
+                  {/* まとめて通知の詳細設定 */}
+                  {settings.notification_timing === 'batched' && (
+                    <div className="px-4 pb-4 pt-2 border-t border-white/10">
+                      <label className="flex items-center gap-3">
+                        <span className="text-sm text-cloud">通知間隔:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="1440"
+                          value={settings.notification_batch_interval}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value, 10);
+                            if (value >= 1 && value <= 1440) {
+                              updateSettings({ notification_batch_interval: value });
+                            }
+                          }}
+                          className="w-20 px-3 py-1.5 bg-surface border border-white/20 rounded-lg text-ink text-sm focus:outline-none focus:border-accent-sand transition-colors"
+                        />
+                        <span className="text-sm text-cloud">分ごと (1-1440)</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
 
                 {/* 営業時間のみ通知 */}
-                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
-                  <input
-                    type="radio"
-                    name="notification_timing"
-                    value="business_hours"
-                    checked={settings.notification_timing === 'business_hours'}
-                    onChange={() => updateSettings({ notification_timing: 'business_hours' })}
-                    style={{ accentColor: 'rgb(213 196 170)' }}
-                    className="w-5 h-5 cursor-pointer"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-ink">営業時間のみ通知</span>
-                    <p className="text-sm text-cloud">指定時間帯のみ通知（9:00-18:00）</p>
-                  </div>
-                </label>
+                <div className="bg-surface-strong rounded-xl overflow-hidden">
+                  <label className="flex items-center gap-3 p-4 hover:bg-mist transition-colors cursor-pointer">
+                    <input
+                      type="radio"
+                      name="notification_timing"
+                      value="business_hours"
+                      checked={settings.notification_timing === 'business_hours'}
+                      onChange={() => updateSettings({ notification_timing: 'business_hours' })}
+                      style={{ accentColor: 'rgb(213 196 170)' }}
+                      className="w-5 h-5 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-ink">営業時間のみ通知</span>
+                      <p className="text-sm text-cloud">指定時間帯のみ通知</p>
+                    </div>
+                  </label>
+
+                  {/* 営業時間のみ通知の詳細設定 */}
+                  {settings.notification_timing === 'business_hours' && (
+                    <div className="px-4 pb-4 pt-2 border-t border-white/10 space-y-3">
+                      <label className="flex items-center gap-3">
+                        <span className="text-sm text-cloud w-16">開始:</span>
+                        <input
+                          type="time"
+                          value={settings.notification_business_hours_start}
+                          onChange={(e) =>
+                            updateSettings({ notification_business_hours_start: e.target.value })
+                          }
+                          className="px-3 py-1.5 bg-surface border border-white/20 rounded-lg text-ink text-sm focus:outline-none focus:border-accent-sand transition-colors"
+                        />
+                      </label>
+                      <label className="flex items-center gap-3">
+                        <span className="text-sm text-cloud w-16">終了:</span>
+                        <input
+                          type="time"
+                          value={settings.notification_business_hours_end}
+                          onChange={(e) =>
+                            updateSettings({ notification_business_hours_end: e.target.value })
+                          }
+                          className="px-3 py-1.5 bg-surface border border-white/20 rounded-lg text-ink text-sm focus:outline-none focus:border-accent-sand transition-colors"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

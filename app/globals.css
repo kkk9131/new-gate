@@ -36,4 +36,81 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* 通知プロンプトのスライドアップアニメーション */
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  /* エラートーストのスライドインアニメーション */
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ================================================
+   React Big Calendar カスタムスタイル
+   ================================================ */
+
+/* 今日の日付のハイライト - より見やすい色に変更 */
+.rbc-today {
+  background-color: rgba(var(--color-accent-warm), 0.15) !important;
+}
+
+/* 今日の日付セルのホバー時 */
+.rbc-day-bg.rbc-today:hover {
+  background-color: rgba(var(--color-accent-warm), 0.25) !important;
+}
+
+/* 月表示での現在の日付番号 */
+.rbc-now .rbc-button-link {
+  color: rgb(var(--color-ink)) !important;
+  font-weight: 700;
+}
+
+/* 選択されたスロット */
+.rbc-slot-selection {
+  background-color: rgba(var(--color-accent-sand), 0.3) !important;
+}
+
+/* イベントのホバー時 */
+.rbc-event:hover {
+  opacity: 1 !important;
+  filter: brightness(0.95);
+}
+
+/* ダークモード対応 */
+.dark .rbc-today {
+  background-color: rgba(var(--color-accent-warm), 0.2) !important;
+}
+
+.dark .rbc-day-bg.rbc-today:hover {
+  background-color: rgba(var(--color-accent-warm), 0.3) !important;
+}
+
+.dark .rbc-now .rbc-button-link {
+  color: rgb(var(--color-ink)) !important;
+  font-weight: 700;
 }

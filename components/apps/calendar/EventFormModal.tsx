@@ -137,11 +137,11 @@ export function EventFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-ink/50 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-surface border border-cloud/20 rounded-lg w-full max-w-lg my-auto flex flex-col overflow-hidden max-h-[calc(100vh-2rem)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-sm">
+      <div className="bg-surface border border-white/40 rounded-3xl shadow-soft w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] flex flex-col">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-cloud/20 flex-shrink-0">
-          <h3 className="text-lg font-bold text-ink">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-cloud/20">
+          <h3 className="text-xl font-bold text-ink">
             {mode === 'create' ? 'イベント新規作成' : 'イベント編集'}
           </h3>
           <button
@@ -149,14 +149,14 @@ export function EventFormModal({
             className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
             aria-label="閉じる"
           >
-            <RiCloseLine className="w-4 h-4" />
+            <RiCloseLine className="w-5 h-5" />
           </button>
         </div>
 
         {/* フォーム */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-3 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           {error && (
-            <div className="p-4 bg-accent-sand/10 border border-accent-sand/30 rounded-lg text-accent-sand text-sm">
+            <div className="p-4 bg-accent-sand/10 border border-accent-sand/30 rounded-2xl text-accent-sand text-sm">
               {error}
             </div>
           )}
@@ -171,7 +171,7 @@ export function EventFormModal({
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
               required
               placeholder="イベントのタイトル"
             />
@@ -206,7 +206,7 @@ export function EventFormModal({
                   start_time: formData.all_day ? `${e.target.value}T00:00` : e.target.value,
                 })
               }
-              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
               required
             />
           </div>
@@ -226,7 +226,7 @@ export function EventFormModal({
                   end_time: formData.all_day ? `${e.target.value}T23:59` : e.target.value,
                 })
               }
-              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
               required
             />
           </div>
@@ -241,7 +241,7 @@ export function EventFormModal({
               type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
               placeholder="オンライン、会議室など"
             />
           </div>
@@ -255,7 +255,7 @@ export function EventFormModal({
               id="project_id"
               value={formData.project_id}
               onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
               <option value="">未割当</option>
               {projects.map((project) => (
@@ -284,7 +284,7 @@ export function EventFormModal({
                   color: selectedCategory?.color || formData.color,
                 });
               }}
-              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
               <option value="">未分類</option>
               {EVENT_CATEGORIES.map((cat) => (
@@ -306,7 +306,7 @@ export function EventFormModal({
                 type="color"
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="w-12 h-12 rounded-lg border border-cloud/30 cursor-pointer"
+                className="w-12 h-12 rounded-xl border border-cloud/30 cursor-pointer"
               />
               <span className="text-sm text-cloud">{formData.color}</span>
             </div>
@@ -323,7 +323,7 @@ export function EventFormModal({
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
               placeholder="イベントの詳細を入力してください"
-              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand resize-none"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand resize-none"
             />
           </div>
 
@@ -332,14 +332,14 @@ export function EventFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 text-sm bg-mist border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
+              className="px-6 py-2 bg-mist border border-cloud/30 text-ink rounded-full hover:bg-cloud/10 transition-colors"
               disabled={isSubmitting}
             >
               キャンセル
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-sm bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting}
             >
               {isSubmitting ? '保存中...' : mode === 'create' ? '作成' : '更新'}

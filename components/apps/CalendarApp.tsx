@@ -211,7 +211,7 @@ export function CalendarApp() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
+      <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
         <div className="text-cloud">読み込み中...</div>
       </div>
     );
@@ -219,17 +219,17 @@ export function CalendarApp() {
 
   if (error) {
     return (
-      <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
+      <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
         <div className="text-accent-sand">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink">
+    <div className="p-6 h-full overflow-auto bg-mist text-ink">
       {/* ヘッダー */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 md:mb-6">
-        <h2 className="text-xl md:text-2xl font-bold">Calendar</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">Calendar</h2>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-accent-sand text-ink rounded-full hover:bg-accent-sand/80 transition-colors"
@@ -239,13 +239,13 @@ export function CalendarApp() {
       </div>
 
       {/* ビュー切り替え */}
-      <div className="flex gap-2 border-b border-cloud/20 pb-2 mb-4 md:mb-6 overflow-x-auto">
+      <div className="flex gap-2 mb-6">
         <button
           onClick={() => setView('today')}
-          className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             view === 'today'
-              ? 'bg-surface text-ink font-semibold border-b-2 border-accent-sand'
-              : 'text-cloud hover:text-ink hover:bg-cloud/10'
+              ? 'bg-accent-sand text-ink'
+              : 'bg-mist text-cloud border border-cloud/30 hover:bg-cloud/10'
           }`}
         >
           今日
@@ -255,10 +255,10 @@ export function CalendarApp() {
             setView('month');
             setBigCalendarView('month');
           }}
-          className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             view === 'month'
-              ? 'bg-surface text-ink font-semibold border-b-2 border-accent-sand'
-              : 'text-cloud hover:text-ink hover:bg-cloud/10'
+              ? 'bg-accent-sand text-ink'
+              : 'bg-mist text-cloud border border-cloud/30 hover:bg-cloud/10'
           }`}
         >
           月
@@ -268,10 +268,10 @@ export function CalendarApp() {
             setView('week');
             setBigCalendarView('week');
           }}
-          className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             view === 'week'
-              ? 'bg-surface text-ink font-semibold border-b-2 border-accent-sand'
-              : 'text-cloud hover:text-ink hover:bg-cloud/10'
+              ? 'bg-accent-sand text-ink'
+              : 'bg-mist text-cloud border border-cloud/30 hover:bg-cloud/10'
           }`}
         >
           週
@@ -282,17 +282,17 @@ export function CalendarApp() {
       {view === 'today' && (
         <>
           {/* 今日の日付 */}
-          <div className="bg-surface border border-cloud/20 p-3 md:p-4 rounded-lg mb-4 md:mb-6">
+          <div className="bg-surface border border-white/40 p-4 rounded-2xl shadow-sm shadow-black/5 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 md:w-16 md:h-16 flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-accent-bloom/30 rounded-2xl flex flex-col items-center justify-center">
                 <span className="text-xs text-cloud font-medium">
                   {format(currentDate, 'M月', { locale: ja })}
                 </span>
-                <span className="text-xl md:text-2xl font-bold">{format(currentDate, 'd')}</span>
+                <span className="text-2xl font-bold">{format(currentDate, 'd')}</span>
               </div>
               <div>
                 <p className="text-sm text-cloud">今日</p>
-                <p className="text-lg md:text-xl font-bold">
+                <p className="text-xl font-bold">
                   {format(currentDate, 'yyyy年M月d日（E）', { locale: ja })}
                 </p>
               </div>
@@ -300,14 +300,14 @@ export function CalendarApp() {
           </div>
 
           {/* イベント一覧 */}
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base md:text-lg font-semibold">今日の予定</h3>
+              <h3 className="text-lg font-semibold">今日の予定</h3>
               <span className="text-sm text-cloud">{events.length}件</span>
             </div>
 
             {events.length === 0 ? (
-              <div className="bg-surface border border-cloud/20 p-8 rounded-lg text-center text-cloud">
+              <div className="bg-surface border border-white/40 p-8 rounded-2xl text-center text-cloud">
                 <RiCalendarLine className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>今日の予定はありません</p>
               </div>
@@ -315,7 +315,7 @@ export function CalendarApp() {
               events.map((event) => (
                 <div
                   key={event.id}
-                  className={`p-4 rounded-lg border-l-4 ${getEventColorClass(event.color)} relative group`}
+                  className={`p-4 rounded-2xl border-l-4 ${getEventColorClass(event.color)} shadow-sm relative group`}
                 >
                   {/* イベント操作ボタン */}
                   <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -384,7 +384,7 @@ export function CalendarApp() {
 
       {/* 月・週ビュー（react-big-calendar） */}
       {(view === 'month' || view === 'week') && (
-        <div className="bg-surface border border-cloud/20 rounded-lg overflow-hidden p-4" style={{ height: '600px' }}>
+        <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden p-4" style={{ height: '600px' }}>
           <Calendar
             localizer={localizer}
             events={calendarEvents}
@@ -398,7 +398,6 @@ export function CalendarApp() {
             onSelectEvent={handleSelectEvent}
             onSelectSlot={handleSelectSlot}
             selectable
-            toolbar={false}
             eventPropGetter={eventStyleGetter}
             culture="ja"
             messages={{
