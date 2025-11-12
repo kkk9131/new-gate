@@ -77,11 +77,11 @@ export function ProjectFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-sm">
-      <div className="bg-surface border border-white/40 rounded-3xl shadow-soft w-full max-w-2xl mx-4 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/50 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-surface border border-cloud/20 rounded-lg w-full max-w-2xl my-auto flex flex-col overflow-hidden max-h-[calc(100vh-2rem)]">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-cloud/20">
-          <h3 className="text-xl font-bold text-ink">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-cloud/20 flex-shrink-0">
+          <h3 className="text-lg font-bold text-ink">
             {mode === 'create' ? 'プロジェクト新規作成' : 'プロジェクト編集'}
           </h3>
           <button
@@ -89,14 +89,14 @@ export function ProjectFormModal({
             className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
             aria-label="閉じる"
           >
-            <RiCloseLine className="w-5 h-5" />
+            <RiCloseLine className="w-4 h-4" />
           </button>
         </div>
 
         {/* フォーム */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-3 overflow-y-auto flex-1">
           {error && (
-            <div className="p-4 bg-accent-sand/10 border border-accent-sand/30 rounded-2xl text-accent-sand text-sm">
+            <div className="p-4 bg-accent-sand/10 border border-accent-sand/30 rounded-lg text-accent-sand text-sm">
               {error}
             </div>
           )}
@@ -111,7 +111,7 @@ export function ProjectFormModal({
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2.5 bg-mist border border-cloud/30 rounded-2xl text-ink placeholder-cloud focus:outline-none focus:border-accent-sand transition-colors"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink placeholder-cloud focus:outline-none focus:ring-2 focus:ring-accent-sand"
               placeholder="例: Webサイトリニューアル"
               required
             />
@@ -127,7 +127,7 @@ export function ProjectFormModal({
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2.5 bg-mist border border-cloud/30 rounded-2xl text-ink placeholder-cloud focus:outline-none focus:border-accent-sand transition-colors resize-none"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink placeholder-cloud focus:outline-none focus:ring-2 focus:ring-accent-sand resize-none"
               placeholder="プロジェクトの詳細説明"
             />
           </div>
@@ -143,7 +143,7 @@ export function ProjectFormModal({
                 id="start_date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-2.5 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:border-accent-sand transition-colors"
+                className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
                 required
               />
             </div>
@@ -156,7 +156,7 @@ export function ProjectFormModal({
                 id="end_date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-4 py-2.5 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:border-accent-sand transition-colors"
+                className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
               />
             </div>
           </div>
@@ -171,7 +171,7 @@ export function ProjectFormModal({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={2}
-              className="w-full px-4 py-2.5 bg-mist border border-cloud/30 rounded-2xl text-ink placeholder-cloud focus:outline-none focus:border-accent-sand transition-colors resize-none"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink placeholder-cloud focus:outline-none focus:ring-2 focus:ring-accent-sand resize-none"
               placeholder="メモや補足情報"
             />
           </div>
@@ -185,7 +185,7 @@ export function ProjectFormModal({
               id="status"
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as ProjectStatus })}
-              className="w-full px-4 py-2.5 bg-mist border border-cloud/30 rounded-2xl text-ink focus:outline-none focus:border-accent-sand transition-colors"
+              className="w-full px-4 py-2 bg-mist border border-cloud/30 rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-accent-sand"
             >
               <option value="planning">企画</option>
               <option value="active">進行中</option>

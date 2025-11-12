@@ -371,7 +371,7 @@ export function ProjectsApp() {
 
   if (isLoading) {
     return (
-      <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
+      <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
         <div className="text-cloud">読み込み中...</div>
       </div>
     );
@@ -379,7 +379,7 @@ export function ProjectsApp() {
 
   if (error) {
     return (
-      <div className="p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
+      <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink flex items-center justify-center">
         <div className="text-accent-sand">{error}</div>
       </div>
     );
@@ -387,7 +387,7 @@ export function ProjectsApp() {
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <div className="p-6 h-full overflow-auto bg-mist text-ink space-y-6">
+      <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink space-y-4 md:space-y-6">
         <Header
           viewMode={viewMode}
           onChangeView={setViewMode}
@@ -411,7 +411,7 @@ export function ProjectsApp() {
           <>
             <SortableContext items={projects.map((p) => p.id)} strategy={viewMode === 'card' ? rectSortingStrategy : verticalListSortingStrategy}>
               {viewMode === 'card' ? (
-                <div className="grid gap-4 lg:grid-cols-3 md:grid-cols-2">
+                <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   {projects.map((project) => (
                     <ProjectCard
                       key={project.id}
@@ -531,9 +531,9 @@ function Header({
   onBulkDelete: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <h2 className="text-2xl font-bold mb-1">Projects</h2>
+        <h2 className="text-xl md:text-2xl font-bold mb-1">Projects</h2>
         {isSelectionMode && (
           <p className="text-sm text-cloud">
             {selectedCount}件 / {totalCount}件を選択中

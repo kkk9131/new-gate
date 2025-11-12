@@ -25,7 +25,7 @@ export function RevenueApp() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   return (
-    <div className="p-6 h-full overflow-auto bg-mist text-ink space-y-6">
+    <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink space-y-4 md:space-y-6">
       {/* ヘッダー */}
       <Header />
 
@@ -33,7 +33,7 @@ export function RevenueApp() {
       <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* タブコンテンツ */}
-      <div className="mt-6">
+      <div className="mt-4 md:mt-6">
         {activeTab === 'dashboard' && <RevenueDashboard />}
         {activeTab === 'revenues' && <RevenueList />}
         {activeTab === 'expenses' && <ExpenseList />}
@@ -50,7 +50,7 @@ function Header() {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h2 className="text-2xl font-bold mb-1">Revenue</h2>
+        <h2 className="text-xl md:text-2xl font-bold mb-1">Revenue</h2>
         <p className="text-sm text-cloud">売上・経費管理と目標達成状況</p>
       </div>
     </div>
@@ -75,7 +75,7 @@ function TabNavigation({
   ];
 
   return (
-    <div className="flex gap-2 border-b border-cloud/20 pb-2">
+    <div className="flex gap-2 border-b border-cloud/20 pb-2 overflow-x-auto">
       {tabs.map((tab) => (
         <button
           key={tab.id}

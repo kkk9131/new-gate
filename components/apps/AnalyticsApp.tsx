@@ -16,16 +16,16 @@ export function AnalyticsApp() {
   };
 
   return (
-    <div className="p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-900">
-      <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Analytics</h2>
+    <div className="p-4 md:p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-900">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4 md:mb-6">Analytics</h2>
 
       {/* メトリクスカード */}
-      <div className="grid grid-cols-1 gap-4 mb-6">
+      <div className="grid grid-cols-1 gap-3 md:gap-4 mb-4 md:mb-6">
         {metrics.map((metric, i) => {
           const Icon = metric.icon;
           const colors = colorMap[metric.color];
           return (
-            <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+            <div key={i} className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
@@ -33,7 +33,7 @@ export function AnalyticsApp() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{metric.label}</p>
-                    <p className="text-2xl font-bold text-gray-800 dark:text-white">{metric.value}</p>
+                    <p className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{metric.value}</p>
                   </div>
                 </div>
                 <span className={`text-sm font-semibold ${colors.text}`}>{metric.change}</span>
@@ -44,8 +44,8 @@ export function AnalyticsApp() {
       </div>
 
       {/* グラフエリア（簡易版） */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">週次トレンド</h3>
+      <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl shadow-sm">
+        <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-white mb-3 md:mb-4">週次トレンド</h3>
         <div className="flex items-end gap-2 h-40">
           {[65, 78, 82, 95, 88, 92, 100].map((value, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-2">
