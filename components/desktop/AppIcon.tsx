@@ -86,12 +86,12 @@ export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
       tabIndex={0}
       role="button"
       aria-label={`${name}アプリを起動`}
-      className="flex flex-col items-center justify-center p-4 cursor-pointer select-none group"
+      className="flex flex-col items-center justify-center p-2 md:p-4 cursor-pointer select-none group"
     >
       {/* アイコン */}
       <div
         className={`
-          w-16 h-16 rounded-2xl
+          w-12 h-12 md:w-16 md:h-16 rounded-2xl
           bg-surface
           shadow-panel
           flex items-center justify-center
@@ -101,14 +101,14 @@ export function AppIcon({ id, name, icon, color, onOpen }: AppIconProps) {
         `}
       >
         <IconComponent
-          className={`w-8 h-8 ${color} transition-transform group-hover:scale-110`}
+          className={`w-6 h-6 md:w-8 md:h-8 ${color} transition-transform group-hover:scale-110`}
         />
       </div>
 
       {/* アプリ名 */}
       <span
         className="
-          mt-2 text-sm font-medium
+          mt-1 md:mt-2 text-xs md:text-sm font-medium
           text-ink
           group-hover:text-ink
           transition-colors
