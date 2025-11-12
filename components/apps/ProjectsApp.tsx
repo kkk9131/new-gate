@@ -762,7 +762,7 @@ function ProjectListRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-4 text-sm items-center ${
+      className={`grid md:grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] grid-cols-[auto_1fr_auto] gap-2 md:gap-4 px-3 md:px-6 py-3 md:py-4 text-sm items-center ${
         !isLast ? 'border-b border-cloud/10' : ''
       } ${isSelected ? 'bg-accent-sand/10' : ''}`}
     >
@@ -787,20 +787,20 @@ function ProjectListRow({
       )}
 
       <div className="font-medium truncate">{project.name}</div>
-      <div className="text-cloud text-xs truncate">{project.description || '—'}</div>
-      <div className="text-cloud text-xs">
+      <div className="hidden md:block text-cloud text-xs truncate">{project.description || '—'}</div>
+      <div className="hidden md:block text-cloud text-xs">
         {project.start_date}
         {project.end_date && ` - ${project.end_date}`}
         {overdue && <span className="ml-2 text-accent-sand">⚠️</span>}
       </div>
-      <div>
+      <div className="hidden md:block">
         <ProjectStatusMenu
           currentStatus={project.status}
           onChange={(newStatus) => onStatusChange(project.id, newStatus)}
           size="sm"
         />
       </div>
-      <div className="text-cloud text-xs truncate">{project.notes || '—'}</div>
+      <div className="hidden md:block text-cloud text-xs truncate">{project.notes || '—'}</div>
       <div className="flex gap-1">
         <button
           onClick={() => onDuplicate(project.id)}
@@ -839,13 +839,13 @@ function ProjectList({
 }) {
   return (
     <div className="bg-surface border border-white/40 rounded-3xl shadow-soft overflow-hidden">
-      <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 text-xs text-cloud border-b border-cloud/20">
+      <div className="grid md:grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_auto] grid-cols-[auto_1fr_auto] gap-2 md:gap-4 px-3 md:px-6 py-3 text-xs text-cloud border-b border-cloud/20">
         <span></span> {/* ドラッグハンドルまたはチェックボックス用の空スペース */}
         <span>名称</span>
-        <span>説明</span>
-        <span>期間</span>
-        <span>ステータス</span>
-        <span>備考</span>
+        <span className="hidden md:block">説明</span>
+        <span className="hidden md:block">期間</span>
+        <span className="hidden md:block">ステータス</span>
+        <span className="hidden md:block">備考</span>
         <span>操作</span>
       </div>
       {projects.map((project, index) => (

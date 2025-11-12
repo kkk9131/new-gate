@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Rnd } from 'react-rnd';
 import { useDesktopStore, type App } from '@/store/desktopStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { appIconMap } from './AppIcon';
 import { Dock } from './Dock';
 import { WindowManager } from './WindowManager';
@@ -30,21 +30,8 @@ export function DesktopLayout() {
   const splitMode = useDesktopStore((state) => state.splitMode);
   const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
 
-  // レスポンシブ対応：画面幅を監視
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    // 初期チェック
-    checkMobile();
-
-    // リサイズイベントリスナー
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // レスポンシブ対応：カスタムフックでモバイル判定
+  const isMobile = useIsMobile();
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
@@ -168,12 +155,6 @@ export function DesktopLayout() {
   );
 }
 
-// デスクトップアイコンのサイズ（レスポンシブ用の定数）
-const ICON_WRAPPER_WIDTH = 80;  // モバイル: 80px
-const ICON_WRAPPER_HEIGHT = 100; // モバイル: 100px
-const ICON_WRAPPER_WIDTH_MD = 96;  // デスクトップ: 96px
-const ICON_WRAPPER_HEIGHT_MD = 120; // デスクトップ: 120px
-
 interface DesktopIconProps {
   app: App;
   onOpen: (appId: App['id']) => void;
@@ -194,7 +175,7 @@ function DesktopIcon({ app, onOpen, onPositionChange }: DesktopIconProps) {
 
   return (
     <Rnd
-      size={{ width: ICON_WRAPPER_WIDTH, height: ICON_WRAPPER_HEIGHT }}
+      size={{ width: 96, height: 120 }}
       position={{ x: position.x, y: position.y }}
       bounds="parent"
       enableResizing={false}

@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Rnd, type RndDragCallback, type RndResizeCallback } from 'react-rnd';
 import type { WindowState } from '@/store/desktopStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   RiCloseLine,
   RiSubtractLine,
@@ -49,21 +50,8 @@ export function BaseWindow({
   titleBarClassName = 'window-drag-handle flex items-center justify-between px-2 md:px-4 py-2 md:py-3 bg-surface text-ink border-b border-accent-sand/60 cursor-move select-none',
   bodyClassName = 'flex-1 overflow-hidden',
 }: BaseWindowProps) {
-  // モバイル判定
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(globalThis.window.innerWidth < 768);
-    };
-
-    // 初期チェック
-    checkMobile();
-
-    // リサイズイベントリスナー
-    globalThis.window.addEventListener('resize', checkMobile);
-    return () => globalThis.window.removeEventListener('resize', checkMobile);
-  }, []);
+  // モバイル判定（カスタムフック使用）
+  const isMobile = useIsMobile();
 
   // モバイル時は常に全画面、デスクトップ時は通常のロジック
   const size = useMemo(
