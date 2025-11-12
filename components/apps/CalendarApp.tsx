@@ -23,10 +23,10 @@ const localizer = dateFnsLocalizer({
 
 export function CalendarApp() {
   const { t } = useTranslation();
-  const { uiLanguage } = useLanguageSettings();
+  const { settings } = useLanguageSettings();
 
   // 言語設定に応じたロケールを選択
-  const currentLocale = uiLanguage === 'ja' ? ja : enUS;
+  const currentLocale = settings.ui_language === 'ja' ? ja : enUS;
 
   // 状態管理
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -295,14 +295,14 @@ export function CalendarApp() {
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 bg-accent-bloom/30 rounded-2xl flex flex-col items-center justify-center">
                 <span className="text-xs text-cloud font-medium">
-                  {format(currentDate, uiLanguage === 'ja' ? 'M月' : 'MMM', { locale: currentLocale })}
+                  {format(currentDate, settings.ui_language === 'ja' ? 'M月' : 'MMM', { locale: currentLocale })}
                 </span>
                 <span className="text-2xl font-bold">{format(currentDate, 'd')}</span>
               </div>
               <div>
                 <p className="text-sm text-cloud">{t.calendar.today}</p>
                 <p className="text-xl font-bold">
-                  {format(currentDate, uiLanguage === 'ja' ? 'yyyy年M月d日（E）' : 'EEE, MMM d, yyyy', { locale: currentLocale })}
+                  {format(currentDate, settings.ui_language === 'ja' ? 'yyyy年M月d日（E）' : 'EEE, MMM d, yyyy', { locale: currentLocale })}
                 </p>
               </div>
             </div>
