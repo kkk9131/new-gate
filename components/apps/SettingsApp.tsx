@@ -34,7 +34,7 @@ export function SettingsApp() {
       icon: RiLockLine,
       title: 'セキュリティ',
       desc: 'パスワードとセキュリティ',
-      onClick: () => console.log('セキュリティ設定を開く')
+      onClick: () => router.push('/settings/security')
     },
     {
       icon: RiPaletteLine,
