@@ -318,6 +318,59 @@ new-gate/
 - 新しいAPI呼び出しには適切な権限チェックを実装
 - RLS（Row Level Security）を活用
 
+### Git操作のガイドライン
+
+#### ⚠️ 重要: Git操作は必ずユーザーの明示的な指示を待つこと
+
+**禁止事項**:
+- ❌ **mainブランチへの直接操作**: push, merge, rebase等は絶対禁止
+- ❌ **devブランチへの直接commit/push**: 必ずfeatureブランチ経由で作業
+- ❌ **勝手なマージ**: ユーザーの明示的な指示なしにマージしない
+- ❌ **勝手なpush**: コミット後、pushはユーザーに確認を取る
+
+**作業フロー**:
+1. **新機能開発**: 必ずfeatureブランチ（worktree）で作業
+   - 例: `feature/calendar-app`, `feature/revenue-app`
+2. **コミット**: featureブランチでコミット
+3. **push確認**: 「pushしますか？」とユーザーに確認
+4. **マージ確認**: 「devにマージしますか？」とユーザーに確認
+
+**例外**: featureブランチへのcommitとpushのみ自動実行可（ただし確認推奨）
+
+#### Git Worktreeでの作業方法
+
+**Worktree構造**:
+```
+/Users/kazuto/Desktop/new-gate            # devブランチ (メイン)
+/Users/kazuto/Desktop/new-gate-calendar   # feature/calendar-app
+/Users/kazuto/Desktop/new-gate-revenue    # feature/revenue-app
+/Users/kazuto/Desktop/new-gate-settings   # feature/notification-system
+```
+
+**⚠️ 重要: Bashコマンドはworktreeディレクトリで実行すること**
+
+Bashツールは実行後に自動的に元のディレクトリ（`/Users/kazuto/Desktop/new-gate`）に戻るため、**各コマンドの前に必ずcdを付ける**:
+
+```bash
+# ❌ 間違い（devブランチで実行されてしまう）
+git add -A
+
+# ✅ 正しい（feature/calendar-appで実行）
+cd /Users/kazuto/Desktop/new-gate-calendar && git add -A
+cd /Users/kazuto/Desktop/new-gate-calendar && git commit -m "..."
+cd /Users/kazuto/Desktop/new-gate-calendar && git push origin feature/calendar-app
+```
+
+**Worktree作業フロー**:
+1. **ブランチ確認**: `cd /path/to/worktree && git branch --show-current`
+2. **ファイル編集**: Read/Edit/Writeは通常通り絶対パスで実行
+3. **Git操作**: 必ず `cd /path/to/worktree &&` を前置
+
+**Worktree一覧確認**:
+```bash
+git worktree list
+```
+
 ### Component Development
 
 #### Tailwind CSS使用規則

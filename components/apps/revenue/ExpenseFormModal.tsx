@@ -115,11 +115,11 @@ export function ExpenseFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-sm">
-      <div className="bg-surface border border-white/40 rounded-3xl shadow-soft w-full max-w-2xl mx-4 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/50 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-surface border border-cloud/20 rounded-lg w-full max-w-2xl my-auto flex flex-col overflow-hidden max-h-[calc(100vh-2rem)]">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-cloud/20">
-          <h3 className="text-xl font-bold text-ink">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-cloud/20 flex-shrink-0">
+          <h3 className="text-lg font-bold text-ink">
             {mode === 'create' ? '経費新規登録' : '経費編集'}
           </h3>
           <button
@@ -127,12 +127,12 @@ export function ExpenseFormModal({
             className="p-2 rounded-full text-cloud hover:bg-cloud/20 transition-colors"
             aria-label="閉じる"
           >
-            <RiCloseLine className="w-5 h-5" />
+            <RiCloseLine className="w-4 h-4" />
           </button>
         </div>
 
         {/* フォーム */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-3 overflow-y-auto flex-1">
           {error && (
             <div className="p-4 bg-accent-sand/10 border border-accent-sand/30 rounded-2xl text-accent-sand text-sm">
               {error}

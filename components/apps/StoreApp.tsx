@@ -164,8 +164,8 @@ export function StoreApp() {
   };
 
   return (
-    <div className="p-6 h-full overflow-auto bg-mist text-ink">
-      <header className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink">
+      <header className="flex items-center justify-between mb-4 md:mb-6">
         {viewMode === 'detail' ? (
           <button
             onClick={() => {
@@ -185,10 +185,10 @@ export function StoreApp() {
         </div>
       </header>
 
-      <div className="bg-surface border border-white/40 rounded-3xl p-6 shadow-panel mb-6">
+      <div className="bg-surface border border-white/40 rounded-3xl p-4 md:p-6 shadow-panel mb-4 md:mb-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center">
           <div className="flex-1">
-            <h2 className="text-3xl font-semibold mb-2">Plugin Store</h2>
+            <h2 className="text-2xl md:text-3xl font-semibold mb-2">Plugin Store</h2>
             <p className="text-cloud text-sm">欲しい体験を追加する、デスクトップ拡張マーケット</p>
           </div>
           <div className="flex gap-3">
@@ -213,14 +213,14 @@ export function StoreApp() {
       </div>
 
       {viewMode === 'home' && (
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           {/* おすすめ */}
           <section>
             <div className="flex items-center gap-2 mb-3">
               <RiRocket2Line className="text-accent-sand" />
               <h3 className="font-semibold">おすすめプラグイン</h3>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
               {featured.map((plugin) => (
                 <PluginCard key={plugin.id} plugin={plugin} onClick={() => handleOpenDetail(plugin)} />
               ))}
@@ -256,11 +256,11 @@ export function StoreApp() {
               <RiStarLine className="text-accent-sand" />
               <h3 className="font-semibold">人気ランキング</h3>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               {ranking.map((plugin, index) => (
                 <div
                   key={plugin.id}
-                  className="flex items-center justify-between bg-surface border border-white/40 rounded-2xl p-4"
+                  className="flex items-center justify-between bg-surface border border-white/40 rounded-2xl p-3 md:p-4"
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-cloud font-semibold w-6">{index + 1}.</span>
@@ -286,7 +286,7 @@ export function StoreApp() {
               <RiStoreLine className="text-accent-sand" />
               <h3 className="font-semibold">新着プラグイン</h3>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 md:gap-4 md:grid-cols-3">
               {newArrivals.map((plugin) => (
                 <PluginCard key={plugin.id} plugin={plugin} onClick={() => handleOpenDetail(plugin)} compact />
               ))}
@@ -297,7 +297,7 @@ export function StoreApp() {
 
       {viewMode === 'search' && (
         <div className="space-y-6">
-          <div className="bg-surface border border-white/40 rounded-3xl p-5 shadow-panel">
+          <div className="bg-surface border border-white/40 rounded-3xl p-4 md:p-5 shadow-panel">
             <div className="flex flex-wrap gap-4 text-sm">
               <FilterGroup title="カテゴリ">
                 {categories.map((category) => (
@@ -350,14 +350,14 @@ export function StoreApp() {
 
       {viewMode === 'detail' && selectedPlugin && (
         <div className="space-y-6">
-          <div className="bg-surface border border-white/40 rounded-3xl p-6 shadow-panel">
+          <div className="bg-surface border border-white/40 rounded-3xl p-4 md:p-6 shadow-panel">
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
               <div className="flex items-center gap-4 flex-1">
                 <div className="w-20 h-20 rounded-3xl bg-accent-calm/30 flex items-center justify-center">
                   <RiStoreLine className="w-10 h-10 text-ink" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold">{selectedPlugin.name}</h3>
+                  <h3 className="text-xl md:text-2xl font-semibold">{selectedPlugin.name}</h3>
                   <p className="text-sm text-cloud">by {selectedPlugin.developer}</p>
                   <p className="text-sm text-cloud">
                     ★{selectedPlugin.rating} ({selectedPlugin.reviews} reviews)
@@ -371,14 +371,14 @@ export function StoreApp() {
             </div>
           </div>
 
-          <section className="bg-surface border border-white/40 rounded-3xl p-6 shadow-panel space-y-4">
+          <section className="bg-surface border border-white/40 rounded-3xl p-4 md:p-6 shadow-panel space-y-4">
             <h4 className="font-semibold">説明</h4>
             <p className="text-cloud text-sm leading-relaxed">{selectedPlugin.description}</p>
           </section>
 
-          <section className="bg-surface border border-white/40 rounded-3xl p-6 shadow-panel">
+          <section className="bg-surface border border-white/40 rounded-3xl p-4 md:p-6 shadow-panel">
             <h4 className="font-semibold mb-4">詳細情報</h4>
-            <dl className="grid grid-cols-2 gap-4 text-sm text-cloud">
+            <dl className="grid grid-cols-2 gap-3 md:gap-4 text-sm text-cloud">
               <div>
                 <dt className="text-xs uppercase tracking-wide text-cloud">カテゴリ</dt>
                 <dd className="text-ink">{selectedPlugin.category}</dd>
@@ -402,7 +402,7 @@ export function StoreApp() {
             </dl>
           </section>
 
-          <section className="bg-surface border border-white/40 rounded-3xl p-6 shadow-panel">
+          <section className="bg-surface border border-white/40 rounded-3xl p-4 md:p-6 shadow-panel">
             <h4 className="font-semibold mb-3">権限</h4>
             <ul className="space-y-2 text-sm">
               {selectedPlugin.permissions.map((permission) => (
@@ -413,7 +413,7 @@ export function StoreApp() {
             </ul>
           </section>
 
-          <section className="bg-surface border border-white/40 rounded-3xl p-6 shadow-panel space-y-3">
+          <section className="bg-surface border border-white/40 rounded-3xl p-4 md:p-6 shadow-panel space-y-3">
             <h4 className="font-semibold">レビュー</h4>
             <div className="flex gap-3">
               <ReviewPill rating={5} text="最高のCRMプラグイン！" user="User123" date="2025-10-15" />
@@ -431,7 +431,7 @@ function PluginCard({ plugin, onClick, compact }: { plugin: Plugin; onClick: () 
   return (
     <button
       onClick={onClick}
-      className="bg-surface border border-white/40 rounded-2xl p-4 text-left shadow-soft hover:shadow-panel transition-shadow"
+      className="bg-surface border border-white/40 rounded-2xl p-3 md:p-4 text-left shadow-soft hover:shadow-panel transition-shadow"
     >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-12 h-12 rounded-2xl bg-accent-calm/30 flex items-center justify-center">
@@ -455,7 +455,7 @@ function PluginCard({ plugin, onClick, compact }: { plugin: Plugin; onClick: () 
 
 function PluginResultCard({ plugin, onClick }: { plugin: Plugin; onClick: () => void }) {
   return (
-    <div className="bg-surface border border-white/40 rounded-3xl p-5 shadow-soft flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="bg-surface border border-white/40 rounded-3xl p-4 md:p-5 shadow-soft flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
         <div className="flex items-center gap-2 mb-1">
           <h4 className="font-semibold text-lg">{plugin.name}</h4>
@@ -490,7 +490,7 @@ function FilterGroup({ title, children }: { title: string; children: React.React
 
 function ReviewPill({ rating, text, user, date }: { rating: number; text: string; user: string; date: string }) {
   return (
-    <div className="flex-1 rounded-2xl border border-cloud/40 p-4">
+    <div className="flex-1 rounded-2xl border border-cloud/40 p-3 md:p-4">
       <div className="flex items-center gap-1 text-sm text-accent-sand mb-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <RiStarFill key={i} className={`w-3 h-3 ${i < rating ? 'text-accent-sand' : 'text-cloud'}`} />

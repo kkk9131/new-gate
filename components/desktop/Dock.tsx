@@ -31,14 +31,14 @@ export function Dock() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-4"
+      className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-2 md:pb-4"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Dockコンテナ */}
       <div
         className={`
-          flex items-center gap-2 px-4 py-3
+          flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 md:py-3
           bg-surface/90
           backdrop-blur-xl
           rounded-2xl
@@ -75,8 +75,8 @@ function DockIcon({ app }: { app: App }) {
     >
       {/* ツールチップ */}
       {isHovered && (
-        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 animate-fade-in">
-          <div className="px-3 py-1 bg-ink text-white text-xs rounded-lg shadow-panel whitespace-nowrap">
+        <div className="absolute bottom-full mb-1 md:mb-2 left-1/2 transform -translate-x-1/2 animate-fade-in">
+          <div className="px-2 md:px-3 py-0.5 md:py-1 bg-ink text-white text-xs rounded-lg shadow-panel whitespace-nowrap">
             {app.name}
           </div>
         </div>
@@ -86,7 +86,7 @@ function DockIcon({ app }: { app: App }) {
       <button
         onClick={handleClick}
         className={`
-          w-12 h-12 rounded-xl border border-white/40
+          w-10 h-10 md:w-12 md:h-12 rounded-xl border border-white/40
           bg-surface
           shadow-panel
           flex items-center justify-center
@@ -96,7 +96,7 @@ function DockIcon({ app }: { app: App }) {
           ${isHovered ? 'scale-110' : 'scale-100'}
         `}
       >
-        <IconComponent className={`w-6 h-6 ${app.color}`} />
+        <IconComponent className={`w-5 h-5 md:w-6 md:h-6 ${app.color}`} />
       </button>
     </div>
   );

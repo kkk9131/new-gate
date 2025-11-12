@@ -10,13 +10,13 @@ export function AgentApp() {
   ];
 
   return (
-    <div className="p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-900">
-      <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">AI Agent</h2>
+    <div className="p-4 md:p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-900">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4 md:mb-6">AI Agent</h2>
 
       {/* エージェントタスク一覧 */}
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {tasks.map((task, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+          <div key={i} className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl shadow-sm">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
