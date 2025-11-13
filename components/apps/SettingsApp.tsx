@@ -2,7 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { RiUserLine, RiNotificationLine, RiLockLine, RiPaletteLine, RiGlobalLine, RiShieldLine, RiAlertLine } from 'react-icons/ri';
+import {
+  RiUserLine,
+  RiNotificationLine,
+  RiLockLine,
+  RiGlobalLine,
+  RiShieldLine,
+  RiAlertLine,
+  RiKeyLine,
+  RiLinksLine,
+} from 'react-icons/ri';
 import { IconType } from 'react-icons';
 import { useTranslation } from '@/lib/hooks/useTranslation';
 
@@ -92,10 +101,16 @@ export function SettingsApp() {
       onClick: () => router.push('/settings/privacy')
     },
     {
-      icon: RiPaletteLine,
-      title: t.settings.theme,
-      desc: t.settings.themeDesc,
-      onClick: () => console.log('テーマ設定を開く')
+      icon: RiKeyLine,
+      title: t.settings.api,
+      desc: t.settings.apiDesc,
+      onClick: () => router.push('/settings/api')
+    },
+    {
+      icon: RiLinksLine,
+      title: t.settings.integrations,
+      desc: t.settings.integrationsDesc,
+      onClick: () => router.push('/settings/integrations')
     },
   ];
 

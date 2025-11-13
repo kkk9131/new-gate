@@ -81,6 +81,126 @@ export const translations = {
       autoSaveInfo: '設定は変更時に自動的に保存されます',
     },
 
+    // API設定ページ
+    apiSettings: {
+      title: 'API設定',
+      description: 'AIプロバイダーとAPIキーを一元管理します',
+      defaultProvider: 'デフォルトプロバイダー',
+      defaultProviderDesc: 'エージェントが優先的に利用するモデルを選びます',
+      providerHealth: '接続状況',
+      latency: 'レイテンシ',
+      usage: '利用量',
+      lastRotated: '最終ローテーション',
+      keyLabel: 'APIキー',
+      featureFlags: '機能トグル',
+      embeddings: '埋め込み生成',
+      reasoning: '高度な推論',
+      streaming: 'ストリーミング',
+      actions: {
+        connect: '接続する',
+        disconnect: '接続解除',
+        rotateKey: 'キーを再発行',
+      },
+      status: {
+        connected: '接続中',
+        disconnected: '未接続',
+      },
+      providers: {
+        chatgpt: {
+          name: 'ChatGPT',
+          desc: 'OpenAIのGPT-4o / 4.1を利用',
+        },
+        claude: {
+          name: 'Claude',
+          desc: 'Anthropic Claude 3.5シリーズ',
+        },
+        gemini: {
+          name: 'Gemini',
+          desc: 'Google Gemini 1.5 / Flashに接続',
+        },
+        cursor: {
+          name: 'Cursor',
+          desc: 'Cursor Workspaceを自動実行',
+        },
+        custom: {
+          name: 'カスタムAPI',
+          desc: '独自ホストのモデルやRAG API',
+        },
+      },
+      customApis: 'カスタムAPI',
+      customApisDesc: '内部APIや社内モデルを追加できます',
+      customEmpty: '登録済みのカスタムAPIはまだありません',
+      autoSync: '自動同期',
+      customName: '表示名',
+      customBaseUrl: 'ベースURL',
+      customKey: 'APIキー',
+      addCustom: 'カスタムAPIを追加',
+      previewTitle: '利用状況プレビュー',
+      requestsToday: '今日のリクエスト',
+      monthlyTokens: '月間トークン',
+      feedback: {
+        connectionUpdated: '接続状態を更新しました（モック）',
+        rotated: 'APIキーを再発行しました（モック）',
+        customAdded: 'カスタムAPIを追加しました（モック）',
+        missingFields: '必須項目を入力してください',
+      },
+    },
+
+    // インテグレーション設定ページ
+    integrations: {
+      title: 'インテグレーション',
+      description: 'GoogleやGitHubなどのサービスと接続します',
+      overview: '接続状況',
+      connectedCount: '{count} サービスが接続中',
+      autoSync: '自動同期',
+      manualSync: '今すぐ同期',
+      lastSync: '最終同期',
+      scopes: '許可スコープ',
+      status: {
+        connected: '接続中',
+        disconnected: '未接続',
+      },
+      actions: {
+        connect: '接続する',
+        disconnect: '接続解除',
+        syncNow: '今すぐ同期',
+      },
+      categories: {
+        calendar: 'カレンダー',
+        development: '開発',
+        communication: 'コミュニケーション',
+        knowledge: 'ナレッジ',
+      },
+      services: {
+        googleCalendar: {
+          name: 'Google Calendar',
+          desc: '予定・会議を双方向同期',
+        },
+        github: {
+          name: 'GitHub',
+          desc: 'IssueやPRの進捗を取り込み',
+        },
+        slack: {
+          name: 'Slack',
+          desc: '通知とエージェント結果を配信',
+        },
+        notion: {
+          name: 'Notion',
+          desc: 'ドキュメントやDBを参照',
+        },
+        linear: {
+          name: 'Linear',
+          desc: 'チケットとステータスを同期',
+        },
+      },
+      activityTitle: '接続アクティビティ',
+      activityEmpty: '最近のアクティビティはまだありません',
+      feedback: {
+        statusUpdated: '接続状態を更新しました（モック）',
+        syncing: '同期を開始しました（モック）',
+      },
+    },
+
     // セキュリティ設定ページ
     security: {
       title: 'セキュリティ設定',
@@ -454,8 +574,10 @@ export const translations = {
       securityDesc: 'セキュリティ',
       privacy: 'プライバシー',
       privacyDesc: 'データとプライバシーの設定',
-      theme: 'テーマ設定',
-      themeDesc: '外観とカスタマイズ',
+      api: 'API設定',
+      apiDesc: 'AIプロバイダーとキー管理',
+      integrations: 'インテグレーション',
+      integrationsDesc: '外部サービス連携',
     },
   },
 
@@ -533,6 +655,126 @@ export const translations = {
       businessHoursEnd: 'Business Hours End',
       hours: 'hours',
       autoSaveInfo: 'Settings are automatically saved when changed',
+    },
+
+    // API Settings Page
+    apiSettings: {
+      title: 'API Settings',
+      description: 'Manage AI providers and API keys in one place',
+      defaultProvider: 'Default Provider',
+      defaultProviderDesc: 'Choose which model your agents should use first',
+      providerHealth: 'Connection Status',
+      latency: 'Latency',
+      usage: 'Usage',
+      lastRotated: 'Last Rotated',
+      keyLabel: 'API Key',
+      featureFlags: 'Feature Toggles',
+      embeddings: 'Embeddings',
+      reasoning: 'Advanced Reasoning',
+      streaming: 'Streaming',
+      actions: {
+        connect: 'Connect',
+        disconnect: 'Disconnect',
+        rotateKey: 'Rotate Key',
+      },
+      status: {
+        connected: 'Connected',
+        disconnected: 'Disconnected',
+      },
+      providers: {
+        chatgpt: {
+          name: 'ChatGPT',
+          desc: 'Use OpenAI GPT-4o / 4.1 models',
+        },
+        claude: {
+          name: 'Claude',
+          desc: 'Connect to Anthropic Claude 3.5 series',
+        },
+        gemini: {
+          name: 'Gemini',
+          desc: 'Access Google Gemini 1.5 / Flash',
+        },
+        cursor: {
+          name: 'Cursor',
+          desc: 'Trigger Cursor Workspace automations',
+        },
+        custom: {
+          name: 'Custom API',
+          desc: 'Bring your self-hosted models',
+        },
+      },
+      customApis: 'Custom APIs',
+      customApisDesc: 'Register internal endpoints or private deployments',
+      customEmpty: 'No custom APIs yet',
+      autoSync: 'Auto Sync',
+      customName: 'Display Name',
+      customBaseUrl: 'Base URL',
+      customKey: 'API Key',
+      addCustom: 'Add Custom API',
+      previewTitle: 'Usage Preview',
+      requestsToday: 'Requests Today',
+      monthlyTokens: 'Monthly Tokens',
+      feedback: {
+        connectionUpdated: 'Connection updated (mock)',
+        rotated: 'Rotated API key (mock)',
+        customAdded: 'Added custom API (mock)',
+        missingFields: 'Please fill in required fields',
+      },
+    },
+
+    // Integrations Page
+    integrations: {
+      title: 'Integrations',
+      description: 'Connect Google Calendar, GitHub, Slack, and more',
+      overview: 'Overview',
+      connectedCount: '{count} services connected',
+      autoSync: 'Auto Sync',
+      manualSync: 'Sync Now',
+      lastSync: 'Last Sync',
+      scopes: 'Allowed Scopes',
+      status: {
+        connected: 'Connected',
+        disconnected: 'Disconnected',
+      },
+      actions: {
+        connect: 'Connect',
+        disconnect: 'Disconnect',
+        syncNow: 'Sync Now',
+      },
+      categories: {
+        calendar: 'Calendar',
+        development: 'Development',
+        communication: 'Communication',
+        knowledge: 'Knowledge',
+      },
+      services: {
+        googleCalendar: {
+          name: 'Google Calendar',
+          desc: 'Bidirectional meeting sync',
+        },
+        github: {
+          name: 'GitHub',
+          desc: 'Track issues and PRs',
+        },
+        slack: {
+          name: 'Slack',
+          desc: 'Send alerts to channels',
+        },
+        notion: {
+          name: 'Notion',
+          desc: 'Reference docs and databases',
+        },
+        linear: {
+          name: 'Linear',
+          desc: 'Sync ticket progress',
+        },
+      },
+      activityTitle: 'Integration Activity',
+      activityEmpty: 'No recent activity yet',
+      feedback: {
+        statusUpdated: 'Connection updated (mock)',
+        syncing: 'Started sync (mock)',
+      },
     },
 
     // Security Settings Page
@@ -908,8 +1150,10 @@ export const translations = {
       securityDesc: 'Password and security settings',
       privacy: 'Privacy',
       privacyDesc: 'Data and privacy settings',
-      theme: 'Theme',
-      themeDesc: 'Appearance and customization',
+      api: 'API',
+      apiDesc: 'Manage AI providers and keys',
+      integrations: 'Integrations',
+      integrationsDesc: 'Connect external services',
     },
   },
 } as const;
