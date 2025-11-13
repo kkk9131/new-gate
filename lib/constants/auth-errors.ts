@@ -14,7 +14,7 @@ export const AUTH_ERRORS = {
   WEAK_PASSWORD: 'パスワードが脆弱です。より強力なパスワードを設定してください',
 
   // パスワード関連
-  PASSWORD_TOO_SHORT: 'パスワードは6文字以上で入力してください',
+  PASSWORD_TOO_SHORT: 'パスワードは8文字以上で入力してください',
   PASSWORD_MISMATCH: 'パスワードが一致しません',
   CURRENT_PASSWORD_REQUIRED: '現在のパスワードを入力してください',
   CURRENT_PASSWORD_INVALID: '現在のパスワードが正しくありません',

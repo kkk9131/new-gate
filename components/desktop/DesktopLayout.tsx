@@ -35,7 +35,7 @@ export function DesktopLayout() {
   const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
 
   // レスポンシブ対応：カスタムフックでモバイル判定
-  const { isMobile, isReady: isMobileReady } = useIsMobile();
+  const { isMobile } = useIsMobile();
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
@@ -43,16 +43,16 @@ export function DesktopLayout() {
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
-  if (!isMobileReady) {
-    return (
-      <div className="h-screen overflow-hidden bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800 transition-colors duration-300" />
-    );
-  }
-
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+    <div
+      className="h-screen overflow-hidden bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800 transition-colors duration-300"
+      suppressHydrationWarning
+    >
       {/* ヘッダー */}
-      <header className="h-14 md:h-16 bg-surface/90 backdrop-blur-xl border-b border-white/40 flex items-center justify-between px-3 md:px-6 shadow-panel text-ink relative z-50">
+      <header
+        className="h-14 md:h-16 bg-surface/90 backdrop-blur-xl border-b border-white/40 flex items-center justify-between px-3 md:px-6 shadow-panel text-ink relative z-50"
+        suppressHydrationWarning
+      >
         {/* 左側：ロゴ */}
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-accent-sand flex items-center justify-center shadow-soft text-ink">
@@ -89,6 +89,7 @@ export function DesktopLayout() {
               shadow-soft hover:shadow-panel
             "
             aria-label="分割モード切り替え"
+            suppressHydrationWarning
           >
             {splitMode === 1 && <RiLayoutLine className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />}
             {splitMode === 2 && <RiLayout2Line className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />}
@@ -107,6 +108,7 @@ export function DesktopLayout() {
               shadow-soft hover:shadow-panel
             "
             aria-label="ダークモード切り替え"
+            suppressHydrationWarning
           >
             {isDarkMode ? (
               <RiSunLine className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />
@@ -124,7 +126,10 @@ export function DesktopLayout() {
       </header>
 
       {/* デスクトップエリア */}
-      <main className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-auto p-3 md:p-6 lg:p-8 relative">
+      <main
+        className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-auto p-3 md:p-6 lg:p-8 relative"
+        suppressHydrationWarning
+      >
         {isMobile ? (
           /* モバイル：グリッドレイアウト */
           <div className={MOBILE_ICON_GRID_CLASS}>
