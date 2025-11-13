@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
             return tempCookieStore.getAll();
           },
           setAll(cookiesToSet) {
-            tempCookieStore.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value, options }) =>
               tempCookieStore.set(name, value, options)
             );
           },
