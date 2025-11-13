@@ -62,8 +62,8 @@ export default function SignupPage() {
     }
 
     // パスワード強度チェック
-    if (password.length < 6) {
-      setError('パスワードは6文字以上で入力してください');
+    if (password.length < 8) {
+      setError('パスワードは8文字以上で入力してください');
       setIsLoading(false);
       return;
     }
@@ -174,11 +174,11 @@ export default function SignupPage() {
                 required
                 autoComplete="new-password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-sand focus:border-transparent transition-all"
-                placeholder="6文字以上で入力"
+                placeholder="8文字以上で入力"
                 disabled={isLoading}
               />
               <p className="mt-1 text-xs text-gray-500">
-                ※ 6文字以上で入力してください
+                ※ 8文字以上で入力してください
               </p>
             </div>
 
