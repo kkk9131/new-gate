@@ -2,13 +2,18 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
+// 定数定義
+const DELETION_GRACE_PERIOD_DAYS = 30;
+
 /**
  * アカウント削除APIエンドポイント
  *
  * POST /api/settings/privacy/delete-account
  *
  * 機能:
- * - パスワード検証
+ * - パスワード検証（パスワード設定済みユーザーのみ）
+ * - Googleユーザー向けのパスワード未設定チェック
+ * - 重複削除リクエストの防止
  * - 削除リクエストの作成（30日間の猶予期間）
  * - 削除実行日時の設定
  *
@@ -19,8 +24,9 @@ import { NextRequest, NextResponse } from 'next/server';
  *
  * レスポンス:
  * - 200: 削除リクエスト作成成功
- * - 400: パスワード未入力
+ * - 400: パスワード未入力またはGoogleユーザーでパスワード未設定
  * - 401: 認証エラーまたはパスワード不一致
+ * - 409: 既存の削除リクエストが存在
  * - 500: サーバーエラー
  */
 export async function POST(request: NextRequest) {
@@ -65,11 +71,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // パスワード検証
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    // ユーザーの認証プロバイダーとパスワード設定状況を確認
+    const identities = session.user.identities || [];
+    const hasPassword = session.user.user_metadata?.has_password === true;
+
+    // Googleユーザーでパスワード未設定の場合はエラー
+    if (!hasPassword) {
+      return NextResponse.json(
+        { error: 'アカウント削除にはパスワードの設定が必要です。プロフィールページからパスワードを作成してください。' },
+        { status: 400 }
+      );
+    }
+
+    // 既存のpending削除リクエストを確認
+    const { data: existingRequest } = await supabase
+      .from('account_deletion_requests')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('status', 'pending')
+      .single();
+
+    if (existingRequest) {
+      return NextResponse.json(
+        {
+          error: '既に削除リクエストが進行中です',
+          scheduled_deletion_at: existingRequest.scheduled_deletion_at,
+        },
+        { status: 409 } // Conflict
+      );
+    }
+
+    // パスワード検証（一時的なクライアントを使用）
+    const tempCookieStore = await cookies();
+    const tempSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return tempCookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            tempCookieStore.forEach(({ name, value, options }) =>
+              tempCookieStore.set(name, value, options)
+            );
+          },
+        },
+      }
+    );
+
+    const { error: signInError } = await tempSupabase.auth.signInWithPassword({
       email: session.user.email!,
       password,
     });
+
+    // パスワード検証後、すぐにサインアウトしてセッションをクリーンアップ
+    if (!signInError) {
+      await tempSupabase.auth.signOut();
+    }
 
     if (signInError) {
       return NextResponse.json(
@@ -78,12 +137,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 削除実行日を計算（30日後）
+    // 削除実行日を計算（定数を使用）
     const scheduledDeletionAt = new Date();
-    scheduledDeletionAt.setDate(scheduledDeletionAt.getDate() + 30);
+    scheduledDeletionAt.setDate(scheduledDeletionAt.getDate() + DELETION_GRACE_PERIOD_DAYS);
 
     // アカウント削除リクエストを作成
-    // account_deletion_requestsテーブルにレコードを挿入
     const { error: insertError } = await supabase
       .from('account_deletion_requests')
       .insert({

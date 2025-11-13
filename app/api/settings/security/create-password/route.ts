@@ -81,8 +81,12 @@ export async function POST(request: NextRequest) {
     }
 
     // ユーザーの認証プロバイダーを確認
-    const identities = user.identities || [];
-    const providers = identities.map((identity: any) => identity.provider);
+    interface UserIdentity {
+      provider: string;
+      id: string;
+    }
+    const identities = (user.identities || []) as UserIdentity[];
+    const providers = identities.map((identity) => identity.provider);
     const hasEmailProvider = providers.includes('email');
 
     // user_metadataのhas_passwordフラグもチェック
