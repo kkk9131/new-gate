@@ -2,17 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuthForAPI } from '@/lib/auth/session';
 import { handleAPIError } from '@/lib/utils/api-error';
-import { z } from 'zod';
-
-// バリデーションスキーマ
-const createRevenueSchema = z.object({
-  project_id: z.string().uuid().optional(),
-  amount: z.number().min(0, '金額は0以上で入力してください'),
-  tax_amount: z.number().min(0, '税額は0以上で入力してください').optional(),
-  revenue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付形式が不正です（YYYY-MM-DD）'),
-  description: z.string().optional(),
-  category: z.string().optional(),
-});
+import { createRevenueSchema } from '@/lib/validators/revenues';
 
 /**
  * GET /api/revenues

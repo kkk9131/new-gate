@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDesktopStore, type App } from '@/store/desktopStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useElementSize } from '@/hooks/useElementSize';
@@ -12,6 +12,8 @@ import { UserMenu } from './UserMenu';
 import { ChatPanel } from './ChatPanel';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import BrowserNotificationPrompt from '@/components/notifications/BrowserNotificationPrompt';
+import { WebRTCQuadWorkspace } from '@/components/multiagent/WebRTCQuadWorkspace';
+import { QuickActionPalette } from '@/components/multiagent/QuickActionPalette';
 import {
   RiMoonLine,
   RiSunLine,
@@ -41,6 +43,7 @@ export function DesktopLayout() {
   const { isMobile } = useIsMobile();
   const { ref: desktopHostRef, width: desktopHostWidth } = useElementSize<HTMLDivElement>();
   const desktopBaseWidthRef = useRef<number | null>(null);
+  const [desktopScale, setDesktopScale] = useState(1);
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
@@ -48,25 +51,28 @@ export function DesktopLayout() {
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
-  const desktopScale = useMemo(() => {
+  useEffect(() => {
     if (isMobile) {
       desktopBaseWidthRef.current = null;
-      return 1;
+      setDesktopScale(1);
+      return;
     }
 
     if (!desktopHostWidth) {
-      return 1;
+      setDesktopScale(1);
+      return;
     }
 
     const prevBase = desktopBaseWidthRef.current;
 
     if (!prevBase || desktopHostWidth > prevBase || !isChatOpen) {
       desktopBaseWidthRef.current = desktopHostWidth;
-      return 1;
+      setDesktopScale(1);
+      return;
     }
 
     const scaleValue = Number((desktopHostWidth / prevBase).toFixed(4));
-    return scaleValue >= 1 ? 1 : scaleValue;
+    setDesktopScale(scaleValue >= 1 ? 1 : scaleValue);
   }, [desktopHostWidth, isChatOpen, isMobile]);
 
   const layoutGap = !isMobile && isChatOpen ? 16 : 0;
@@ -194,7 +200,11 @@ export function DesktopLayout() {
             </>
           ) : (
             <div ref={desktopHostRef} className="relative w-full h-full min-h-[400px]">
-              <SplitMode className="h-full w-full" scale={desktopScale} />
+              {splitMode === 4 ? (
+                <WebRTCQuadWorkspace className="h-full" />
+              ) : (
+                <SplitMode className="h-full w-full" scale={desktopScale} />
+              )}
             </div>
           )}
         </main>
@@ -207,6 +217,7 @@ export function DesktopLayout() {
         </div>
 
         <ChatPanel />
+        <QuickActionPalette />
       </div>
     </div>
   );

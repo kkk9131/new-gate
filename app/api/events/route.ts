@@ -2,36 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuthForAPI } from '@/lib/auth/session';
 import { handleAPIError } from '@/lib/utils/api-error';
-import { z } from 'zod';
-
-// バリデーションスキーマ
-const createEventSchema = z.object({
-  project_id: z.string().uuid().optional().nullable(),
-  title: z.string().min(1, 'タイトルは必須です').max(255),
-  description: z.string().optional().nullable(),
-  location: z.string().max(255).optional().nullable(),
-  start_time: z.string().datetime({ message: 'ISO 8601形式の日時が必要です' }),
-  end_time: z.string().datetime({ message: 'ISO 8601形式の日時が必要です' }),
-  all_day: z.boolean().default(false),
-  timezone: z.string().default('Asia/Tokyo'),
-  category: z.string().max(100).optional().nullable(),
-  tags: z.array(z.string()).optional().nullable(),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i, 'HEX形式のカラーコードが必要です').default('#3B82F6'),
-  // 繰り返し設定（オプション）
-  recurrence: z.object({
-    frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']),
-    interval: z.number().int().positive().default(1),
-    count: z.number().int().positive().optional(),
-    until_date: z.string().datetime().optional(),
-    by_day: z.array(z.enum(['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'])).optional(),
-    by_month_day: z.array(z.number().int().min(-31).max(31).refine(n => n !== 0)).optional(),
-  }).optional().nullable(),
-  // リマインダー設定（オプション）
-  reminders: z.array(z.object({
-    reminder_type: z.enum(['notification', 'email']).default('notification'),
-    minutes_before: z.number().int().min(0).default(15),
-  })).optional().nullable(),
-});
+import { createEventSchema } from '@/lib/validators/events';
 
 /**
  * GET /api/events

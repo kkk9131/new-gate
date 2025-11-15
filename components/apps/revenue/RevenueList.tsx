@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   RiAddLine,
   RiCalendarLine,
@@ -47,12 +47,7 @@ export function RevenueList() {
     }
   }, [projectError]);
 
-  // 売上データ取得
-  useEffect(() => {
-    fetchRevenues();
-  }, [period, selectedProjectId]);
-
-  const fetchRevenues = async () => {
+  const fetchRevenues = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -98,7 +93,12 @@ export function RevenueList() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [period, selectedProjectId, t]);
+
+  // 売上データ取得
+  useEffect(() => {
+    void fetchRevenues();
+  }, [fetchRevenues]);
 
   // 売上作成ハンドラー
   const handleCreate = async (formData: any) => {

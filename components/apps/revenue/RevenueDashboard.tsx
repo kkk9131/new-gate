@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   RiMoneyDollarCircleLine,
   RiWallet3Line,
@@ -67,12 +67,7 @@ export function RevenueDashboard() {
     }
   }, [projectError]);
 
-  // ダッシュボードデータ取得
-  useEffect(() => {
-    fetchDashboardData();
-  }, [period, selectedProjectId]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -117,7 +112,12 @@ export function RevenueDashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [period, selectedProjectId]);
+
+  // ダッシュボードデータ取得
+  useEffect(() => {
+    void fetchDashboardData();
+  }, [fetchDashboardData]);
 
   if (isLoading) {
     return (

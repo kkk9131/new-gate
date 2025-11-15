@@ -21,8 +21,8 @@
 | Ticket | Phase | タイトル | 主要作業 | 依存 | Status |
 |--------|-------|----------|----------|------|--------|
 | MA-001 | Phase1 | AIボタントグルPoC | 200msスライド+フェード、リサイズ動作検証 | 現UI | Todo |
-| MA-002 | Phase1 | WebRTC 4面PoC | SFU構成調査、CPU/帯域測定 | MA-001 | Todo |
-| MA-003 | Phase1 | Quick Actionモック | 右下ポップアップ、キーハンドラ対応 | MA-001 | Todo |
+| MA-002 | Phase1 | WebRTC 4面PoC | SFU構成調査、CPU/帯域測定 | MA-001 | Done |
+| MA-003 | Phase1 | Quick Actionモック | 右下ポップアップ、キーハンドラ対応 | MA-001 | Done |
 | MA-004 | Phase2 | チャットタブ実装 | Screen1〜4タブ＋横スクロール拡張 | MA-001 | Todo |
 | MA-005 | Phase2 | ステータスログ基盤 | Tool/MCP/APIキー表示、Stop API連携 | MA-004 | Todo |
 | MA-006 | Phase2 | Atlas風ボーダー | エメラルドアニメ、状態連動 | MA-002 | Todo |
@@ -47,13 +47,15 @@
 
 ### Phase 1: UX PoC
 - [x] MA-001 AIボタントグルPoC（スライド＋フェード／リサイズ検証）
-- [ ] MA-002 WebRTC 4面PoC（SFU構成・負荷計測）
-- [ ] MA-003 Quick Actionモック（右下ポップアップ＋ショートカット）
+- [x] MA-002 WebRTC 4面PoC（SFU構成・負荷計測）
+- [x] MA-003 Quick Actionモック（右下ポップアップ＋ショートカット）
 
 ### Phase 2: コア実装
 - [ ] MA-004 チャットタブ実装（Screenタブ拡張対応）
 - [ ] MA-005 ステータスログ基盤（Tool/MCP/APIキー表示）
 - [ ] MA-006 Atlas風ボーダー（エメラルドアニメ）
+- [ ] MA-017 AgentSDK Skill設計（各アプリ操作APIのSkill化＋権限制御）
+- [ ] MA-018 Tool/APIスキーマ整備（OpenAPI/JSON Schema＋Gateway監査）
 - [ ] MA-007 Esc停止制御（キーイベント＋チャット通知）
 
 ### Phase 3: 安全/連携

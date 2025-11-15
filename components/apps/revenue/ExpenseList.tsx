@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   RiAddLine,
   RiCalendarLine,
@@ -47,12 +47,7 @@ export function ExpenseList() {
     }
   }, [projectError]);
 
-  // 経費データ取得
-  useEffect(() => {
-    fetchExpenses();
-  }, [period, selectedProjectId]);
-
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -98,7 +93,12 @@ export function ExpenseList() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [period, selectedProjectId, t]);
+
+  // 経費データ取得
+  useEffect(() => {
+    void fetchExpenses();
+  }, [fetchExpenses]);
 
   // 経費作成ハンドラー
   const handleCreate = async (formData: any) => {

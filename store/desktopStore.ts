@@ -59,6 +59,16 @@ export interface WindowState {
   zIndex: number; // Z-index（前面表示順序）
 }
 
+// 4面スクリーン（マルチエージェントView）で使用するスクリーンID
+export type QuadScreenId = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
+
+export const QUAD_SCREEN_LABELS: Record<QuadScreenId, string> = {
+  topLeft: 'Screen 1',
+  topRight: 'Screen 2',
+  bottomLeft: 'Screen 3',
+  bottomRight: 'Screen 4',
+};
+
 // ストアの状態の型定義
 interface DesktopState {
   // アプリ一覧
@@ -103,6 +113,8 @@ interface DesktopState {
   splitScreenWindows: Record<string, WindowState[]>; // スクリーン位置 → ウィンドウ配列
   toggleSplitMode: () => void;
   setSplitMode: (mode: 1 | 2 | 3 | 4) => void;
+  activeQuadScreen: QuadScreenId;
+  setActiveQuadScreen: (screen: QuadScreenId) => void;
 
   // スクリーンごとのウィンドウ管理
   openWindowInScreen: (screenId: string, appId: AppId) => void;
@@ -247,7 +259,7 @@ const normalizeZIndexesIfNeeded = (windows: WindowState[]) => {
   return windows.map((w) => ({ ...w, zIndex: orderMap.get(w.id) ?? w.zIndex }));
 };
 
-type DesktopDataSlice = Pick<DesktopState, 'apps' | 'isDarkMode' | 'isDockVisible' | 'isChatOpen' | 'chatWidth' | 'windows' | 'splitMode' | 'splitScreenWindows'>;
+type DesktopDataSlice = Pick<DesktopState, 'apps' | 'isDarkMode' | 'isDockVisible' | 'isChatOpen' | 'chatWidth' | 'windows' | 'splitMode' | 'splitScreenWindows' | 'activeQuadScreen'>;
 
 const createSplitScreenWindows = (): DesktopDataSlice['splitScreenWindows'] => ({
   left: [],
@@ -270,6 +282,7 @@ const createDesktopData = (): DesktopDataSlice => ({
   windows: [],
   splitMode: 1,
   splitScreenWindows: createSplitScreenWindows(),
+  activeQuadScreen: 'topLeft',
 });
 
 type MemoryStorage = StateStorage & { clear: () => void };
@@ -481,6 +494,9 @@ export const useDesktopStore = create<DesktopState>()(
       setSplitMode: (mode) =>
         set({ splitMode: mode }),
 
+      setActiveQuadScreen: (screen) =>
+        set({ activeQuadScreen: screen }),
+
       // スクリーンごとのウィンドウを開く
       openWindowInScreen: (screenId, appId) =>
         set((state) => {
@@ -635,11 +651,15 @@ export const useDesktopStore = create<DesktopState>()(
             ...persistedState,
             // 既存のsplitScreenWindowsがあればそれを使い、なければ初期化
             splitScreenWindows: persistedState?.splitScreenWindows || createSplitScreenWindows(),
+            activeQuadScreen: persistedState?.activeQuadScreen || 'topLeft',
           });
         }
 
         // v2以降はapp座標のみ補正
-        return withDefaults(persistedState);
+        return withDefaults({
+          ...persistedState,
+          activeQuadScreen: persistedState?.activeQuadScreen || 'topLeft',
+        });
       },
       onRehydrateStorage: () => (state, error) => {
         if (error) {

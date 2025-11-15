@@ -75,6 +75,13 @@
 - 各画面は独立した仮想ワークスペース（ブラウザ or ネイティブアプリ制御）を持ち、タスクごとにセッションID・モデルIDを割り当てる。
 - チャット→タスク連携はイベント駆動（例: `task.create`）で実装し、状態管理はZustand/Supabaseを併用。
 
+### 🤖 エージェント連携設計（Agent SDK / Skills / Tools）
+- **Anthropic Agent SDK採用**: `.claude/skills/*` で定義した Skill を自動検出させ、`allowed_tools` に `"Skill"` とJSON Schemaベースの Tool を併記。タスク内容に応じて Claude が Skill / Tool を選択して実行できる構成とする。
+- **Skillの役割**: 「アプリ操作のまとまった手順」や「ファイル同梱が必要な処理」は Skill 化し、SKILL.md に API エンドポイント、前提権限、失敗時ハンドリングを詳述。Skill 内でプロキシ API を呼ぶことで、レガシー UI 操作を抽象化。
+- **Toolの役割**: 即時応答が必要なシンプルAPIは Tool (function calling) として公開。エンドポイントは OpenAPI/JSON Schema 化し、破壊的操作には `x-risk-level` 等のメタ情報を付与してチャット側確認を強制。
+- **セキュリティ**: 各 Skill / Tool は呼び出し元トークンを最小権限に限定し、監査ログ・レート制限を API Gateway 側で実施。破壊的操作は既存の Yes/No 承認と連動。
+- **MCP/外部連携**: Slack や Asana 等の公式 MCP サーバーを必要に応じて同居させ、社内アプリも将来的に MCP 化して Skills/Tools と同列に扱えるようにする。
+
 ---
 
 ## 🚨 エラー & リカバリ
@@ -95,4 +102,3 @@
 1. 本要件をベースにUI要件定義（画面遷移・コンポーネント構成）を策定。
 2. WebRTC配信方式（SFU/VMC etc）のPoC実施と負荷見積り。
 3. モデル/APIキー管理画面の情報設計とセキュアストレージ選定。
-
