@@ -9,6 +9,13 @@ import { type AppId } from '@/components/desktop/appRegistry';
 /** z-indexの正規化閾値（この値を超えたら正規化を実行） */
 const Z_INDEX_NORMALIZATION_THRESHOLD = 1000;
 
+export const CHAT_MIN_WIDTH = 240;
+export const CHAT_MAX_WIDTH = 640;
+export const CHAT_DEFAULT_WIDTH = 420;
+export const DESKTOP_ICON_WIDTH = 96;
+export const DESKTOP_ICON_HEIGHT = 120;
+const clampChatWidth = (width: number) => Math.min(CHAT_MAX_WIDTH, Math.max(CHAT_MIN_WIDTH, width));
+
 // ===========================
 // ヘルパー関数
 // ===========================
@@ -64,6 +71,13 @@ interface DesktopState {
   // Dock表示状態
   isDockVisible: boolean;
   setDockVisible: (visible: boolean) => void;
+
+  // チャットペイン
+  isChatOpen: boolean;
+  chatWidth: number;
+  toggleChat: () => void;
+  setChatOpen: (open: boolean) => void;
+  setChatWidth: (width: number) => void;
 
   // アプリの順序変更
   reorderApps: (oldIndex: number, newIndex: number) => void;
@@ -233,7 +247,7 @@ const normalizeZIndexesIfNeeded = (windows: WindowState[]) => {
   return windows.map((w) => ({ ...w, zIndex: orderMap.get(w.id) ?? w.zIndex }));
 };
 
-type DesktopDataSlice = Pick<DesktopState, 'apps' | 'isDarkMode' | 'isDockVisible' | 'windows' | 'splitMode' | 'splitScreenWindows'>;
+type DesktopDataSlice = Pick<DesktopState, 'apps' | 'isDarkMode' | 'isDockVisible' | 'isChatOpen' | 'chatWidth' | 'windows' | 'splitMode' | 'splitScreenWindows'>;
 
 const createSplitScreenWindows = (): DesktopDataSlice['splitScreenWindows'] => ({
   left: [],
@@ -251,6 +265,8 @@ const createDesktopData = (): DesktopDataSlice => ({
   apps: cloneDefaultApps(),
   isDarkMode: false,
   isDockVisible: false,
+  isChatOpen: false,
+  chatWidth: CHAT_DEFAULT_WIDTH,
   windows: [],
   splitMode: 1,
   splitScreenWindows: createSplitScreenWindows(),
@@ -283,12 +299,22 @@ export const useDesktopStore = create<DesktopState>()(
       ...createDesktopData(),
 
       // ダークモード切り替え
-  toggleDarkMode: () =>
-    set((state) => ({ isDarkMode: !state.isDarkMode })),
+      toggleDarkMode: () =>
+        set((state) => ({ isDarkMode: !state.isDarkMode })),
 
       // Dock表示切り替え
       setDockVisible: (visible) =>
         set({ isDockVisible: visible }),
+
+      // チャットペイン制御
+      toggleChat: () =>
+        set((state) => ({ isChatOpen: !state.isChatOpen })),
+
+      setChatOpen: (open) =>
+        set({ isChatOpen: open }),
+
+      setChatWidth: (width) =>
+        set({ chatWidth: clampChatWidth(width) }),
 
       // アプリの順序を変更
       reorderApps: (oldIndex, newIndex) =>
@@ -596,14 +622,16 @@ export const useDesktopStore = create<DesktopState>()(
        * @returns 新しいバージョンに変換されたデータ
        */
       migrate: (persistedState: any, persistedVersion: number) => {
-        const withApps = (state: any) => ({
+        const withDefaults = (state: any) => ({
           ...state,
           apps: normalizeApps(state?.apps),
+          isChatOpen: typeof state?.isChatOpen === 'boolean' ? state.isChatOpen : false,
+          chatWidth: typeof state?.chatWidth === 'number' ? clampChatWidth(state.chatWidth) : CHAT_DEFAULT_WIDTH,
         });
 
         // v0またはv1から来た場合、splitScreenWindowsを追加
         if (persistedVersion < 2) {
-          return withApps({
+          return withDefaults({
             ...persistedState,
             // 既存のsplitScreenWindowsがあればそれを使い、なければ初期化
             splitScreenWindows: persistedState?.splitScreenWindows || createSplitScreenWindows(),
@@ -611,7 +639,7 @@ export const useDesktopStore = create<DesktopState>()(
         }
 
         // v2以降はapp座標のみ補正
-        return withApps(persistedState);
+        return withDefaults(persistedState);
       },
       onRehydrateStorage: () => (state, error) => {
         if (error) {

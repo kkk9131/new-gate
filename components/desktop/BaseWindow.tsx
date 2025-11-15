@@ -31,6 +31,7 @@ interface BaseWindowProps {
   maximizedPosition?: { x: number; y: number };
   titleBarClassName?: string;
   bodyClassName?: string;
+  scale?: number;
 }
 
 export function BaseWindow({
@@ -49,9 +50,11 @@ export function BaseWindow({
   maximizedPosition = { x: 0, y: 0 },
   titleBarClassName = 'window-drag-handle flex items-center justify-between px-2 md:px-4 py-2 md:py-3 bg-surface text-ink border-b border-accent-sand/60 cursor-move select-none',
   bodyClassName = 'flex-1 overflow-hidden',
+  scale = 1,
 }: BaseWindowProps) {
   // モバイル判定（カスタムフック使用）
   const { isMobile } = useIsMobile();
+  const effectiveScale = isMobile ? 1 : Math.max(scale, 0.01);
 
   // モバイル時は常に全画面、デスクトップ時は通常のロジック
   const size = useMemo(
@@ -59,11 +62,15 @@ export function BaseWindow({
       if (isMobile) {
         return { width: '100%', height: '100%' };
       }
-      return window.isMaximized
-        ? maximizedSize
-        : { width: window.size.width, height: window.size.height };
+      if (window.isMaximized) {
+        return maximizedSize;
+      }
+      return {
+        width: window.size.width * effectiveScale,
+        height: window.size.height * effectiveScale,
+      };
     },
-    [isMobile, window.isMaximized, window.size.height, window.size.width, maximizedSize]
+    [effectiveScale, isMobile, maximizedSize, window.isMaximized, window.size.height, window.size.width]
   );
 
   const position = useMemo(
@@ -71,22 +78,33 @@ export function BaseWindow({
       if (isMobile) {
         return { x: 0, y: 0 };
       }
-      return window.isMaximized ? maximizedPosition : window.position;
+      if (window.isMaximized) {
+        return maximizedPosition;
+      }
+      return {
+        x: window.position.x * effectiveScale,
+        y: window.position.y * effectiveScale,
+      };
     },
-    [isMobile, window.isMaximized, window.position, maximizedPosition]
+    [effectiveScale, isMobile, maximizedPosition, window.isMaximized, window.position]
   );
 
   const handleDragStop = useCallback<RndDragCallback>((_, data) => {
     if (window.isMaximized || isMobile) return;
-    onPositionChange({ x: data.x, y: data.y });
-  }, [onPositionChange, window.isMaximized, isMobile]);
+    const baseScale = effectiveScale || 1;
+    onPositionChange({ x: data.x / baseScale, y: data.y / baseScale });
+  }, [effectiveScale, onPositionChange, window.isMaximized, isMobile]);
 
   const handleResizeStop = useCallback<RndResizeCallback>((_, __, ref, ___, positionData) => {
     if (window.isMaximized || isMobile) return;
-    const width = parseInt(ref.style.width, 10) || window.size.width;
-    const height = parseInt(ref.style.height, 10) || window.size.height;
-    onResize({ width, height }, positionData);
-  }, [onResize, window.isMaximized, window.size.height, window.size.width, isMobile]);
+    const baseScale = effectiveScale || 1;
+    const width = (parseInt(ref.style.width, 10) || window.size.width * baseScale) / baseScale;
+    const height = (parseInt(ref.style.height, 10) || window.size.height * baseScale) / baseScale;
+    onResize({ width, height }, {
+      x: positionData.x / baseScale,
+      y: positionData.y / baseScale,
+    });
+  }, [effectiveScale, onResize, window.isMaximized, window.size.height, window.size.width, isMobile]);
 
   const handleFocus = useCallback(() => {
     onFocus();
@@ -98,8 +116,8 @@ export function BaseWindow({
       position={position}
       onDragStop={handleDragStop}
       onResizeStop={handleResizeStop}
-      minWidth={minWidth}
-      minHeight={minHeight}
+      minWidth={minWidth * effectiveScale}
+      minHeight={minHeight * effectiveScale}
       bounds={bounds}
       dragHandleClassName="window-drag-handle"
       style={{ zIndex: window.zIndex }}

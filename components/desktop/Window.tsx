@@ -7,9 +7,10 @@ import { appComponents } from './appRegistry';
 
 interface WindowProps {
   window: WindowState;
+  scale?: number;
 }
 
-export function Window({ window }: WindowProps) {
+export function Window({ window, scale = 1 }: WindowProps) {
   const closeWindow = useDesktopStore((state) => state.closeWindow);
   const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
   const maximizeWindow = useDesktopStore((state) => state.maximizeWindow);
@@ -43,6 +44,7 @@ export function Window({ window }: WindowProps) {
       onFocus={handleFocus}
       onPositionChange={handlePositionChange}
       onResize={handleResize}
+      scale={scale}
     />
   );
 }

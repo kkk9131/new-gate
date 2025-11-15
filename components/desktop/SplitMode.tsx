@@ -19,19 +19,16 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { AppIcon } from './AppIcon';
-import { BaseWindow } from './BaseWindow';
+import { BaseWindow, WINDOW_MIN_HEIGHT, WINDOW_MIN_WIDTH } from './BaseWindow';
 import { appComponents } from './appRegistry';
 
 // レスポンシブ対応：モバイルでは最小サイズを小さく
 const SPLIT_WINDOW_MIN_WIDTH = 280;  // モバイル: 280px
 const SPLIT_WINDOW_MIN_HEIGHT = 250; // モバイル: 250px
-
-export function SplitMode() {
-  const splitMode = useDesktopStore((state) => state.splitMode);
+export function useAppGridDnD() {
   const apps = useDesktopStore((state) => state.apps);
   const reorderApps = useDesktopStore((state) => state.reorderApps);
 
-  // ドラッグ&ドロップのセンサー設定
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -43,30 +40,57 @@ export function SplitMode() {
     })
   );
 
-  // ドラッグ終了時の処理
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = apps.findIndex((app) => app.id === active.id);
-      const newIndex = apps.findIndex((app) => app.id === over.id);
-      reorderApps(oldIndex, newIndex);
-    }
-  };
+      if (over && active.id !== over.id) {
+        const oldIndex = apps.findIndex((app) => app.id === active.id);
+        const newIndex = apps.findIndex((app) => app.id === over.id);
+        reorderApps(oldIndex, newIndex);
+      }
+    },
+    [apps, reorderApps]
+  );
 
-  // 通常モードなら表示しない
-  if (splitMode === 1) return null;
+  return { sensors, handleDragEnd };
+}
+
+interface SplitModeProps {
+  className?: string;
+  scale?: number;
+}
+
+export function SplitMode({ className = 'h-full w-full', scale = 1 }: SplitModeProps = {}) {
+  const splitMode = useDesktopStore((state) => state.splitMode);
+  const { sensors, handleDragEnd } = useAppGridDnD();
+
+  if (splitMode === 1) {
+    return (
+      <SplitScreen
+        screenId="primary"
+        sensors={sensors}
+        handleDragEnd={handleDragEnd}
+        className={className}
+        useGlobalWindows
+        scale={scale}
+        windowMinWidth={WINDOW_MIN_WIDTH}
+        windowMinHeight={WINDOW_MIN_HEIGHT}
+      />
+    );
+  }
 
   // 2分割レイアウト
   if (splitMode === 2) {
     return (
-      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
+      <div className={`flex gap-4 ${className}`}>
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="w-1/2 border-r border-cloud/40"
+          className="w-1/2 h-full border-r border-cloud/40"
+          scale={scale}
         />
 
         {/* 右画面 */}
@@ -74,7 +98,8 @@ export function SplitMode() {
           screenId="right"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="w-1/2"
+          className="w-1/2 h-full"
+          scale={scale}
         />
       </div>
     );
@@ -83,23 +108,25 @@ export function SplitMode() {
   // 3分割レイアウト（左50% + 右上25% + 右下25%）
   if (splitMode === 3) {
     return (
-      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
+      <div className={`flex gap-4 ${className}`}>
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="w-1/2 border-r border-cloud/40"
+          className="w-1/2 h-full border-r border-cloud/40"
+          scale={scale}
         />
 
         {/* 右側2分割 */}
-        <div className="w-1/2 flex flex-col">
+        <div className="w-1/2 h-full flex flex-col">
           {/* 右上画面 */}
           <SplitScreen
             screenId="topRight"
             sensors={sensors}
             handleDragEnd={handleDragEnd}
             className="h-1/2 border-b border-cloud/40"
+            scale={scale}
           />
 
           {/* 右下画面 */}
@@ -108,6 +135,7 @@ export function SplitMode() {
             sensors={sensors}
             handleDragEnd={handleDragEnd}
             className="h-1/2"
+            scale={scale}
           />
         </div>
       </div>
@@ -117,13 +145,14 @@ export function SplitMode() {
   // 4分割レイアウト（2x2グリッド）
   if (splitMode === 4) {
     return (
-      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist grid grid-cols-2 grid-rows-2">
+      <div className={`grid grid-cols-2 grid-rows-2 gap-4 ${className}`}>
         {/* 左上画面 */}
         <SplitScreen
           screenId="topLeft"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="border-r border-b border-cloud/40"
+          className="border-r border-b border-cloud/40 h-full"
+          scale={scale}
         />
 
         {/* 右上画面 */}
@@ -131,7 +160,8 @@ export function SplitMode() {
           screenId="topRight"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="border-b border-cloud/40"
+          className="border-b border-cloud/40 h-full"
+          scale={scale}
         />
 
         {/* 左下画面 */}
@@ -139,7 +169,8 @@ export function SplitMode() {
           screenId="bottomLeft"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className="border-r border-cloud/40"
+          className="border-r border-cloud/40 h-full"
+          scale={scale}
         />
 
         {/* 右下画面 */}
@@ -147,7 +178,8 @@ export function SplitMode() {
           screenId="bottomRight"
           sensors={sensors}
           handleDragEnd={handleDragEnd}
-          className=""
+          className="h-full"
+          scale={scale}
         />
       </div>
     );
@@ -162,9 +194,22 @@ interface SplitScreenProps {
   sensors: SensorDescriptor<SensorOptions>[];
   handleDragEnd: (event: DragEndEvent) => void;
   className?: string;
+  useGlobalWindows?: boolean;
+  scale?: number;
+  windowMinWidth?: number;
+  windowMinHeight?: number;
 }
 
-function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: SplitScreenProps) {
+export function SplitScreen({
+  screenId,
+  sensors,
+  handleDragEnd,
+  className = '',
+  useGlobalWindows = false,
+  scale = 1,
+  windowMinWidth = SPLIT_WINDOW_MIN_WIDTH,
+  windowMinHeight = SPLIT_WINDOW_MIN_HEIGHT,
+}: SplitScreenProps) {
   /**
    * パフォーマンス最適化: データとアクションを分離
    *
@@ -184,18 +229,104 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
   const { apps, screenWindows } = useDesktopStore(
     useShallow((state) => ({
       apps: state.apps,
-      screenWindows: state.splitScreenWindows[screenId] || [],
+      screenWindows: useGlobalWindows ? state.windows : state.splitScreenWindows[screenId] || [],
     }))
   );
 
-  // アクション関数は別途取得（参照が保持されるため再レンダリングの原因にならない）
-  const openWindow = useDesktopStore((state) => state.openWindowInScreen);
-  const closeWindow = useDesktopStore((state) => state.closeWindowInScreen);
-  const minimizeWindow = useDesktopStore((state) => state.minimizeWindowInScreen);
-  const maximizeWindow = useDesktopStore((state) => state.maximizeWindowInScreen);
-  const bringToFront = useDesktopStore((state) => state.bringToFrontInScreen);
-  const updateWindowPosition = useDesktopStore((state) => state.updateWindowPositionInScreen);
-  const updateWindowSize = useDesktopStore((state) => state.updateWindowSizeInScreen);
+  const openWindowDefault = useDesktopStore((state) => state.openWindow);
+  const closeWindowDefault = useDesktopStore((state) => state.closeWindow);
+  const minimizeWindowDefault = useDesktopStore((state) => state.minimizeWindow);
+  const maximizeWindowDefault = useDesktopStore((state) => state.maximizeWindow);
+  const bringToFrontDefault = useDesktopStore((state) => state.bringToFront);
+  const updateWindowPositionDefault = useDesktopStore((state) => state.updateWindowPosition);
+  const updateWindowSizeDefault = useDesktopStore((state) => state.updateWindowSize);
+
+  const openWindowSplit = useDesktopStore((state) => state.openWindowInScreen);
+  const closeWindowSplit = useDesktopStore((state) => state.closeWindowInScreen);
+  const minimizeWindowSplit = useDesktopStore((state) => state.minimizeWindowInScreen);
+  const maximizeWindowSplit = useDesktopStore((state) => state.maximizeWindowInScreen);
+  const bringToFrontSplit = useDesktopStore((state) => state.bringToFrontInScreen);
+  const updateWindowPositionSplit = useDesktopStore((state) => state.updateWindowPositionInScreen);
+  const updateWindowSizeSplit = useDesktopStore((state) => state.updateWindowSizeInScreen);
+
+  const handleOpen = useCallback(
+    (appId: App['id']) => {
+      if (useGlobalWindows) {
+        openWindowDefault(appId);
+      } else {
+        openWindowSplit(screenId, appId);
+      }
+    },
+    [openWindowDefault, openWindowSplit, screenId, useGlobalWindows]
+  );
+
+  const handleClose = useCallback(
+    (windowId: string) => {
+      if (useGlobalWindows) {
+        closeWindowDefault(windowId);
+      } else {
+        closeWindowSplit(screenId, windowId);
+      }
+    },
+    [closeWindowDefault, closeWindowSplit, screenId, useGlobalWindows]
+  );
+
+  const handleMinimize = useCallback(
+    (windowId: string) => {
+      if (useGlobalWindows) {
+        minimizeWindowDefault(windowId);
+      } else {
+        minimizeWindowSplit(screenId, windowId);
+      }
+    },
+    [minimizeWindowDefault, minimizeWindowSplit, screenId, useGlobalWindows]
+  );
+
+  const handleMaximize = useCallback(
+    (windowId: string) => {
+      if (useGlobalWindows) {
+        maximizeWindowDefault(windowId);
+      } else {
+        maximizeWindowSplit(screenId, windowId);
+      }
+    },
+    [maximizeWindowDefault, maximizeWindowSplit, screenId, useGlobalWindows]
+  );
+
+  const handleFocus = useCallback(
+    (windowId: string) => {
+      if (useGlobalWindows) {
+        bringToFrontDefault(windowId);
+      } else {
+        bringToFrontSplit(screenId, windowId);
+      }
+    },
+    [bringToFrontDefault, bringToFrontSplit, screenId, useGlobalWindows]
+  );
+
+  const handlePositionChange = useCallback(
+    (windowId: string, position: { x: number; y: number }) => {
+      if (useGlobalWindows) {
+        updateWindowPositionDefault(windowId, position);
+      } else {
+        updateWindowPositionSplit(screenId, windowId, position);
+      }
+    },
+    [screenId, updateWindowPositionDefault, updateWindowPositionSplit, useGlobalWindows]
+  );
+
+  const handleResize = useCallback(
+    (windowId: string, size: { width: number; height: number }, position: { x: number; y: number }) => {
+      if (useGlobalWindows) {
+        updateWindowSizeDefault(windowId, size);
+        updateWindowPositionDefault(windowId, position);
+      } else {
+        updateWindowSizeSplit(screenId, windowId, size);
+        updateWindowPositionSplit(screenId, windowId, position);
+      }
+    },
+    [screenId, updateWindowPositionDefault, updateWindowPositionSplit, updateWindowSizeDefault, updateWindowSizeSplit, useGlobalWindows]
+  );
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
@@ -216,7 +347,7 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
                   name={app.name}
                   icon={app.icon}
                   color={app.color}
-                  onOpen={() => openWindow(screenId, app.id)}
+                  onOpen={() => handleOpen(app.id)}
                 />
               ))}
             </div>
@@ -228,13 +359,15 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
           <ScreenWindow
             key={window.id}
             window={window}
-            screenId={screenId}
-            closeWindow={closeWindow}
-            minimizeWindow={minimizeWindow}
-            maximizeWindow={maximizeWindow}
-            bringToFront={bringToFront}
-            updateWindowPosition={updateWindowPosition}
-            updateWindowSize={updateWindowSize}
+            onClose={handleClose}
+            onMinimize={handleMinimize}
+            onMaximize={handleMaximize}
+            onFocus={handleFocus}
+            onPositionChange={handlePositionChange}
+            onResize={handleResize}
+            minWidth={windowMinWidth}
+            minHeight={windowMinHeight}
+            scale={scale}
           />
         ))}
       </div>
@@ -245,38 +378,41 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
 // スクリーン専用ウィンドウコンポーネント（通常のWindowと同様だが、スクリーンIDを使う）
 interface ScreenWindowProps {
   window: WindowState;
-  screenId: string;
-  closeWindow: (screenId: string, windowId: string) => void;
-  minimizeWindow: (screenId: string, windowId: string) => void;
-  maximizeWindow: (screenId: string, windowId: string) => void;
-  bringToFront: (screenId: string, windowId: string) => void;
-  updateWindowPosition: (screenId: string, windowId: string, position: { x: number; y: number }) => void;
-  updateWindowSize: (screenId: string, windowId: string, size: { width: number; height: number }) => void;
+  onClose: (windowId: string) => void;
+  onMinimize: (windowId: string) => void;
+  onMaximize: (windowId: string) => void;
+  onFocus: (windowId: string) => void;
+  onPositionChange: (windowId: string, position: { x: number; y: number }) => void;
+  onResize: (windowId: string, size: { width: number; height: number }, position: { x: number; y: number }) => void;
+  minWidth?: number;
+  minHeight?: number;
+  scale?: number;
 }
 
 function ScreenWindow({
   window,
-  screenId,
-  closeWindow,
-  minimizeWindow,
-  maximizeWindow,
-  bringToFront,
-  updateWindowPosition,
-  updateWindowSize,
+  onClose,
+  onMinimize,
+  onMaximize,
+  onFocus,
+  onPositionChange,
+  onResize,
+  minWidth = SPLIT_WINDOW_MIN_WIDTH,
+  minHeight = SPLIT_WINDOW_MIN_HEIGHT,
+  scale = 1,
 }: ScreenWindowProps) {
   const AppComponent = useMemo(() => appComponents[window.appId], [window.appId]);
 
-  const handleClose = useCallback(() => closeWindow(screenId, window.id), [closeWindow, screenId, window.id]);
-  const handleMinimize = useCallback(() => minimizeWindow(screenId, window.id), [minimizeWindow, screenId, window.id]);
-  const handleMaximize = useCallback(() => maximizeWindow(screenId, window.id), [maximizeWindow, screenId, window.id]);
-  const handleFocus = useCallback(() => bringToFront(screenId, window.id), [bringToFront, screenId, window.id]);
+  const handleClose = useCallback(() => onClose(window.id), [onClose, window.id]);
+  const handleMinimize = useCallback(() => onMinimize(window.id), [onMinimize, window.id]);
+  const handleMaximize = useCallback(() => onMaximize(window.id), [onMaximize, window.id]);
+  const handleFocus = useCallback(() => onFocus(window.id), [onFocus, window.id]);
   const handlePositionChange = useCallback((position: { x: number; y: number }) => {
-    updateWindowPosition(screenId, window.id, position);
-  }, [screenId, updateWindowPosition, window.id]);
+    onPositionChange(window.id, position);
+  }, [onPositionChange, window.id]);
   const handleResize = useCallback((size: { width: number; height: number }, position: { x: number; y: number }) => {
-    updateWindowSize(screenId, window.id, size);
-    updateWindowPosition(screenId, window.id, position);
-  }, [screenId, updateWindowPosition, updateWindowSize, window.id]);
+    onResize(window.id, size, position);
+  }, [onResize, window.id]);
 
   if (window.isMinimized) return null;
 
@@ -290,8 +426,9 @@ function ScreenWindow({
       onFocus={handleFocus}
       onPositionChange={handlePositionChange}
       onResize={handleResize}
-      minWidth={SPLIT_WINDOW_MIN_WIDTH}
-      minHeight={SPLIT_WINDOW_MIN_HEIGHT}
+      minWidth={minWidth}
+      minHeight={minHeight}
+      scale={scale}
       titleBarClassName="window-drag-handle flex items-center justify-between px-2 md:px-3 py-1.5 md:py-2 bg-surface text-ink border-b border-accent-sand/60 cursor-move select-none text-xs md:text-sm"
       bodyClassName="flex-1 overflow-auto"
     />
