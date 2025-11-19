@@ -54,11 +54,11 @@
 **目標**: 右側固定のチャットUIを実装し、Router-Worker構成のバックエンドと接続する。
 
 ### 3.1 Agent Database
-- [ ] **DB Schema Setup**
-  - [ ] `llm_providers` (APIキー管理)
-  - [ ] `agent_profiles` (Worker定義)
-  - [ ] `agent_routing_rules` (振り分けルール)
-  - [ ] `agent_memories` (pgvector導入)
+- [x] **DB Schema Setup**
+  - [x] `llm_providers` (APIキー管理)
+  - [x] `agent_profiles` (Worker定義)
+  - [x] `agent_routing_rules` (振り分けルール)
+  - [x] `agent_memories` (pgvector導入)
 
 ### 3.2 Router & Worker Logic
 - [ ] **LLM Service Layer**
