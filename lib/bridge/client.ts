@@ -1,5 +1,10 @@
 import { BridgeMessage, MessageType, ApiRequestPayload, ApiResponsePayload, isBridgeMessage } from './types';
 
+const REQUEST_TIMEOUT_MS = 30_000;
+const REQUEST_TIMEOUT_MESSAGE = 'リクエストがタイムアウトしました (30秒)';
+
+const buildFailureMessage = (status: number) => `ステータス${status}でリクエストが失敗しました`;
+
 export class BridgeRequestError extends Error {
     public readonly status: number;
     public readonly errorType?: ApiResponsePayload['errorType'];
@@ -113,7 +118,7 @@ export class PluginClient {
             if (status >= 200 && status < 300) {
                 pending.resolve(data);
             } else {
-                pending.reject(new BridgeRequestError(error || `Request failed with status ${status}`, status, errorType));
+                pending.reject(new BridgeRequestError(error || buildFailureMessage(status), status, errorType));
             }
             this.pendingRequests.delete(requestId);
         }
@@ -128,8 +133,8 @@ export class PluginClient {
             if (!this.pendingRequests.has(requestId)) return;
 
             this.pendingRequests.delete(requestId);
-            reject(new BridgeRequestError('リクエストがタイムアウトしました (30s)', 408, 'TIMEOUT'));
-        }, 30_000);
+            reject(new BridgeRequestError(REQUEST_TIMEOUT_MESSAGE, 408, 'TIMEOUT'));
+        }, REQUEST_TIMEOUT_MS);
     }
 
     private generateId(): string {

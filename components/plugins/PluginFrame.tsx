@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { PluginHost } from '@/lib/bridge/host';
 
 interface PluginFrameProps {
@@ -15,11 +15,23 @@ export function PluginFrame({ pluginId, src, className, onReady, allowPopups = f
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const hostRef = useRef<PluginHost | null>(null);
 
+    const hostConfig = useMemo(() => {
+        const options = resolveHostOptions(src);
+        const signature = JSON.stringify({
+            targetOrigin: options.targetOrigin,
+            allowOpaqueOrigin: options.allowOpaqueOrigin,
+            allowedOrigins: options.allowedOrigins,
+        });
+
+        return { options, signature };
+    }, [src]);
+
+    const { options: memoizedHostOptions, signature: hostSignature } = hostConfig;
+
     useEffect(() => {
         if (iframeRef.current) {
-            const hostOptions = resolveHostOptions(src);
             // Initialize host bridge
-            hostRef.current = new PluginHost(iframeRef.current, pluginId, hostOptions);
+            hostRef.current = new PluginHost(iframeRef.current, pluginId, memoizedHostOptions);
 
             if (onReady) {
                 onReady();
@@ -32,7 +44,7 @@ export function PluginFrame({ pluginId, src, className, onReady, allowPopups = f
                 hostRef.current = null;
             }
         };
-    }, [pluginId, onReady, src]);
+    }, [pluginId, onReady, hostSignature, memoizedHostOptions]);
 
     const sandboxTokens = ['allow-scripts', 'allow-forms', 'allow-modals'];
     if (allowPopups) {

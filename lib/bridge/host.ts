@@ -1,5 +1,8 @@
 import { BridgeMessage, MessageType, ApiRequestPayload, ApiResponsePayload, isBridgeMessage } from './types';
 
+const HOST_UNKNOWN_ERROR = 'ホスト内部でエラーが発生しました';
+const HOST_ABORTED_MESSAGE = 'ホストリクエストが中断されました';
+
 type PendingHostRequest = {
     controller: AbortController;
 };
@@ -99,7 +102,7 @@ export class PluginHost {
                     requestId,
                     status: response.status,
                     data: response.ok ? data : undefined,
-                    error: response.ok ? undefined : data.error || 'Unknown error',
+                    error: response.ok ? undefined : data.error || HOST_UNKNOWN_ERROR,
                     errorType: data.errorType,
                 } as ApiResponsePayload,
                 source: 'host',
@@ -113,10 +116,10 @@ export class PluginHost {
                     requestId,
                     status: aborted ? 499 : 500,
                     error: aborted
-                        ? 'Host request was aborted'
+                        ? HOST_ABORTED_MESSAGE
                         : error instanceof Error
                           ? error.message
-                          : 'Internal Host Error',
+                          : HOST_UNKNOWN_ERROR,
                     errorType: 'NETWORK',
                 } as ApiResponsePayload,
                 source: 'host',

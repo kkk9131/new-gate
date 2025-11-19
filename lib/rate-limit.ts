@@ -1,6 +1,6 @@
 import { Ratelimit, type RateLimitResponse } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { env } from './env';
+import { env, isProduction } from './env';
 
 const redis = env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({
@@ -8,6 +8,15 @@ const redis = env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
       token: env.UPSTASH_REDIS_REST_TOKEN,
     })
   : undefined;
+
+if (!redis) {
+  const message = '[RateLimit] Upstash Redis が未設定のため、Sandbox API のレート制限は無効化されています。';
+  if (!isProduction) {
+    console.warn(message);
+  } else {
+    console.error(message);
+  }
+}
 
 const sandboxLimiter = redis
   ? new Ratelimit({
