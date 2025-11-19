@@ -37,12 +37,12 @@
   - [x] インストールボタンの処理実装
 
 ### 2.2 Sandbox Environment (Security)
-- [ ] **UI Sandbox (iframe)**
-  - [ ] `components/PluginFrame.tsx` 実装 (iframeコンテナ)
-  - [ ] `lib/bridge/host.ts` 実装 (postMessage受信側)
-- [ ] **API Sandbox (Server)**
-  - [ ] `api/sandbox/[pluginId]/[...path]` プロキシ実装
-  - [ ] 権限チェックミドルウェア (DBアクセス制限)
+- [x] **UI Sandbox (iframe)**
+  - [x] `components/PluginFrame.tsx` 実装 (iframeコンテナ)
+  - [x] `lib/bridge/host.ts` 実装 (postMessage受信側)
+- [x] **API Sandbox (Server)**
+  - [x] `api/sandbox/[pluginId]/[...path]` プロキシ実装
+  - [x] 権限チェックミドルウェア (DBアクセス制限)
 
 ### 2.3 Developer Experience
 - [ ] **Core SDK Package**
