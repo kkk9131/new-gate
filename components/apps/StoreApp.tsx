@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   RiArrowLeftLine,
   RiDownloadLine,
@@ -16,110 +16,28 @@ import {
 
 type Plugin = {
   id: string;
+  plugin_id: string;
   name: string;
-  summary: string;
-  rating: number;
-  reviews: number;
-  downloads: number;
-  price: string;
-  priceType: 'free' | 'paid';
+  description: string; // summary
+  long_description?: string;
+  icon_url?: string;
+  screenshots?: string[];
+  author_name: string; // developer
   category: string;
-  badges?: string[];
-  developer: string;
-  version: string;
-  size: string;
-  lastUpdated: string;
-  compatibility: string;
-  description: string;
-  permissions: string[];
-  screenshots: string[];
+  tags?: string[];
+  latest_version: string; // version
+  download_count: number; // downloads
+  average_rating: number; // rating
+  review_count: number; // reviews
+  price: number;
+  is_free: boolean;
+  published_at: string; // lastUpdated
+  // compatibility: string; // Not in DB yet
+  // permissions: string[]; // Not in DB yet
 };
 
-const mockPlugins: Plugin[] = [
-  {
-    id: 'crm-manager',
-    name: 'CRM Manager',
-    summary: '顧客管理を自動化し、チームの対応を可視化するコアプラグイン。',
-    rating: 4.9,
-    reviews: 250,
-    downloads: 10234,
-    price: '無料',
-    priceType: 'free',
-    category: 'ビジネス',
-    badges: ['公式', 'セキュリティ検証済み'],
-    developer: 'Acme Labs',
-    version: '2.1.0',
-    size: '1.2 MB',
-    lastUpdated: '2025-11-01',
-    compatibility: 'Platform v1.0+',
-    description:
-      '顧客情報の統合管理、パイプライン自動更新、レポート生成までワンクリック。SalesforceやHubSpotとも簡単連携可能。',
-    permissions: ['projects.read', 'projects.write', 'notifications.send'],
-    screenshots: ['/mock/screen-1.png', '/mock/screen-2.png', '/mock/screen-3.png'],
-  },
-  {
-    id: 'analytics-pro',
-    name: 'Analytics Pro',
-    summary: '売上とプロジェクトKPIをまとめた高機能ダッシュボード。',
-    rating: 4.7,
-    reviews: 158,
-    downloads: 8650,
-    price: '¥2,980',
-    priceType: 'paid',
-    category: '分析',
-    badges: ['トレンド'],
-    developer: 'DataGrid',
-    version: '1.4.3',
-    size: '2.8 MB',
-    lastUpdated: '2025-10-22',
-    compatibility: 'Platform v1.0+',
-    description:
-      'リアルタイム売上チャート、プロジェクト別原価、アラート設定を1つのウィンドウで。チャットからもコマンド可能。',
-    permissions: ['revenues.read', 'revenues.write'],
-    screenshots: ['/mock/screen-4.png'],
-  },
-  {
-    id: 'mail-bridge',
-    name: 'Mail Bridge',
-    summary: 'メールとプロジェクトを同期し、やり取りをタイムライン化。',
-    rating: 4.6,
-    reviews: 320,
-    downloads: 7200,
-    price: '¥1,480',
-    priceType: 'paid',
-    category: 'コミュニケーション',
-    developer: 'Postal Tech',
-    version: '3.0.0',
-    size: '900 KB',
-    lastUpdated: '2025-09-30',
-    compatibility: 'Platform v1.0+',
-    description:
-      'Gmail/Outlookと双方向連携し、案件やチケットに自動紐づけ。メールテンプレや自動返信もサポート。',
-    permissions: ['mail.read', 'mail.write'],
-    screenshots: ['/mock/screen-5.png'],
-  },
-  {
-    id: 'automation-kit',
-    name: 'Automation Kit',
-    summary: 'ワークフローをドラッグ&ドロップで自動化。200以上のアクションを搭載。',
-    rating: 4.4,
-    reviews: 90,
-    downloads: 4200,
-    price: '無料',
-    priceType: 'free',
-    category: 'その他',
-    badges: ['新着'],
-    developer: 'Flowtail',
-    version: '0.9.0-beta',
-    size: '1.8 MB',
-    lastUpdated: '2025-11-05',
-    compatibility: 'Platform v1.0+',
-    description:
-      'if/else、遅延、繰り返しを GUI で配置し、自動入力や通知を実現。近日中にAIブロックも追加予定。',
-    permissions: ['projects.write', 'notifications.send'],
-    screenshots: ['/mock/screen-6.png'],
-  },
-];
+type ToastState = { type: 'success' | 'error'; message: string } | null;
+
 
 const categories = ['ビジネス', '分析', 'コミュニケーション', 'プロダクティビティ', 'その他'];
 
@@ -133,20 +51,101 @@ export function StoreApp() {
   const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'paid'>('all');
   const [ratingFilter, setRatingFilter] = useState<'all' | '4' | '3'>('4');
 
+  const [plugins, setPlugins] = useState<Plugin[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [installingId, setInstallingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((type: 'success' | 'error', message: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToast({ type, message });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchPlugins = async () => {
+      if (isMounted) setIsLoading(true);
+
+      try {
+        const res = await fetch('/api/store/plugins');
+        if (!res.ok) {
+          throw new Error('Failed to fetch plugins');
+        }
+        const data = await res.json();
+        if (isMounted) {
+          setPlugins(data.plugins || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch plugins:', error);
+        if (isMounted) {
+          showToast('error', 'プラグイン一覧の取得に失敗しました');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchPlugins();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [showToast]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
   const filteredResults = useMemo(() => {
-    return mockPlugins.filter((plugin) => {
+    return plugins.filter((plugin) => {
       const keywordMatch = keyword ? plugin.name.toLowerCase().includes(keyword.toLowerCase()) : true;
       const categoryMatch = activeCategories.length ? activeCategories.includes(plugin.category) : true;
       const priceMatch =
-        priceFilter === 'all' ? true : priceFilter === 'free' ? plugin.priceType === 'free' : plugin.priceType === 'paid';
-      const ratingMatch = ratingFilter === 'all' ? true : plugin.rating >= Number(ratingFilter);
+        priceFilter === 'all' ? true : priceFilter === 'free' ? plugin.is_free : !plugin.is_free;
+      const ratingMatch = ratingFilter === 'all' ? true : plugin.average_rating >= Number(ratingFilter);
       return keywordMatch && categoryMatch && priceMatch && ratingMatch;
     });
-  }, [keyword, activeCategories, priceFilter, ratingFilter]);
+  }, [plugins, keyword, activeCategories, priceFilter, ratingFilter]);
 
-  const featured = mockPlugins.slice(0, 4);
-  const ranking = [...mockPlugins].sort((a, b) => b.downloads - a.downloads).slice(0, 3);
-  const newArrivals = mockPlugins.slice(-3);
+  const featured = plugins.slice(0, 4);
+  const ranking = useMemo(() => {
+    return [...plugins].sort((a, b) => b.download_count - a.download_count).slice(0, 3);
+  }, [plugins]);
+  const newArrivals = plugins.slice(-3);
+
+  const handleInstall = async (plugin: Plugin) => {
+    try {
+      setInstallingId(plugin.id);
+      const res = await fetch('/api/store/install', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plugin_id: plugin.plugin_id, version: plugin.latest_version }),
+      });
+
+      if (res.ok) {
+        showToast('success', `${plugin.name} をインストールしました`);
+      } else {
+        const data = await res.json();
+        showToast('error', data.error ? `インストール失敗: ${data.error}` : 'インストールに失敗しました');
+      }
+    } catch (error) {
+      console.error('Install failed:', error);
+      showToast('error', 'インストール中にエラーが発生しました');
+    } finally {
+      setInstallingId(null);
+    }
+  };
 
   const handleOpenDetail = (plugin: Plugin) => {
     setSelectedPlugin(plugin);
@@ -212,6 +211,12 @@ export function StoreApp() {
         </div>
       </div>
 
+      {isLoading && (
+        <div className="mb-4 rounded-3xl border border-white/40 bg-surface px-4 py-3 text-sm text-cloud animate-pulse">
+          プラグイン情報を読み込み中です...
+        </div>
+      )}
+
       {viewMode === 'home' && (
         <div className="space-y-6 md:space-y-8">
           {/* おすすめ */}
@@ -238,11 +243,10 @@ export function StoreApp() {
                 <button
                   key={category}
                   onClick={() => toggleCategory(category)}
-                  className={`px-4 py-2 rounded-full border text-sm ${
-                    activeCategories.includes(category)
+                  className={`px-4 py-2 rounded-full border text-sm ${activeCategories.includes(category)
                       ? 'bg-ink text-white'
                       : 'border-cloud/40 text-ink hover:border-ink/40'
-                  }`}
+                    }`}
                 >
                   {category}
                 </button>
@@ -266,7 +270,7 @@ export function StoreApp() {
                     <span className="text-cloud font-semibold w-6">{index + 1}.</span>
                     <div>
                       <p className="font-semibold">{plugin.name}</p>
-                      <p className="text-xs text-cloud">★{plugin.rating} / {plugin.downloads.toLocaleString()} DL</p>
+                      <p className="text-xs text-cloud">★{plugin.average_rating} / {plugin.download_count.toLocaleString()} DL</p>
                     </div>
                   </div>
                   <button
@@ -358,15 +362,21 @@ export function StoreApp() {
                 </div>
                 <div>
                   <h3 className="text-xl md:text-2xl font-semibold">{selectedPlugin.name}</h3>
-                  <p className="text-sm text-cloud">by {selectedPlugin.developer}</p>
+                  <p className="text-sm text-cloud">by {selectedPlugin.author_name}</p>
                   <p className="text-sm text-cloud">
-                    ★{selectedPlugin.rating} ({selectedPlugin.reviews} reviews)
+                    ★{selectedPlugin.average_rating} ({selectedPlugin.review_count} reviews)
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <button className="px-5 py-3 rounded-2xl border border-cloud/40 text-sm">デモを見る</button>
-                <button className="px-5 py-3 rounded-2xl bg-ink text-white text-sm">インストール</button>
+                <button
+                  onClick={() => handleInstall(selectedPlugin)}
+                  disabled={installingId === selectedPlugin.id}
+                  className="px-5 py-3 rounded-2xl bg-ink text-white text-sm disabled:opacity-50"
+                >
+                  {installingId === selectedPlugin.id ? 'インストール中...' : 'インストール'}
+                </button>
               </div>
             </div>
           </div>
@@ -385,19 +395,19 @@ export function StoreApp() {
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-cloud">バージョン</dt>
-                <dd className="text-ink">{selectedPlugin.version}</dd>
+                <dd className="text-ink">{selectedPlugin.latest_version}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-cloud">サイズ</dt>
-                <dd className="text-ink">{selectedPlugin.size}</dd>
+                <dd className="text-ink">-</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-cloud">最終更新</dt>
-                <dd className="text-ink">{selectedPlugin.lastUpdated}</dd>
+                <dd className="text-ink">{new Date(selectedPlugin.published_at).toLocaleDateString()}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-cloud">互換性</dt>
-                <dd className="text-ink">{selectedPlugin.compatibility}</dd>
+                <dd className="text-ink">Platform v1.0+</dd>
               </div>
             </dl>
           </section>
@@ -405,11 +415,10 @@ export function StoreApp() {
           <section className="bg-surface border border-white/40 rounded-3xl p-4 md:p-6 shadow-panel">
             <h4 className="font-semibold mb-3">権限</h4>
             <ul className="space-y-2 text-sm">
-              {selectedPlugin.permissions.map((permission) => (
-                <li key={permission} className="flex items-center gap-2">
-                  <RiShieldCheckLine className="text-accent-sand" /> {permission}
-                </li>
-              ))}
+              {/* Permissions not yet in DB, showing placeholder */}
+              <li className="flex items-center gap-2 text-cloud">
+                <RiShieldCheckLine className="text-accent-sand" /> 権限情報はまだありません
+              </li>
             </ul>
           </section>
 
@@ -421,6 +430,17 @@ export function StoreApp() {
             </div>
             <button className="text-sm text-ink underline">もっと見る</button>
           </section>
+        </div>
+      )}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <div
+            className={`rounded-2xl px-5 py-3 shadow-panel text-sm text-white ${
+              toast.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'
+            }`}
+          >
+            {toast.message}
+          </div>
         </div>
       )}
     </div>
@@ -442,11 +462,11 @@ function PluginCard({ plugin, onClick, compact }: { plugin: Plugin; onClick: () 
           <p className="text-xs text-cloud">{plugin.category}</p>
         </div>
       </div>
-      <p className="text-sm text-cloud mb-3 line-clamp-2">{plugin.summary}</p>
+      <p className="text-sm text-cloud mb-3 line-clamp-2">{plugin.description}</p>
       {!compact && (
         <div className="flex items-center justify-between text-sm text-cloud">
-          <span>★{plugin.rating} ({plugin.reviews})</span>
-          <span>{plugin.price}</span>
+          <span>★{plugin.average_rating} ({plugin.review_count})</span>
+          <span>{plugin.is_free ? '無料' : `¥${plugin.price}`}</span>
         </div>
       )}
     </button>
@@ -459,17 +479,17 @@ function PluginResultCard({ plugin, onClick }: { plugin: Plugin; onClick: () => 
       <div>
         <div className="flex items-center gap-2 mb-1">
           <h4 className="font-semibold text-lg">{plugin.name}</h4>
-          {plugin.badges?.map((badge) => (
+          {plugin.tags?.map((badge) => (
             <span key={badge} className="text-xs px-2 py-1 rounded-full bg-cloud/20 text-cloud">
               {badge}
             </span>
           ))}
         </div>
-        <p className="text-sm text-cloud mb-2">{plugin.summary}</p>
+        <p className="text-sm text-cloud mb-2">{plugin.description}</p>
         <div className="flex items-center gap-4 text-xs text-cloud">
-          <span>★{plugin.rating}</span>
-          <span>{plugin.price}</span>
-          <span>{plugin.downloads.toLocaleString()} DL</span>
+          <span>★{plugin.average_rating}</span>
+          <span>{plugin.is_free ? '無料' : `¥${plugin.price}`}</span>
+          <span>{plugin.download_count.toLocaleString()} DL</span>
         </div>
       </div>
       <button className="px-4 py-2 rounded-2xl border border-cloud/40 text-sm" onClick={onClick}>

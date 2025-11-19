@@ -1,46 +1,54 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 /**
  * ブラウザ通知の許可をリクエストするプロンプト
  */
 export default function BrowserNotificationPrompt() {
-  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const isNotificationSupported = useMemo(
+    () => typeof window !== 'undefined' && 'Notification' in window,
+    []
+  );
+
+  const getInitialPermission = () => {
+    if (!isNotificationSupported) return 'default';
+    return Notification.permission;
+  };
+
+  const getInitialDismissed = () => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('notification_prompt_dismissed') === 'true';
+  };
+
+  const [permission, setPermission] = useState<NotificationPermission>(getInitialPermission);
   const [isVisible, setIsVisible] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(getInitialDismissed);
 
   useEffect(() => {
-    // ブラウザ通知がサポートされているか確認
-    if (!('Notification' in window)) {
-      console.log('このブラウザは通知をサポートしていません');
+    if (!isNotificationSupported) {
       return;
     }
 
-    // 現在の許可状態を取得
-    setPermission(Notification.permission);
-
-    // ローカルストレージから非表示設定を取得
-    const dismissed = localStorage.getItem('notification_prompt_dismissed');
-    if (dismissed === 'true') {
-      setIsDismissed(true);
+    if (isDismissed || permission !== 'default') {
       return;
     }
 
-    // 許可がまだ取得されていない場合のみ表示
-    if (Notification.permission === 'default') {
-      // 3秒後に表示（ユーザーがページに慣れてから）
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-      }, 3000);
+    const timer = window.setTimeout(() => {
+      setIsVisible(true);
+    }, 3000);
 
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    return () => window.clearTimeout(timer);
+  }, [isNotificationSupported, isDismissed, permission]);
 
   // 通知許可をリクエスト
   async function requestPermission() {
+    if (!isNotificationSupported) {
+      console.warn('ブラウザが通知をサポートしていません');
+      return;
+    }
+
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
@@ -67,12 +75,13 @@ export default function BrowserNotificationPrompt() {
   function dismissPrompt() {
     setIsVisible(false);
     setIsDismissed(true);
-    // ローカルストレージに非表示設定を保存
-    localStorage.setItem('notification_prompt_dismissed', 'true');
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('notification_prompt_dismissed', 'true');
+    }
   }
 
   // 表示しない条件
-  if (!isVisible || isDismissed || permission !== 'default') {
+  if (!isNotificationSupported || !isVisible || isDismissed || permission !== 'default') {
     return null;
   }
 

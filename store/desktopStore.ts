@@ -218,11 +218,11 @@ const nudgePositionIfNeeded = (
  * // 入力: [{id: 'a', zIndex: 1500}, {id: 'b', zIndex: 1501}]
  * // 出力: [{id: 'a', zIndex: 1}, {id: 'b', zIndex: 2}]
  */
-const normalizeZIndexesIfNeeded = (windows: WindowState[]) => {
-  const maxZ = windows.reduce((max, w) => Math.max(max, w.zIndex), 0);
+const normalizeZIndexesIfNeeded = (windows: WindowState[], previousWindows?: WindowState[]) => {
+  const reference = previousWindows ?? windows;
+  const hadOverflow = reference.some((w) => w.zIndex > Z_INDEX_NORMALIZATION_THRESHOLD);
 
-  // 閾値以下なら正規化不要
-  if (maxZ <= Z_INDEX_NORMALIZATION_THRESHOLD) {
+  if (!hadOverflow) {
     return windows;
   }
 
@@ -356,14 +356,13 @@ export const useDesktopStore = create<DesktopState>()(
           const existingWindow = state.windows.find((w) => w.appId === appId);
           if (existingWindow) {
             const maxZ = Math.max(...state.windows.map((w) => w.zIndex), 0);
+            const updatedWindows = state.windows.map((w) =>
+              w.id === existingWindow.id
+                ? { ...w, zIndex: maxZ + 1, isMinimized: false }
+                : w
+            );
             return {
-              windows: normalizeZIndexesIfNeeded(
-                state.windows.map((w) =>
-                  w.id === existingWindow.id
-                    ? { ...w, zIndex: maxZ + 1, isMinimized: false }
-                    : w
-                )
-              ),
+              windows: normalizeZIndexesIfNeeded(updatedWindows, state.windows),
             };
           }
 
@@ -386,7 +385,7 @@ export const useDesktopStore = create<DesktopState>()(
           };
 
           const windows = [...state.windows, newWindow];
-          return { windows: normalizeZIndexesIfNeeded(windows) };
+          return { windows: normalizeZIndexesIfNeeded(windows, state.windows) };
         }),
 
       // ウィンドウを閉じる
@@ -425,7 +424,7 @@ export const useDesktopStore = create<DesktopState>()(
           const updatedWindows = state.windows.map((w) =>
             w.id === windowId ? { ...w, zIndex: maxZ + 1 } : w
           );
-          return { windows: normalizeZIndexesIfNeeded(updatedWindows) };
+          return { windows: normalizeZIndexesIfNeeded(updatedWindows, state.windows) };
         }),
 
       // ウィンドウ位置を更新
@@ -464,16 +463,15 @@ export const useDesktopStore = create<DesktopState>()(
           const existingWindow = screenWindows.find((w) => w.appId === appId);
           if (existingWindow) {
             const maxZ = Math.max(...screenWindows.map((w) => w.zIndex), 0);
+            const updatedScreenWindows = screenWindows.map((w) =>
+              w.id === existingWindow.id
+                ? { ...w, zIndex: maxZ + 1, isMinimized: false }
+                : w
+            );
             return {
               splitScreenWindows: {
                 ...state.splitScreenWindows,
-                [screenId]: normalizeZIndexesIfNeeded(
-                  screenWindows.map((w) =>
-                    w.id === existingWindow.id
-                      ? { ...w, zIndex: maxZ + 1, isMinimized: false }
-                      : w
-                  )
-                ),
+                [screenId]: normalizeZIndexesIfNeeded(updatedScreenWindows, screenWindows),
               },
             };
           }
@@ -500,7 +498,7 @@ export const useDesktopStore = create<DesktopState>()(
           return {
             splitScreenWindows: {
               ...state.splitScreenWindows,
-              [screenId]: normalizeZIndexesIfNeeded(windows),
+              [screenId]: normalizeZIndexesIfNeeded(windows, screenWindows),
             },
           };
         }),
@@ -554,7 +552,7 @@ export const useDesktopStore = create<DesktopState>()(
           return {
             splitScreenWindows: {
               ...state.splitScreenWindows,
-              [screenId]: normalizeZIndexesIfNeeded(updatedScreenWindows),
+              [screenId]: normalizeZIndexesIfNeeded(updatedScreenWindows, screenWindows),
             },
           };
         }),

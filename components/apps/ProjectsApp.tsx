@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   RiAddLine,
   RiCalendarLine,
@@ -70,7 +70,7 @@ export function ProjectsApp() {
   );
 
   // プロジェクト一覧取得（初回）
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -93,10 +93,10 @@ export function ProjectsApp() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [LIMIT, t]);
 
   // 追加プロジェクト読み込み（無限スクロール用）
-  const loadMoreProjects = async () => {
+  const loadMoreProjects = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
 
     try {
@@ -119,35 +119,34 @@ export function ProjectsApp() {
     } finally {
       setIsLoadingMore(false);
     }
-  };
+  }, [LIMIT, hasMore, isLoadingMore, offset, t.projects.fetchError]);
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
   // 無限スクロール用のIntersection Observer
   const observerTarget = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!observerTarget.current) return;
+
+    const target = observerTarget.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+        if (entries[0].isIntersecting) {
           loadMoreProjects();
         }
       },
       { threshold: 0.1 }
     );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
+    observer.observe(target);
 
     return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
+      observer.unobserve(target);
     };
-  }, [hasMore, isLoadingMore, offset]);
+  }, [loadMoreProjects]);
 
   // プロジェクト作成ハンドラー
   const handleCreate = async (formData: any) => {
@@ -877,4 +876,3 @@ function ProjectList({
     </div>
   );
 }
-
