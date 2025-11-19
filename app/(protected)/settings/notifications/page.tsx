@@ -1,0 +1,458 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { RiArrowLeftLine, RiNotificationLine, RiMailLine, RiGlobalLine, RiVolumeUpLine } from 'react-icons/ri';
+import { useTranslation } from '@/lib/hooks/useTranslation';
+
+/**
+ * 通知設定の型定義
+ */
+interface NotificationSettings {
+  // 通知方法
+  notification_email: boolean;
+  notification_browser: boolean;
+  notification_in_app: boolean;
+  notification_sound: boolean;
+
+  // 通知カテゴリ
+  notify_agent_task_success: boolean;
+  notify_agent_task_failure: boolean;
+  notify_security_alert: boolean;
+  notify_platform_updates: boolean;
+  notify_project_reminder: boolean;
+
+  // 通知タイミング
+  notification_timing: 'immediate' | 'batched' | 'business_hours';
+  notification_batch_interval: number;
+  notification_business_hours_start: string;
+  notification_business_hours_end: string;
+}
+
+/**
+ * 通知設定ページ
+ *
+ * ユーザーの通知設定を管理します。
+ */
+export default function NotificationsPage() {
+  const router = useRouter();
+  const { t } = useTranslation();
+
+  const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * 通知設定を取得
+   */
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/notifications');
+
+        if (!response.ok) {
+          throw new Error(t.notifications.loadFailed);
+        }
+
+        const data = await response.json();
+        setSettings(data);
+      } catch (err: any) {
+        console.error('通知設定取得エラー:', err);
+        setError(err.message || t.notifications.loadFailed);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [t]);
+
+  /**
+   * 通知設定を更新（楽観的更新）
+   * UIを即座に反映し、バックグラウンドでAPIを呼び出す
+   */
+  const updateSettings = async (updates: Partial<NotificationSettings>) => {
+    if (!settings) return;
+
+    // 元の設定を保存（ロールバック用）
+    const previousSettings = settings;
+
+    // 先にローカル状態を更新（楽観的更新）
+    setSettings({
+      ...settings,
+      ...updates,
+    });
+
+    setError(null);
+
+    try {
+      // バックグラウンドでAPI呼び出し
+      const response = await fetch('/api/settings/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error('通知設定の更新に失敗しました');
+      }
+    } catch (err: any) {
+      console.error('通知設定更新エラー:', err);
+
+      // エラー時は元の状態にロールバック
+      setSettings(previousSettings);
+      setError(err.message || '通知設定の更新に失敗しました');
+    }
+  };
+
+  /**
+   * デスクトップに戻る
+   */
+  const handleBack = () => {
+    router.push('/');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-mist flex items-center justify-center p-4">
+        <p className="text-cloud">{t.common.loading}</p>
+      </div>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <div className="min-h-screen bg-mist flex items-center justify-center p-4">
+        <p className="text-cloud">{t.notifications.loadFailed}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-mist flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        {/* 戻るボタン */}
+        <button
+          type="button"
+          onClick={handleBack}
+          className="mb-4 flex items-center gap-2 text-ink hover:text-accent-sand transition-colors font-medium"
+        >
+          <RiArrowLeftLine className="w-5 h-5" />
+          <span>{t.common.backToDesktop}</span>
+        </button>
+
+        {/* 通知設定 */}
+        <div className="bg-surface rounded-2xl shadow-panel p-8">
+          <div className="flex items-center gap-2 mb-6">
+            <RiNotificationLine className="w-6 h-6 text-accent-sand" />
+            <h2 className="text-2xl font-bold text-ink">
+              {t.notifications.title}
+            </h2>
+          </div>
+
+          {/* エラーメッセージ */}
+          {error && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm mb-4"
+            >
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-8">
+            {/* 通知方法 */}
+            <div>
+              <h3 className="text-lg font-semibold text-ink mb-4">
+                {t.notifications.notificationMethods}
+              </h3>
+              <div className="space-y-3">
+                {/* メール通知 */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notification_email}
+                    onChange={(e) =>
+                      updateSettings({ notification_email: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <RiMailLine className="w-5 h-5 text-cloud" />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.emailNotifications}</span>
+                    <p className="text-sm text-cloud">登録メールアドレスに通知を送信</p>
+                  </div>
+                </label>
+
+                {/* ブラウザ通知 */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notification_browser}
+                    onChange={(e) =>
+                      updateSettings({ notification_browser: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <RiGlobalLine className="w-5 h-5 text-cloud" />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.browserNotifications}</span>
+                    <p className="text-sm text-cloud">デスクトップ通知を表示</p>
+                  </div>
+                </label>
+
+                {/* アプリ内通知 */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notification_in_app}
+                    onChange={(e) =>
+                      updateSettings({ notification_in_app: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <RiNotificationLine className="w-5 h-5 text-cloud" />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.inAppNotifications}</span>
+                    <p className="text-sm text-cloud">通知バッジを表示</p>
+                  </div>
+                </label>
+
+                {/* 通知音 */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notification_sound}
+                    onChange={(e) =>
+                      updateSettings({ notification_sound: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <RiVolumeUpLine className="w-5 h-5 text-cloud" />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.soundNotifications}</span>
+                    <p className="text-sm text-cloud">通知時に音を鳴らす</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* 通知カテゴリ */}
+            <div>
+              <h3 className="text-lg font-semibold text-ink mb-4">
+                {t.notifications.notificationCategories}
+              </h3>
+              <div className="space-y-3">
+                {/* エージェントタスク成功 */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notify_agent_task_success}
+                    onChange={(e) =>
+                      updateSettings({ notify_agent_task_success: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.agentTaskSuccess}</span>
+                    <p className="text-sm text-cloud">タスクが正常に完了した時</p>
+                  </div>
+                </label>
+
+                {/* エージェントタスク失敗 */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notify_agent_task_failure}
+                    onChange={(e) =>
+                      updateSettings({ notify_agent_task_failure: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.agentTaskFailure}</span>
+                    <p className="text-sm text-cloud">タスクが失敗した時</p>
+                  </div>
+                </label>
+
+                {/* セキュリティアラート */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notify_security_alert}
+                    onChange={(e) =>
+                      updateSettings({ notify_security_alert: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.securityAlerts}</span>
+                    <p className="text-sm text-cloud">不審なログインや重要な変更</p>
+                  </div>
+                </label>
+
+                {/* プラットフォーム更新 */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notify_platform_updates}
+                    onChange={(e) =>
+                      updateSettings({ notify_platform_updates: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.platformUpdates}</span>
+                    <p className="text-sm text-cloud">新機能やメンテナンス情報</p>
+                  </div>
+                </label>
+
+                {/* プロジェクトリマインダー */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.notify_project_reminder}
+                    onChange={(e) =>
+                      updateSettings({ notify_project_reminder: e.target.checked })
+                    }
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 rounded cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.projectReminders}</span>
+                    <p className="text-sm text-cloud">プロジェクト期限のリマインド</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* 通知タイミング */}
+            <div>
+              <h3 className="text-lg font-semibold text-ink mb-4">
+                {t.notifications.notificationTiming}
+              </h3>
+              <div className="space-y-3">
+                {/* 即時通知 */}
+                <label className="flex items-center gap-3 p-4 bg-surface-strong rounded-xl hover:bg-mist transition-colors cursor-pointer">
+                  <input
+                    type="radio"
+                    name="notification_timing"
+                    value="immediate"
+                    checked={settings.notification_timing === 'immediate'}
+                    onChange={() => updateSettings({ notification_timing: 'immediate' })}
+                    style={{ accentColor: 'rgb(213 196 170)' }}
+                    className="w-5 h-5 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium text-ink">{t.notifications.immediate}</span>
+                    <p className="text-sm text-cloud">イベント発生時すぐに通知</p>
+                  </div>
+                </label>
+
+                {/* まとめて通知 */}
+                <div className="bg-surface-strong rounded-xl overflow-hidden">
+                  <label className="flex items-center gap-3 p-4 hover:bg-mist transition-colors cursor-pointer">
+                    <input
+                      type="radio"
+                      name="notification_timing"
+                      value="batched"
+                      checked={settings.notification_timing === 'batched'}
+                      onChange={() => updateSettings({ notification_timing: 'batched' })}
+                      style={{ accentColor: 'rgb(213 196 170)' }}
+                      className="w-5 h-5 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-ink">{t.notifications.batched}</span>
+                      <p className="text-sm text-cloud">定期的にまとめて通知</p>
+                    </div>
+                  </label>
+
+                  {/* まとめて通知の詳細設定 */}
+                  {settings.notification_timing === 'batched' && (
+                    <div className="px-4 pb-4 pt-2 border-t border-white/10">
+                      <label className="flex items-center gap-3">
+                        <span className="text-sm text-cloud">{t.notifications.batchInterval}:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="1440"
+                          value={settings.notification_batch_interval}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value, 10);
+                            if (value >= 1 && value <= 1440) {
+                              updateSettings({ notification_batch_interval: value });
+                            }
+                          }}
+                          className="w-20 px-3 py-1.5 bg-surface border border-white/20 rounded-lg text-ink text-sm focus:outline-none focus:border-accent-sand transition-colors"
+                        />
+                        <span className="text-sm text-cloud">分ごと (1-1440)</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* 営業時間のみ通知 */}
+                <div className="bg-surface-strong rounded-xl overflow-hidden">
+                  <label className="flex items-center gap-3 p-4 hover:bg-mist transition-colors cursor-pointer">
+                    <input
+                      type="radio"
+                      name="notification_timing"
+                      value="business_hours"
+                      checked={settings.notification_timing === 'business_hours'}
+                      onChange={() => updateSettings({ notification_timing: 'business_hours' })}
+                      style={{ accentColor: 'rgb(213 196 170)' }}
+                      className="w-5 h-5 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-ink">{t.notifications.businessHoursOnly}</span>
+                      <p className="text-sm text-cloud">指定時間帯のみ通知</p>
+                    </div>
+                  </label>
+
+                  {/* 営業時間のみ通知の詳細設定 */}
+                  {settings.notification_timing === 'business_hours' && (
+                    <div className="px-4 pb-4 pt-2 border-t border-white/10 space-y-3">
+                      <label className="flex items-center gap-3">
+                        <span className="text-sm text-cloud w-16">{t.notifications.businessHoursStart}:</span>
+                        <input
+                          type="time"
+                          value={settings.notification_business_hours_start}
+                          onChange={(e) =>
+                            updateSettings({ notification_business_hours_start: e.target.value })
+                          }
+                          className="px-3 py-1.5 bg-surface border border-white/20 rounded-lg text-ink text-sm focus:outline-none focus:border-accent-sand transition-colors"
+                        />
+                      </label>
+                      <label className="flex items-center gap-3">
+                        <span className="text-sm text-cloud w-16">{t.notifications.businessHoursEnd}:</span>
+                        <input
+                          type="time"
+                          value={settings.notification_business_hours_end}
+                          onChange={(e) =>
+                            updateSettings({ notification_business_hours_end: e.target.value })
+                          }
+                          className="px-3 py-1.5 bg-surface border border-white/20 rounded-lg text-ink text-sm focus:outline-none focus:border-accent-sand transition-colors"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

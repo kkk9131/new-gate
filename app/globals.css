@@ -3,26 +3,114 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-mist: 245 246 248;
+  --color-ink: 47 58 79;
+  --color-cloud: 154 165 185;
+  --color-surface: 255 255 255;
+  --color-surface-strong: 240 241 244;
+  --color-accent-calm: 155 212 207;
+  --color-accent-warm: 227 199 165;
+  --color-accent-bloom: 231 183 200;
+  --color-accent-sand: 213 196 170;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --color-mist: 18 23 34;
+  --color-ink: 229 234 247;
+  --color-cloud: 143 154 179;
+  --color-surface: 27 31 44;
+  --color-surface-strong: 37 43 58;
+  --color-accent-calm: 129 194 188;
+  --color-accent-warm: 209 178 146;
+  --color-accent-bloom: 210 162 180;
+  --color-accent-sand: 191 168 143;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(var(--color-ink));
+  background: rgb(var(--color-mist));
+  font-family: "Inter", "Hiragino Sans", "BIZ UDPGothic", Arial, sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* 通知プロンプトのスライドアップアニメーション */
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  /* エラートーストのスライドインアニメーション */
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ================================================
+   React Big Calendar カスタムスタイル
+   ================================================ */
+
+/* 今日の日付のハイライト - より見やすい色に変更 */
+.rbc-today {
+  background-color: rgba(var(--color-accent-warm), 0.15) !important;
+}
+
+/* 今日の日付セルのホバー時 */
+.rbc-day-bg.rbc-today:hover {
+  background-color: rgba(var(--color-accent-warm), 0.25) !important;
+}
+
+/* 月表示での現在の日付番号 */
+.rbc-now .rbc-button-link {
+  color: rgb(var(--color-ink)) !important;
+  font-weight: 700;
+}
+
+/* 選択されたスロット */
+.rbc-slot-selection {
+  background-color: rgba(var(--color-accent-sand), 0.3) !important;
+}
+
+/* イベントのホバー時 */
+.rbc-event:hover {
+  opacity: 1 !important;
+  filter: brightness(0.95);
+}
+
+/* ダークモード対応 */
+.dark .rbc-today {
+  background-color: rgba(var(--color-accent-warm), 0.2) !important;
+}
+
+.dark .rbc-day-bg.rbc-today:hover {
+  background-color: rgba(var(--color-accent-warm), 0.3) !important;
+}
+
+.dark .rbc-now .rbc-button-link {
+  color: rgb(var(--color-ink)) !important;
+  font-weight: 700;
+}

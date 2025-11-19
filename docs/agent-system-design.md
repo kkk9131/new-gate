@@ -1,462 +1,138 @@
-# エージェントシステム設計書
+# エージェントシステム設計 (Multi-LLM Router)
 
-## 📋 ドキュメント情報
-- **作成日**: 2025-11-09
-- **バージョン**: 1.0
-- **対象**: AIエージェント自動化システム
-- **目的**: タスクの自動化とワークフロー実行の設計
+## 1. 概要
+本システムのエージェントは、単一のLLMではなく、**「司令塔（Router）」と「専門家（Workers）」** からなるチームとして機能する。
+ユーザーはタスクの性質やコストに応じて、使用するLLMを柔軟に構成・選択できる。
 
----
+## 2. アーキテクチャ: Router-Worker パターン
 
-## 🎯 システム概要
+### 2.1 Router Agent (司令塔)
+*   **役割**: ユーザーの入力を最初に受け取り、意図理解とタスクの振り分けを行う。
+*   **推奨モデル**: 高速かつ低コストなモデル (例: gpt-4o-mini, gemini-flash)。
+*   **機能**:
+    1.  ユーザー入力の解析
+    2.  必要なツールの特定
+    3.  適切なWorker Agentへの委譲（または自ら実行）
 
-AIエージェントシステムは、**繰り返し作業の自動化**と**複数プラグインを横断したタスク実行**を実現します。
+### 2.2 Worker Agents (専門家)
+特定のタスクに特化したエージェント設定。ユーザーは以下のようなWorkerを定義できる。
 
-### コアコンセプト
+| Worker名 | 得意分野 | 推奨モデル | 特徴 |
+| :--- | :--- | :--- | :--- |
+| **Writer** | ドキュメント作成、要約 | Gemini 1.5 Pro | 長文コンテキストに強く、自然な日本語生成が得意 |
+| **Coder** | コード生成、デバッグ | GPT-4o / Claude 3.5 Sonnet | 論理的思考とコーディング能力が高い |
+| **Analyst** | データ分析、グラフ作成 | GPT-4o (Code Interpreter) | データ処理と可視化が得意 |
+| **Clerk** | 定型業務、データ入力 | Gemini Flash / GPT-4o-mini | 高速・低コスト |
 
-```yaml
-自動化:
-  - 定期実行（cron形式スケジュール）
-  - イベントトリガー実行
-  - 手動実行
+## 3. ルーティングロジック
 
-ワークフロー:
-  - 複数ステップの連鎖実行
-  - 条件分岐・ループ
-  - エラーハンドリング・リトライ
-
-プラグイン連携:
-  - 複数プラグインAPI呼び出し
-  - データ受け渡し
-  - 結果集約
-```
-
----
-
-## 🏗️ アーキテクチャ
-
-### システム構成
-
-```
-┌──────────────────────────────────────┐
-│     Task Scheduler (Cron Engine)     │
-│  - 定期実行管理                      │
-│  - イベントリスナー                  │
-└──────────┬───────────────────────────┘
-           │
-┌──────────▼───────────────────────────┐
-│    Workflow Executor Engine          │
-│  - YAML/JSON解析                     │
-│  - ステップ実行                      │
-│  - 条件分岐処理                      │
-│  - エラーハンドリング                │
-└──────────┬───────────────────────────┘
-           │
-┌──────────▼───────────────────────────┐
-│      Plugin API Caller               │
-│  - プラグインAPI呼び出し             │
-│  - Core API呼び出し                  │
-│  - レスポンス処理                    │
-└──────────┬───────────────────────────┘
-           │
-┌──────────▼───────────────────────────┐
-│       Task History Storage           │
-│  - 実行ログ保存                      │
-│  - 成功/失敗記録                     │
-│  - パフォーマンスメトリクス          │
-└──────────────────────────────────────┘
-```
-
----
-
-## 📝 タスク定義
-
-### YAML形式
-
-```yaml
-# task-definition.yaml
-name: "月次売上レポート自動生成"
-description: "毎月1日に先月の売上レポートを生成してメール送信"
-
-schedule:
-  cron: "0 9 1 * *"  # 毎月1日 9:00
-  timezone: "Asia/Tokyo"
-
-workflow:
-  steps:
-    - id: "fetch-revenues"
-      action: "plugin.call"
-      plugin: "com.platform.revenue"
-      method: "getRevenues"
-      params:
-        startDate: "{{ lastMonth.start }}"
-        endDate: "{{ lastMonth.end }}"
-      output: "revenues"
-
-    - id: "aggregate-data"
-      action: "transform"
-      input: "{{ revenues }}"
-      transform: "sum"
-      field: "amount"
-      output: "total"
-
-    - id: "generate-pdf"
-      action: "plugin.call"
-      plugin: "com.platform.pdf-generator"
-      method: "createReport"
-      params:
-        template: "monthly-revenue"
-        data:
-          total: "{{ total }}"
-          revenues: "{{ revenues }}"
-      output: "pdfUrl"
-
-    - id: "send-email"
-      action: "plugin.call"
-      plugin: "com.platform.email"
-      method: "send"
-      params:
-        to: "manager@example.com"
-        subject: "月次売上レポート"
-        body: "先月の売上レポートを添付します"
-        attachments:
-          - "{{ pdfUrl }}"
-
-    - id: "notify-completion"
-      action: "ui.notification"
-      params:
-        message: "月次レポートを送信しました"
-        type: "success"
-
-  onError:
-    - action: "ui.notification"
-      params:
-        message: "レポート生成に失敗しました: {{ error.message }}"
-        type: "error"
-
-    - action: "plugin.call"
-      plugin: "com.platform.logger"
-      method: "logError"
-      params:
-        error: "{{ error }}"
-```
-
-### JSON形式
+ユーザーは「ルーティングルール」を設定画面で定義できる。
 
 ```json
-{
-  "name": "プロジェクト期限アラート",
-  "description": "期限が3日以内のプロジェクトを通知",
-  "schedule": {
-    "cron": "0 18 * * *",
-    "timezone": "Asia/Tokyo"
+// ルーティングルールのイメージ
+[
+  {
+    "condition": "task_type == 'writing'",
+    "target_worker": "Writer"
   },
-  "workflow": {
-    "steps": [
-      {
-        "id": "fetch-projects",
-        "action": "plugin.call",
-        "plugin": "com.platform.projects",
-        "method": "getActiveProjects",
-        "output": "projects"
-      },
-      {
-        "id": "filter-due-soon",
-        "action": "filter",
-        "input": "{{ projects }}",
-        "condition": "item.dueDate <= Date.now() + 3 * 24 * 60 * 60 * 1000",
-        "output": "dueSoonProjects"
-      },
-      {
-        "id": "send-slack-alert",
-        "action": "plugin.call",
-        "plugin": "com.platform.slack",
-        "method": "postMessage",
-        "params": {
-          "channel": "#alerts",
-          "text": "期限が近いプロジェクト: {{ dueSoonProjects.length }}件"
-        },
-        "condition": "dueSoonProjects.length > 0"
-      }
-    ]
+  {
+    "condition": "task_type == 'coding'",
+    "target_worker": "Coder"
+  },
+  {
+    "condition": "default",
+    "target_worker": "Clerk"
   }
-}
+]
 ```
 
----
+## 4. データベース設計 (Schema)
 
-## ⚙️ 実行エンジン
+エージェントシステムを支えるためのテーブル構造。
 
-### Workflow Executor
-
-```typescript
-class WorkflowExecutor {
-  async execute(workflow: Workflow, context: ExecutionContext) {
-    const results = new Map<string, any>();
-
-    for (const step of workflow.steps) {
-      try {
-        // 条件チェック
-        if (step.condition && !this.evaluateCondition(step.condition, results)) {
-          continue;
-        }
-
-        // ステップ実行
-        const result = await this.executeStep(step, results, context);
-
-        // 結果保存
-        if (step.output) {
-          results.set(step.output, result);
-        }
-
-        // ログ記録
-        await this.logStepSuccess(step.id, result);
-
-      } catch (error) {
-        // エラーハンドリング
-        await this.logStepError(step.id, error);
-
-        if (workflow.onError) {
-          await this.executeErrorHandler(workflow.onError, error);
-        }
-
-        // リトライロジック
-        if (step.retry) {
-          await this.retryStep(step, results, context);
-        } else {
-          throw error;
-        }
-      }
-    }
-
-    return results;
-  }
-
-  private async executeStep(
-    step: WorkflowStep,
-    results: Map<string, any>,
-    context: ExecutionContext
-  ) {
-    switch (step.action) {
-      case 'plugin.call':
-        return await this.callPluginAPI(step, results);
-
-      case 'transform':
-        return await this.transformData(step, results);
-
-      case 'filter':
-        return await this.filterData(step, results);
-
-      case 'ui.notification':
-        return await this.showNotification(step, results);
-
-      default:
-        throw new Error(`Unknown action: ${step.action}`);
-    }
-  }
-
-  private async callPluginAPI(step: PluginCallStep, results: Map<string, any>) {
-    const plugin = await this.loadPlugin(step.plugin);
-    const params = this.resolveVariables(step.params, results);
-
-    return await plugin[step.method](params);
-  }
-
-  private resolveVariables(template: any, results: Map<string, any>): any {
-    // {{ variable }} を実際の値に置換
-    const json = JSON.stringify(template);
-    const resolved = json.replace(/\{\{\s*(\w+(?:\.\w+)*)\s*\}\}/g, (_, path) => {
-      return this.getNestedValue(results, path);
-    });
-    return JSON.parse(resolved);
-  }
-}
-```
-
----
-
-## 🕒 スケジューラー
-
-### Cron形式スケジュール
-
-```typescript
-class TaskScheduler {
-  private scheduler: CronScheduler;
-  private tasks: Map<string, ScheduledTask> = new Map();
-
-  async scheduleTask(taskId: string, cronExpression: string, workflow: Workflow) {
-    const job = this.scheduler.schedule(cronExpression, async () => {
-      await this.executeTask(taskId, workflow);
-    });
-
-    this.tasks.set(taskId, {
-      id: taskId,
-      cron: cronExpression,
-      workflow,
-      job,
-      lastRun: null,
-      nextRun: job.nextDate(),
-    });
-  }
-
-  async executeTask(taskId: string, workflow: Workflow) {
-    const execution = await this.createExecution(taskId);
-
-    try {
-      const executor = new WorkflowExecutor();
-      const results = await executor.execute(workflow, {
-        executionId: execution.id,
-      });
-
-      await this.markExecutionSuccess(execution.id, results);
-    } catch (error) {
-      await this.markExecutionFailure(execution.id, error);
-    }
-  }
-
-  cancelTask(taskId: string) {
-    const task = this.tasks.get(taskId);
-    if (task) {
-      task.job.cancel();
-      this.tasks.delete(taskId);
-    }
-  }
-}
-```
-
----
-
-## 📊 実行履歴管理
-
-### データベーススキーマ
+### 4.1 `llm_providers`
+利用可能なLLMプロバイダーとAPIキー（暗号化保存）を管理。
 
 ```sql
--- タスク定義
-CREATE TABLE agent_tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id),
+CREATE TABLE llm_providers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
+  provider_name VARCHAR(50) NOT NULL, -- 'openai', 'google', 'anthropic'
+  api_key_hash VARCHAR(255) NOT NULL, -- 暗号化されたAPIキー
+  is_active BOOLEAN DEFAULT true
+);
+```
 
-  name VARCHAR(255) NOT NULL,
+### 4.2 `agent_profiles`
+Worker Agentの設定定義。
+
+```sql
+CREATE TABLE agent_profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
+  name VARCHAR(100) NOT NULL, -- 'Writer', 'Coder'
   description TEXT,
-
-  workflow JSONB NOT NULL,
-  schedule JSONB,  -- { cron, timezone }
-
-  is_active BOOLEAN DEFAULT TRUE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 実行履歴
-CREATE TABLE agent_executions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  task_id UUID NOT NULL REFERENCES agent_tasks(id) ON DELETE CASCADE,
-
-  status VARCHAR(20) NOT NULL,  -- running, success, failed
-  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMPTZ,
-
-  results JSONB,
-  error_message TEXT,
-
-  execution_time_ms INT
-);
-
--- ステップログ
-CREATE TABLE agent_step_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  execution_id UUID NOT NULL REFERENCES agent_executions(id) ON DELETE CASCADE,
-
-  step_id VARCHAR(255) NOT NULL,
-  status VARCHAR(20) NOT NULL,
-
-  input JSONB,
-  output JSONB,
-  error_message TEXT,
-
-  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMPTZ,
-  execution_time_ms INT
+  model_id VARCHAR(100) NOT NULL, -- 'gemini-1.5-pro', 'gpt-4o'
+  system_prompt TEXT, -- 「あなたはプロのライターです...」
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
 
----
+### 4.3 `agent_routing_rules`
+タスク振り分けルール。
 
-## 🎨 UI設計
-
-### タスク一覧画面
-
-```
-┌────────────────────────────────────────────────┐
-│  エージェントタスク                [+ 新規作成] │
-├────────────────────────────────────────────────┤
-│  [アクティブ] [停止中] [すべて]                │
-│                                                │
-│  ✅ 月次売上レポート自動生成                   │
-│     毎月1日 9:00 | 最終実行: 2025-11-01        │
-│     [編集] [実行] [停止]                       │
-│                                                │
-│  ✅ プロジェクト期限アラート                   │
-│     毎日 18:00 | 最終実行: 2025-11-08          │
-│     [編集] [実行] [停止]                       │
-│                                                │
-│  ⏸️ データバックアップ                         │
-│     毎週日曜 2:00 | 停止中                     │
-│     [編集] [開始]                              │
-│                                                │
-└────────────────────────────────────────────────┘
+```sql
+CREATE TABLE agent_routing_rules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
+  priority INTEGER DEFAULT 0,
+  condition_json JSONB NOT NULL, -- 振り分け条件
+  target_agent_id UUID REFERENCES agent_profiles(id)
+);
 ```
 
-### 実行履歴画面
+### 4.4 `agent_memories` (Vector Store)
+エージェントの長期記憶。過去のタスク実行結果やユーザーの好みを保存。
+`pgvector` 拡張機能を使用する。
 
-```
-┌────────────────────────────────────────────────┐
-│  実行履歴 - 月次売上レポート自動生成           │
-├────────────────────────────────────────────────┤
-│  ✅ 2025-11-01 09:00  成功  実行時間: 3.2s    │
-│  ✅ 2025-10-01 09:00  成功  実行時間: 2.8s    │
-│  ❌ 2025-09-01 09:00  失敗  エラー: API timeout│
-│  ✅ 2025-08-01 09:00  成功  実行時間: 3.1s    │
-│                                                │
-│  [詳細を表示]                                  │
-└────────────────────────────────────────────────┘
-```
-
----
-
-## 🔧 API仕様
-
-```typescript
-// タスク作成
-POST /api/agents/tasks
-{
-  "name": "タスク名",
-  "workflow": { ... },
-  "schedule": { "cron": "0 9 * * *" }
-}
-
-// タスク一覧取得
-GET /api/agents/tasks
-
-// タスク実行
-POST /api/agents/tasks/:taskId/execute
-
-// タスク停止
-POST /api/agents/tasks/:taskId/pause
-
-// 実行履歴取得
-GET /api/agents/tasks/:taskId/executions
-
-// ログ取得
-GET /api/agents/executions/:executionId/logs
+```sql
+CREATE TABLE agent_memories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
+  content TEXT NOT NULL,
+  embedding vector(1536), -- 埋め込みベクトル
+  metadata JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 ```
 
----
+## 5. エージェントの実行フロー
 
-## 📚 関連ドキュメント
+1.  **User**: 「来月の売上予測レポートを書いて」
+2.  **Router**: 入力を解析。「レポート作成」→ `Writer` (Gemini) に委譲と判断。
+3.  **Router**: `Writer` にタスクと必要なツール（`generate_sales_forecast` from Plugin）を渡す。
+4.  **Writer**:
+    *   ツール `generate_sales_forecast` を実行（API Call）。
+    *   結果（数値データ）を取得。
+    *   レポート本文を執筆。
+5.  **System**: 結果をユーザーに提示し、実行ログを `agent_memories` に保存。
 
-- [プラットフォーム要件定義](./platform-requirements.md)
-- [プラグインアーキテクチャ](./plugin-architecture.md)
-- [Core API仕様](./core-api-spec.md)
-- [データベーススキーマ](./database-schema.md)
+## 6. Agent-Driven UI Control (並列実行の可視化)
+
+ユーザーの複合的なリクエストに対して、エージェントが自律的にUIを操作し、並列作業を視覚化する。
+
+### 6.1 コンセプト
+「プロジェクト作成、カレンダー登録、売上入力」のような複合タスクの場合、エージェントは以下のステップで実行する。
+
+1.  **Task Decomposition**: Routerがタスクを3つのサブタスクに分解。
+2.  **UI Layout Control**: Routerが「3分割モード」に切り替え、各領域に対象アプリ（Projects, Calendar, Revenue）を開く。
+3.  **Parallel Execution**: 各Worker Agentがそれぞれのアプリ（API）に対して操作を行い、その進行状況が各ウィンドウにリアルタイム反映される。
+
+### 6.2 UI Control Tools
+エージェントには以下のUI操作ツールが提供される。
+
+*   `ui_set_layout(mode: 'single' | 'split-2' | 'split-3' | 'split-4')`
+*   `ui_open_app(appId: string, targetScreen: number)`
+*   `ui_highlight_element(selector: string)`
+
+これにより、ユーザーは「エージェントが自分の代わりに画面を操作して仕事をしている」様子を目の当たりにできる。

@@ -1,59 +1,41 @@
 'use client';
 
-import { useEffect, useId } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable';
-import { useDesktopStore } from '@/store/desktopStore';
-import { AppIcon } from './AppIcon';
+import { useEffect } from 'react';
+import { Rnd } from 'react-rnd';
+import { useDesktopStore, type App } from '@/store/desktopStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { AppLauncherIcon } from './AppLauncherIcon';
 import { Dock } from './Dock';
 import { WindowManager } from './WindowManager';
 import { SplitMode } from './SplitMode';
-import { RiMoonLine, RiSunLine, RiLayout2Line, RiLayout3Line, RiLayout4Line, RiLayoutLine } from 'react-icons/ri';
+import { UserMenu } from './UserMenu';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import BrowserNotificationPrompt from '@/components/notifications/BrowserNotificationPrompt';
+import {
+  RiMoonLine,
+  RiSunLine,
+  RiLayout2Line,
+  RiLayout3Line,
+  RiLayout4Line,
+  RiLayoutLine,
+  RiArrowGoBackLine,
+} from 'react-icons/ri';
+
+// モバイル時のグリッド設定を定数化してマジックナンバーを回避
+const MOBILE_ICON_GRID_CLASS = 'grid gap-3 pb-20 grid-cols-2 sm:grid-cols-3 min-[560px]:grid-cols-4';
 
 export function DesktopLayout() {
   const apps = useDesktopStore((state) => state.apps);
-  const reorderApps = useDesktopStore((state) => state.reorderApps);
+  const updateAppPosition = useDesktopStore((state) => state.updateAppPosition);
+  const openWindow = useDesktopStore((state) => state.openWindow);
+  const resetAppPositions = useDesktopStore((state) => state.resetAppPositions);
   const isDarkMode = useDesktopStore((state) => state.isDarkMode);
   const toggleDarkMode = useDesktopStore((state) => state.toggleDarkMode);
   const splitMode = useDesktopStore((state) => state.splitMode);
   const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
-  const desktopDndId = useId();
 
-  // ドラッグ&ドロップのセンサー設定
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // 8px移動したらドラッグ開始
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // ドラッグ終了時の処理
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = apps.findIndex((app) => app.id === active.id);
-      const newIndex = apps.findIndex((app) => app.id === over.id);
-      reorderApps(oldIndex, newIndex);
-    }
-  };
+  // レスポンシブ対応：カスタムフックでモバイル判定
+  const { isMobile } = useIsMobile();
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
@@ -62,85 +44,117 @@ export function DesktopLayout() {
   }, [isDarkMode]);
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+    <div
+      className="h-screen overflow-hidden bg-gradient-to-br from-mist to-surface-strong dark:from-gray-900 dark:to-gray-800 transition-colors duration-300"
+      suppressHydrationWarning
+    >
       {/* ヘッダー */}
-      <header className="h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between px-6 shadow-sm">
+      <header
+        className="h-14 md:h-16 bg-surface/90 backdrop-blur-xl border-b border-white/40 flex items-center justify-between px-3 md:px-6 shadow-panel text-ink relative z-50"
+        suppressHydrationWarning
+      >
         {/* 左側：ロゴ */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-xl">N</span>
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-accent-sand flex items-center justify-center shadow-soft text-ink">
+            <span className="font-bold text-lg md:text-xl">N</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-lg md:text-xl font-bold">
             New Gate
           </h1>
         </div>
 
         {/* 右側：分割ボタン + ダークモード切り替えボタン */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+          <button
+            onClick={resetAppPositions}
+            className="
+              p-1.5 md:p-2 rounded-xl
+              bg-surface border border-white/40
+              hover:bg-cloud/20
+              transition-colors duration-200
+              shadow-soft hover:shadow-panel
+            "
+            aria-label="アイコン配置をリセット"
+          >
+            <RiArrowGoBackLine className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />
+          </button>
           {/* 分割モードボタン */}
           <button
             onClick={toggleSplitMode}
             className="
-              p-2 rounded-xl
-              bg-gray-100 dark:bg-gray-700
-              hover:bg-gray-200 dark:hover:bg-gray-600
+              p-1.5 md:p-2 rounded-xl
+              bg-surface border border-white/40
+              hover:bg-cloud/20
               transition-colors duration-200
-              shadow-sm hover:shadow-md
+              shadow-soft hover:shadow-panel
             "
             aria-label="分割モード切り替え"
+            suppressHydrationWarning
           >
-            {splitMode === 1 && <RiLayoutLine className="w-6 h-6 text-blue-500" />}
-            {splitMode === 2 && <RiLayout2Line className="w-6 h-6 text-blue-500" />}
-            {splitMode === 3 && <RiLayout3Line className="w-6 h-6 text-blue-500" />}
-            {splitMode === 4 && <RiLayout4Line className="w-6 h-6 text-blue-500" />}
+            {splitMode === 1 && <RiLayoutLine className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />}
+            {splitMode === 2 && <RiLayout2Line className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />}
+            {splitMode === 3 && <RiLayout3Line className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />}
+            {splitMode === 4 && <RiLayout4Line className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />}
           </button>
 
           {/* ダークモード切り替えボタン */}
           <button
             onClick={toggleDarkMode}
             className="
-              p-2 rounded-xl
-              bg-gray-100 dark:bg-gray-700
-              hover:bg-gray-200 dark:hover:bg-gray-600
+              p-1.5 md:p-2 rounded-xl
+              bg-surface border border-white/40
+              hover:bg-cloud/20
               transition-colors duration-200
-              shadow-sm hover:shadow-md
+              shadow-soft hover:shadow-panel
             "
             aria-label="ダークモード切り替え"
+            suppressHydrationWarning
           >
             {isDarkMode ? (
-              <RiSunLine className="w-6 h-6 text-yellow-400" />
+              <RiSunLine className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />
             ) : (
-              <RiMoonLine className="w-6 h-6 text-gray-600" />
+              <RiMoonLine className="w-5 h-5 md:w-6 md:h-6 text-accent-sand" />
             )}
           </button>
+
+          {/* 通知アイコン */}
+          <NotificationBell />
+
+          {/* ユーザーメニュー */}
+          <UserMenu />
         </div>
       </header>
 
       {/* デスクトップエリア */}
-      <main className="h-[calc(100vh-4rem)] overflow-auto p-8 relative">
-        <DndContext
-          id={desktopDndId}
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={apps.map((app) => app.id)} strategy={rectSortingStrategy}>
-            {/* アプリアイコングリッド */}
-            <div className="grid grid-cols-8 gap-4 max-w-7xl mx-auto">
-              {apps.map((app) => (
-                <AppIcon
-                  key={app.id}
-                  id={app.id}
-                  name={app.name}
-                  icon={app.icon}
-                  color={app.color}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+      <main
+        className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-auto p-3 md:p-6 lg:p-8 relative"
+        suppressHydrationWarning
+      >
+        {isMobile ? (
+          /* モバイル：グリッドレイアウト */
+          <div className={MOBILE_ICON_GRID_CLASS}>
+            {apps.map((app) => (
+              <MobileAppIcon
+                key={app.id}
+                app={app}
+                onOpen={openWindow}
+              />
+            ))}
+          </div>
+        ) : (
+          /* デスクトップ：ドラッグ可能なレイアウト */
+          <div className="relative w-full h-full min-h-[400px]">
+            {apps.map((app) => (
+              <DesktopIcon
+                key={app.id}
+                app={app}
+                onOpen={openWindow}
+                onPositionChange={updateAppPosition}
+              />
+            ))}
+          </div>
+        )}
 
-        {/* ウィンドウ管理エリア */}
         <WindowManager />
       </main>
 
@@ -149,6 +163,65 @@ export function DesktopLayout() {
 
       {/* 分割モード */}
       <SplitMode />
+
+      {/* ブラウザ通知許可プロンプト */}
+      <BrowserNotificationPrompt />
     </div>
+  );
+}
+
+interface DesktopIconProps {
+  app: App;
+  onOpen: (appId: App['id']) => void;
+  onPositionChange: (appId: App['id'], position: { x: number; y: number }) => void;
+}
+
+function DesktopIcon({ app, onOpen, onPositionChange }: DesktopIconProps) {
+  const position = app.position ?? { x: 0, y: 0 };
+
+  return (
+    <Rnd
+      size={{ width: 96, height: 120 }}
+      position={{ x: position.x, y: position.y }}
+      bounds="parent"
+      enableResizing={false}
+      dragAxis="both"
+      onDragStop={(e, data) => onPositionChange(app.id, { x: data.x, y: data.y })}
+      className="absolute"
+    >
+      <AppLauncherIcon
+        name={app.name}
+        icon={app.icon}
+        color={app.color}
+        onActivate={() => onOpen(app.id)}
+        activation="double"
+        containerClassName="p-2 md:p-4"
+        iconWrapperClassName="w-12 h-12 md:w-16 md:h-16 group-hover:scale-110 group-hover:shadow-xl"
+        iconClassName="w-6 h-6 md:w-8 md:h-8 transition-transform group-hover:scale-110"
+        labelClassName="mt-1 md:mt-2 text-xs md:text-sm font-medium text-ink group-hover:text-ink transition-colors"
+      />
+    </Rnd>
+  );
+}
+
+// モバイルアイコンコンポーネント（グリッドレイアウト用、ドラッグ不可）
+interface MobileAppIconProps {
+  app: App;
+  onOpen: (appId: App['id']) => void;
+}
+
+function MobileAppIcon({ app, onOpen }: MobileAppIconProps) {
+  return (
+    <AppLauncherIcon
+      name={app.name}
+      icon={app.icon}
+      color={app.color}
+      onActivate={() => onOpen(app.id)}
+      activation="single"
+      containerClassName="p-2"
+      iconWrapperClassName="w-12 h-12 active:scale-95"
+      iconClassName="w-6 h-6"
+      labelClassName="mt-1 text-xs font-medium text-ink text-center line-clamp-2"
+    />
   );
 }
