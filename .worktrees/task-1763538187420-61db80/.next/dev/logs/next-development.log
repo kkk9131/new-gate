@@ -1,0 +1,3 @@
+[00:05:04.002] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763538187420-61db80/app'
+[00:05:04.009] Server  ERROR    ⨯ "unhandledRejection:" Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763538187420-61db80/app'
+[00:05:04.014] Server  ERROR    ⨯ "unhandledRejection: " Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763538187420-61db80/app'

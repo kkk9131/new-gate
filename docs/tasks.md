@@ -25,16 +25,16 @@
 **目標**: Mock状態の `StoreApp` を実機能化し、外部プラグインをサンドボックスで動かす。
 
 ### 2.1 Plugin Registry & DB
-- [ ] **DB Schema Setup**
-  - [ ] `plugins` テーブル作成 (manifest情報格納)
-  - [ ] `plugin_installations` テーブル作成
-  - [ ] `plugin_permissions` テーブル作成
-- [ ] **Store API Implementation**
-  - [ ] `api/store/plugins` (GET: 一覧, POST: 公開)
-  - [ ] `api/store/install` (POST: インストール)
-- [ ] **StoreApp Integration**
-  - [ ] `components/apps/StoreApp.tsx` の `mockPlugins` をAPI取得に置き換え
-  - [ ] インストールボタンの処理実装
+- [x] **DB Schema Setup**
+  - [x] `plugins` テーブル作成 (manifest情報格納)
+  - [x] `plugin_installations` テーブル作成
+  - [x] `plugin_permissions` テーブル作成
+- [x] **Store API Implementation**
+  - [x] `api/store/plugins` (GET: 一覧, POST: 公開)
+  - [x] `api/store/install` (POST: インストール)
+- [x] **StoreApp Integration**
+  - [x] `components/apps/StoreApp.tsx` の `mockPlugins` をAPI取得に置き換え
+  - [x] インストールボタンの処理実装
 
 ### 2.2 Sandbox Environment (Security)
 - [ ] **UI Sandbox (iframe)**
