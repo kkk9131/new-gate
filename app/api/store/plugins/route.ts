@@ -22,7 +22,13 @@ export async function GET(request: Request) {
   }
 
   if (query) {
-    dbQuery = dbQuery.or(`name.ilike.%${query}%,description.ilike.%${query}%`);
+    const normalizedQuery = query.trim();
+    if (normalizedQuery) {
+      dbQuery = dbQuery.textSearch('search_vector', normalizedQuery, {
+        type: 'websearch',
+        config: 'simple',
+      });
+    }
   }
 
   const { data, error, count } = await dbQuery;
@@ -51,10 +57,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const pluginId = String(body.plugin_id).trim();
+    if (!isValidPluginId(pluginId)) {
+      return NextResponse.json({ error: 'Invalid plugin_id format' }, { status: 400 });
+    }
+
     const { data, error } = await supabase
       .from('store_plugins')
       .insert({
         ...body,
+        plugin_id: pluginId,
         author_id: user.id,
         author_name: user.user_metadata.full_name || user.email, // Fallback
         author_email: user.email,
@@ -71,4 +83,10 @@ export async function POST(request: Request) {
   } catch (e) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
+}
+
+const PLUGIN_ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
+
+function isValidPluginId(pluginId: string) {
+  return PLUGIN_ID_PATTERN.test(pluginId);
 }

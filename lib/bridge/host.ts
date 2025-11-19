@@ -1,28 +1,47 @@
 import { BridgeMessage, MessageType, ApiRequestPayload, ApiResponsePayload } from './types';
 
-export class PluginHost {
-    private iframe: HTMLIFrameElement;
-    private pluginId: string;
-    private origin: string;
-    private pendingRequests: Map<string, (response: unknown) => void>;
+type PluginHostOptions = {
+    targetOrigin?: string;
+    allowedOrigins?: string[];
+    allowOpaqueOrigin?: boolean;
+};
 
-    constructor(iframe: HTMLIFrameElement, pluginId: string, origin: string = '*') {
+export class PluginHost {
+    private readonly iframe: HTMLIFrameElement;
+    private readonly pluginId: string;
+    private readonly pendingRequests: Map<string, (response: unknown) => void>;
+    private readonly boundHandleMessage: (event: MessageEvent) => void;
+    private readonly allowedOrigins: string[];
+    private readonly targetOrigin: string;
+    private readonly allowOpaqueOrigin: boolean;
+
+    constructor(iframe: HTMLIFrameElement, pluginId: string, options: PluginHostOptions = {}) {
         this.iframe = iframe;
         this.pluginId = pluginId;
-        this.origin = origin;
         this.pendingRequests = new Map();
 
-        window.addEventListener('message', this.handleMessage.bind(this));
+        this.allowedOrigins = this.deriveAllowedOrigins(options.allowedOrigins);
+        this.targetOrigin = options.targetOrigin ?? this.allowedOrigins[0] ?? '*';
+        this.allowOpaqueOrigin = options.allowOpaqueOrigin ?? this.shouldAllowOpaqueOrigin();
+        this.boundHandleMessage = this.handleMessage.bind(this);
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('message', this.boundHandleMessage);
+        }
     }
 
     public destroy() {
-        window.removeEventListener('message', this.handleMessage.bind(this));
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('message', this.boundHandleMessage);
+        }
     }
 
     private async handleMessage(event: MessageEvent) {
-        // Security check: verify origin
-        // For development, we might allow '*', but in production this should be strict
-        if (this.origin !== '*' && event.origin !== this.origin) return;
+        if (event.source !== this.iframe.contentWindow) return;
+        if (!this.isAllowedOrigin(event.origin)) {
+            console.warn('[PluginHost] Rejected message from unauthorized origin:', event.origin);
+            return;
+        }
 
         const message = event.data as BridgeMessage;
         if (!message || message.source !== 'plugin') return;
@@ -87,8 +106,59 @@ export class PluginHost {
     }
 
     private send(message: BridgeMessage) {
-        if (this.iframe.contentWindow) {
-            this.iframe.contentWindow.postMessage(message, this.origin);
+        const targetOrigin = this.resolveTargetOrigin();
+        this.iframe.contentWindow?.postMessage(message, targetOrigin);
+    }
+
+    private deriveAllowedOrigins(overrides?: string[]): string[] {
+        if (overrides && overrides.length > 0) {
+            return overrides;
         }
+
+        const src = this.iframe.getAttribute('src');
+        if (!src || typeof window === 'undefined') return [];
+
+        try {
+            const url = new URL(src, window.location.origin);
+            if (url.origin && url.origin !== 'null') {
+                return [url.origin];
+            }
+        } catch (error) {
+            console.warn('[PluginHost] Failed to parse iframe src for origin allowlist', error);
+        }
+
+        return [];
+    }
+
+    private shouldAllowOpaqueOrigin(): boolean {
+        const sandbox = this.iframe.getAttribute('sandbox') || '';
+        if (!sandbox.trim()) return false;
+
+        // When sandbox is present without allow-same-origin, the iframe becomes an opaque origin ("null")
+        return sandbox
+            .split(/\s+/)
+            .filter(Boolean)
+            .every((token) => token !== 'allow-same-origin');
+    }
+
+    private isAllowedOrigin(origin: string): boolean {
+        if (origin === 'null') {
+            return this.allowOpaqueOrigin;
+        }
+
+        if (this.allowedOrigins.length === 0) {
+            return this.targetOrigin === '*';
+        }
+
+        return this.allowedOrigins.includes(origin);
+    }
+
+    private resolveTargetOrigin(): string {
+        if (this.allowOpaqueOrigin) return '*';
+        if (!this.targetOrigin || this.targetOrigin === 'null' || this.targetOrigin === '*') {
+            return '*';
+        }
+
+        return this.targetOrigin;
     }
 }

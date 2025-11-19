@@ -1,16 +1,24 @@
 import { BridgeMessage, MessageType, ApiRequestPayload, ApiResponsePayload } from './types';
 
+type PendingRequest = { resolve: (data: unknown) => void; reject: (error: Error) => void };
+
 export class PluginClient {
-    private targetWindow: Window;
-    private origin: string;
-    private pendingRequests: Map<string, { resolve: (data: unknown) => void; reject: (error: Error) => void }>;
+    private readonly targetWindow: Window;
+    private readonly allowedOrigins: string[];
+    private readonly targetOrigin: string;
+    private readonly pendingRequests: Map<string, PendingRequest>;
+    private readonly boundHandleMessage: (event: MessageEvent) => void;
 
     constructor(targetWindow: Window = window.parent, origin: string = '*') {
         this.targetWindow = targetWindow;
-        this.origin = origin;
+        this.allowedOrigins = this.resolveAllowedOrigins(origin);
+        this.targetOrigin = this.allowedOrigins[0] ?? '*';
         this.pendingRequests = new Map();
+        this.boundHandleMessage = this.handleMessage.bind(this);
 
-        window.addEventListener('message', this.handleMessage.bind(this));
+        if (typeof window !== 'undefined') {
+            window.addEventListener('message', this.boundHandleMessage);
+        }
 
         // Initiate handshake
         this.send({
@@ -22,7 +30,9 @@ export class PluginClient {
     }
 
     public destroy() {
-        window.removeEventListener('message', this.handleMessage.bind(this));
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('message', this.boundHandleMessage);
+        }
     }
 
     // --- Core API Methods ---
@@ -55,8 +65,11 @@ export class PluginClient {
     // --- Internal Methods ---
 
     private handleMessage(event: MessageEvent) {
-        // In production, verify origin
-        // if (this.origin !== '*' && event.origin !== this.origin) return;
+        if (event.source !== this.targetWindow) return;
+        if (!this.isAllowedOrigin(event.origin)) {
+            console.warn('[PluginClient] Rejected message from unauthorized origin:', event.origin);
+            return;
+        }
 
         const message = event.data as BridgeMessage;
         if (!message || message.source !== 'host') return;
@@ -87,10 +100,45 @@ export class PluginClient {
     }
 
     private send(message: BridgeMessage) {
-        this.targetWindow.postMessage(message, this.origin);
+        const origin = this.targetOrigin || '*';
+        this.targetWindow.postMessage(message, origin);
     }
 
     private generateId(): string {
         return Math.random().toString(36).substring(2, 15);
+    }
+
+    private resolveAllowedOrigins(origin: string): string[] {
+        if (origin && origin !== '*') {
+            return [origin];
+        }
+
+        const origins = new Set<string>();
+
+        // NEXT_PUBLIC_APP_URL is preferred in production
+        if (process.env.NEXT_PUBLIC_APP_URL) {
+            origins.add(process.env.NEXT_PUBLIC_APP_URL);
+        }
+
+        if (process.env.NODE_ENV !== 'production') {
+            origins.add('http://localhost:3000');
+            origins.add('http://127.0.0.1:3000');
+        }
+
+        if (typeof document !== 'undefined' && document.referrer) {
+            try {
+                origins.add(new URL(document.referrer).origin);
+            } catch (error) {
+                console.warn('[PluginClient] Failed to parse document.referrer', error);
+            }
+        }
+
+        // If we still do not have any origin, fall back to wildcard
+        return Array.from(origins).filter(Boolean);
+    }
+
+    private isAllowedOrigin(origin: string): boolean {
+        if (this.allowedOrigins.length === 0) return true;
+        return this.allowedOrigins.includes(origin);
     }
 }

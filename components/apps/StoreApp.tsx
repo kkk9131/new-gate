@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   RiArrowLeftLine,
   RiDownloadLine,
@@ -36,6 +36,8 @@ type Plugin = {
   // permissions: string[]; // Not in DB yet
 };
 
+type ToastState = { type: 'success' | 'error'; message: string } | null;
+
 
 const categories = ['ビジネス', '分析', 'コミュニケーション', 'プロダクティビティ', 'その他'];
 
@@ -52,24 +54,57 @@ export function StoreApp() {
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [installingId, setInstallingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch plugins
-  useMemo(() => {
+  const showToast = useCallback((type: 'success' | 'error', message: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToast({ type, message });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
     const fetchPlugins = async () => {
+      if (isMounted) setIsLoading(true);
+
       try {
-        setIsLoading(true);
         const res = await fetch('/api/store/plugins');
-        if (res.ok) {
-          const data = await res.json();
+        if (!res.ok) {
+          throw new Error('Failed to fetch plugins');
+        }
+        const data = await res.json();
+        if (isMounted) {
           setPlugins(data.plugins || []);
         }
       } catch (error) {
         console.error('Failed to fetch plugins:', error);
+        if (isMounted) {
+          showToast('error', 'プラグイン一覧の取得に失敗しました');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
+
     fetchPlugins();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [showToast]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
   }, []);
 
   const filteredResults = useMemo(() => {
@@ -84,7 +119,9 @@ export function StoreApp() {
   }, [plugins, keyword, activeCategories, priceFilter, ratingFilter]);
 
   const featured = plugins.slice(0, 4);
-  const ranking = [...plugins].sort((a, b) => b.download_count - a.download_count).slice(0, 3);
+  const ranking = useMemo(() => {
+    return [...plugins].sort((a, b) => b.download_count - a.download_count).slice(0, 3);
+  }, [plugins]);
   const newArrivals = plugins.slice(-3);
 
   const handleInstall = async (plugin: Plugin) => {
@@ -97,14 +134,14 @@ export function StoreApp() {
       });
 
       if (res.ok) {
-        alert('インストールしました！'); // Simple feedback for now
+        showToast('success', `${plugin.name} をインストールしました`);
       } else {
         const data = await res.json();
-        alert(`インストール失敗: ${data.error}`);
+        showToast('error', data.error ? `インストール失敗: ${data.error}` : 'インストールに失敗しました');
       }
     } catch (error) {
       console.error('Install failed:', error);
-      alert('インストール中にエラーが発生しました');
+      showToast('error', 'インストール中にエラーが発生しました');
     } finally {
       setInstallingId(null);
     }
@@ -173,6 +210,12 @@ export function StoreApp() {
           </div>
         </div>
       </div>
+
+      {isLoading && (
+        <div className="mb-4 rounded-3xl border border-white/40 bg-surface px-4 py-3 text-sm text-cloud animate-pulse">
+          プラグイン情報を読み込み中です...
+        </div>
+      )}
 
       {viewMode === 'home' && (
         <div className="space-y-6 md:space-y-8">
@@ -387,6 +430,17 @@ export function StoreApp() {
             </div>
             <button className="text-sm text-ink underline">もっと見る</button>
           </section>
+        </div>
+      )}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <div
+            className={`rounded-2xl px-5 py-3 shadow-panel text-sm text-white ${
+              toast.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'
+            }`}
+          >
+            {toast.message}
+          </div>
         </div>
       )}
     </div>
