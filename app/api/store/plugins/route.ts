@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const pluginId = String(body.plugin_id).trim();
+    const pluginId = String(body.plugin_id).trim().toLowerCase();
     if (!isValidPluginId(pluginId)) {
       return NextResponse.json({ error: 'Invalid plugin_id format' }, { status: 400 });
     }
@@ -85,8 +85,18 @@ export async function POST(request: Request) {
   }
 }
 
+const MAX_PLUGIN_ID_LENGTH = 64;
 const PLUGIN_ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
+const RESERVED_PLUGIN_IDS = new Set(['system', 'admin', 'host', 'sandbox', 'newgate', 'core']);
 
 function isValidPluginId(pluginId: string) {
+  if (!pluginId || pluginId.length > MAX_PLUGIN_ID_LENGTH) {
+    return false;
+  }
+
+  if (RESERVED_PLUGIN_IDS.has(pluginId)) {
+    return false;
+  }
+
   return PLUGIN_ID_PATTERN.test(pluginId);
 }

@@ -45,6 +45,8 @@ export function PluginFrame({ pluginId, src, className, onReady, allowPopups = f
             src={src}
             className={`w-full h-full border-none ${className || ''}`}
             sandbox={sandboxTokens.join(' ')}
+            referrerPolicy="no-referrer"
+            loading="lazy"
             title={`Plugin: ${pluginId}`}
         />
     );

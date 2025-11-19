@@ -93,11 +93,13 @@ export class PluginClient {
 
         switch (message.type) {
             case MessageType.HANDSHAKE_ACK:
-                console.log('Plugin connected to host:', message.payload);
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log('Plugin connected to host:', message.payload);
+                }
                 break;
 
             case MessageType.API_RESPONSE:
-                this.handleApiResponse(message.payload as ApiResponsePayload);
+                this.handleApiResponse(message.payload);
                 break;
         }
     }

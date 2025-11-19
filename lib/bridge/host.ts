@@ -64,7 +64,7 @@ export class PluginHost {
                 break;
 
             case MessageType.API_REQUEST:
-                await this.handleApiRequest(message.id, message.payload as ApiRequestPayload);
+                await this.handleApiRequest(message.id, message.payload);
                 break;
 
             case MessageType.RESIZE:
@@ -123,6 +123,7 @@ export class PluginHost {
             });
         } finally {
             this.pendingRequests.delete(requestId);
+            controller.abort();
         }
     }
 
