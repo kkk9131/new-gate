@@ -36,7 +36,6 @@
   - [x] `components/apps/StoreApp.tsx` の `mockPlugins` をAPI取得に置き換え
   - [x] インストールボタンの処理実装
 
-### 2.2 Sandbox Environment (Security)
 - [x] **UI Sandbox (iframe)**
   - [x] `components/PluginFrame.tsx` 実装 (iframeコンテナ)
   - [x] `lib/bridge/host.ts` 実装 (postMessage受信側)
@@ -45,9 +44,9 @@
   - [x] 権限チェックミドルウェア (DBアクセス制限)
 
 ### 2.3 Developer Experience
-- [ ] **Core SDK Package**
-  - [ ] `@platform/sdk` の型定義とエクスポート設定
-  - [ ] `lib/bridge/client.ts` 実装 (プラグイン側SDK)
+- [x] **Core SDK Package**
+  - [x] `@platform/sdk` の型定義とエクスポート設定
+  - [x] `lib/bridge/client.ts` 実装 (プラグイン側SDK)
 
 ---
 

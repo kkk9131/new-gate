@@ -1,0 +1,46 @@
+[00:13:56.723] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/.next/dev/static/development/_buildManifest.js.tmp.hbfg9e6n809'
+[00:13:56.756] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/app'
+[00:13:57.266] Server  ERROR   Error: Cannot find module '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/styled-jsx/index.js'
+Require stack:
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/compiled/next-server/pages-turbo.runtime.dev.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/server/route-modules/pages/module.compiled.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/server/route-modules/pages/vendored/contexts/html-context.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/pages/_document.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/load-default-error-components.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/dev/next-dev-server.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/next.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/lib/start-server.js
+[00:13:57.270] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/app'
+[00:13:57.370] Server  ERROR   Error: Cannot find module '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/styled-jsx/index.js'
+Require stack:
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/compiled/next-server/pages-turbo.runtime.dev.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/server/route-modules/pages/module.compiled.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/server/route-modules/pages/vendored/contexts/html-context.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/pages/_document.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/load-default-error-components.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/dev/next-dev-server.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/next.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/lib/start-server.js
+[00:13:57.374] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/app'
+[00:13:57.680] Server  ERROR   Error: Cannot find module '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/styled-jsx/index.js'
+Require stack:
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/compiled/next-server/pages-turbo.runtime.dev.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/server/route-modules/pages/module.compiled.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/server/route-modules/pages/vendored/contexts/html-context.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/pages/_document.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/load-default-error-components.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/dev/next-dev-server.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/next.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/lib/start-server.js
+[00:13:57.682] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/app'
+[00:13:57.783] Server  ERROR   Error: Cannot find module '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/styled-jsx/index.js'
+Require stack:
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/compiled/next-server/pages-turbo.runtime.dev.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/server/route-modules/pages/module.compiled.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/server/route-modules/pages/vendored/contexts/html-context.js
+- /Users/kazuto/Desktop/new-gate/node_modules/next/dist/pages/_document.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/load-default-error-components.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/dev/next-dev-server.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/next.js
+- /Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/node_modules/next/dist/server/lib/start-server.js
+[00:13:57.785] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545087250-3e6527/app'

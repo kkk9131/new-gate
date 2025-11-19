@@ -1,0 +1,5 @@
+[00:05:05.904] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545085057-1f7e38/app'
+[00:05:05.931] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545085057-1f7e38/app'
+[00:05:07.274] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545085057-1f7e38/.next/dev/routes-manifest.json'
+[00:05:07.277] Server  ERROR   Error: ENOENT: no such file or directory, scandir '/Users/kazuto/Desktop/new-gate/.worktrees/task-1763545085057-1f7e38/app'
+[00:05:22.672] Server  LOG      ✓ Compiled in 34.5s
