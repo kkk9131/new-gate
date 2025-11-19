@@ -1,6 +1,22 @@
-import { BridgeMessage, MessageType, ApiRequestPayload, ApiResponsePayload } from './types';
+import { BridgeMessage, MessageType, ApiRequestPayload, ApiResponsePayload, isBridgeMessage } from './types';
 
-type PendingRequest = { resolve: (data: unknown) => void; reject: (error: Error) => void };
+export class BridgeRequestError extends Error {
+    public readonly status: number;
+    public readonly errorType?: ApiResponsePayload['errorType'];
+
+    constructor(message: string, status: number, errorType?: ApiResponsePayload['errorType']) {
+        super(message);
+        this.name = 'BridgeRequestError';
+        this.status = status;
+        this.errorType = errorType;
+    }
+}
+
+type PendingRequest = {
+    resolve: (data: unknown) => void;
+    reject: (error: Error) => void;
+    timeoutId: ReturnType<typeof setTimeout>;
+};
 
 export class PluginClient {
     private readonly targetWindow: Window;
@@ -12,7 +28,7 @@ export class PluginClient {
     constructor(targetWindow: Window = window.parent, origin: string = '*') {
         this.targetWindow = targetWindow;
         this.allowedOrigins = this.resolveAllowedOrigins(origin);
-        this.targetOrigin = this.allowedOrigins[0] ?? '*';
+        this.targetOrigin = this.resolveTargetOrigin();
         this.pendingRequests = new Map();
         this.boundHandleMessage = this.handleMessage.bind(this);
 
@@ -40,7 +56,8 @@ export class PluginClient {
     public async request(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', body?: unknown): Promise<unknown> {
         return new Promise((resolve, reject) => {
             const requestId = this.generateId();
-            this.pendingRequests.set(requestId, { resolve, reject });
+            const timeoutId = this.startRequestTimeout(requestId, reject);
+            this.pendingRequests.set(requestId, { resolve, reject, timeoutId });
 
             this.send({
                 id: requestId,
@@ -71,7 +88,7 @@ export class PluginClient {
             return;
         }
 
-        const message = event.data as BridgeMessage;
+        const message = isBridgeMessage(event.data) ? event.data : null;
         if (!message || message.source !== 'host') return;
 
         switch (message.type) {
@@ -86,22 +103,31 @@ export class PluginClient {
     }
 
     private handleApiResponse(payload: ApiResponsePayload) {
-        const { requestId, status, data, error } = payload;
+        const { requestId, status, data, error, errorType } = payload;
         const pending = this.pendingRequests.get(requestId);
 
         if (pending) {
+            clearTimeout(pending.timeoutId);
             if (status >= 200 && status < 300) {
                 pending.resolve(data);
             } else {
-                pending.reject(new Error(error || `Request failed with status ${status}`));
+                pending.reject(new BridgeRequestError(error || `Request failed with status ${status}`, status, errorType));
             }
             this.pendingRequests.delete(requestId);
         }
     }
 
     private send(message: BridgeMessage) {
-        const origin = this.targetOrigin || '*';
-        this.targetWindow.postMessage(message, origin);
+        this.targetWindow.postMessage(message, this.targetOrigin);
+    }
+
+    private startRequestTimeout(requestId: string, reject: (error: Error) => void) {
+        return setTimeout(() => {
+            if (!this.pendingRequests.has(requestId)) return;
+
+            this.pendingRequests.delete(requestId);
+            reject(new BridgeRequestError('リクエストがタイムアウトしました (30s)', 408, 'TIMEOUT'));
+        }, 30_000);
     }
 
     private generateId(): string {
@@ -133,12 +159,25 @@ export class PluginClient {
             }
         }
 
-        // If we still do not have any origin, fall back to wildcard
         return Array.from(origins).filter(Boolean);
     }
 
+    private resolveTargetOrigin(): string {
+        if (this.allowedOrigins.length > 0) {
+            return this.allowedOrigins[0];
+        }
+
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn('[PluginClient] No allowed origins resolved. Falling back to * for development only.');
+            return '*';
+        }
+
+        throw new Error('[PluginClient] allowedOrigins is empty. Set NEXT_PUBLIC_APP_URL or pass an explicit origin.');
+    }
+
     private isAllowedOrigin(origin: string): boolean {
-        if (this.allowedOrigins.length === 0) return true;
+        if (this.allowedOrigins.length === 0) return false;
         return this.allowedOrigins.includes(origin);
     }
+
 }

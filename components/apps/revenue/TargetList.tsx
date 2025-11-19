@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   RiAddLine,
   RiCalendarLine,
@@ -27,11 +27,7 @@ export function TargetList() {
   const [selectedTarget, setSelectedTarget] = useState<RevenueTarget | null>(null);
 
   // 目標データ取得
-  useEffect(() => {
-    fetchTargets();
-  }, []);
-
-  const fetchTargets = async () => {
+  const fetchTargets = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -50,7 +46,11 @@ export function TargetList() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t.revenue.fetchErrorTarget, t.revenue.error]);
+
+  useEffect(() => {
+    fetchTargets();
+  }, [fetchTargets]);
 
   // 目標作成ハンドラー
   const handleCreate = async (formData: any) => {

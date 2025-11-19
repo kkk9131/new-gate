@@ -39,12 +39,7 @@ export function CalendarApp() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
-  // イベントデータ取得
-  useEffect(() => {
-    fetchEvents();
-  }, [currentDate, view]);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -90,7 +85,12 @@ export function CalendarApp() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentDate, view, currentLocale, t]);
+
+  // イベントデータ取得
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   // イベント削除ハンドラー
   const handleDelete = async (eventId: string, title: string) => {

@@ -1,4 +1,8 @@
-import { BridgeMessage, MessageType, ApiRequestPayload, ApiResponsePayload } from './types';
+import { BridgeMessage, MessageType, ApiRequestPayload, ApiResponsePayload, isBridgeMessage } from './types';
+
+type PendingHostRequest = {
+    controller: AbortController;
+};
 
 type PluginHostOptions = {
     targetOrigin?: string;
@@ -9,7 +13,7 @@ type PluginHostOptions = {
 export class PluginHost {
     private readonly iframe: HTMLIFrameElement;
     private readonly pluginId: string;
-    private readonly pendingRequests: Map<string, (response: unknown) => void>;
+    private readonly pendingRequests: Map<string, PendingHostRequest>;
     private readonly boundHandleMessage: (event: MessageEvent) => void;
     private readonly allowedOrigins: string[];
     private readonly targetOrigin: string;
@@ -21,8 +25,8 @@ export class PluginHost {
         this.pendingRequests = new Map();
 
         this.allowedOrigins = this.deriveAllowedOrigins(options.allowedOrigins);
-        this.targetOrigin = options.targetOrigin ?? this.allowedOrigins[0] ?? '*';
         this.allowOpaqueOrigin = options.allowOpaqueOrigin ?? this.shouldAllowOpaqueOrigin();
+        this.targetOrigin = this.resolveTargetOrigin(options.targetOrigin);
         this.boundHandleMessage = this.handleMessage.bind(this);
 
         if (typeof window !== 'undefined') {
@@ -34,6 +38,9 @@ export class PluginHost {
         if (typeof window !== 'undefined') {
             window.removeEventListener('message', this.boundHandleMessage);
         }
+
+        this.pendingRequests.forEach(({ controller }) => controller.abort());
+        this.pendingRequests.clear();
     }
 
     private async handleMessage(event: MessageEvent) {
@@ -43,7 +50,7 @@ export class PluginHost {
             return;
         }
 
-        const message = event.data as BridgeMessage;
+        const message = isBridgeMessage(event.data) ? event.data : null;
         if (!message || message.source !== 'plugin') return;
 
         switch (message.type) {
@@ -67,6 +74,10 @@ export class PluginHost {
     }
 
     private async handleApiRequest(requestId: string, payload: ApiRequestPayload) {
+        const controller = new AbortController();
+        this.abortDuplicateRequest(requestId);
+        this.pendingRequests.set(requestId, { controller });
+
         try {
             // Proxy request to our backend sandbox API
             // The backend will handle permission checks
@@ -76,6 +87,7 @@ export class PluginHost {
                     'Content-Type': 'application/json',
                 },
                 body: payload.body ? JSON.stringify(payload.body) : undefined,
+                signal: controller.signal,
             });
 
             const data = await response.json();
@@ -88,26 +100,34 @@ export class PluginHost {
                     status: response.status,
                     data: response.ok ? data : undefined,
                     error: response.ok ? undefined : data.error || 'Unknown error',
+                    errorType: data.errorType,
                 } as ApiResponsePayload,
                 source: 'host',
             });
         } catch (error) {
+            const aborted = this.isAbortError(error);
             this.send({
                 id: requestId,
                 type: MessageType.API_RESPONSE,
                 payload: {
                     requestId,
-                    status: 500,
-                    error: error instanceof Error ? error.message : 'Internal Host Error',
+                    status: aborted ? 499 : 500,
+                    error: aborted
+                        ? 'Host request was aborted'
+                        : error instanceof Error
+                          ? error.message
+                          : 'Internal Host Error',
+                    errorType: 'NETWORK',
                 } as ApiResponsePayload,
                 source: 'host',
             });
+        } finally {
+            this.pendingRequests.delete(requestId);
         }
     }
 
     private send(message: BridgeMessage) {
-        const targetOrigin = this.resolveTargetOrigin();
-        this.iframe.contentWindow?.postMessage(message, targetOrigin);
+        this.iframe.contentWindow?.postMessage(message, this.targetOrigin);
     }
 
     private deriveAllowedOrigins(overrides?: string[]): string[] {
@@ -147,18 +167,55 @@ export class PluginHost {
         }
 
         if (this.allowedOrigins.length === 0) {
-            return this.targetOrigin === '*';
+            return false;
         }
 
-        return this.allowedOrigins.includes(origin);
+        const allowedSet = new Set(this.allowedOrigins);
+        if (this.targetOrigin && this.targetOrigin !== '*' && this.targetOrigin !== 'null') {
+            allowedSet.add(this.targetOrigin);
+        }
+
+        return allowedSet.has(origin);
     }
 
-    private resolveTargetOrigin(): string {
-        if (this.allowOpaqueOrigin) return '*';
-        if (!this.targetOrigin || this.targetOrigin === 'null' || this.targetOrigin === '*') {
+    private resolveTargetOrigin(explicitOrigin?: string): string {
+        const sanitized = explicitOrigin?.trim();
+
+        if (sanitized && sanitized !== '*' && sanitized !== 'null') {
+            return sanitized;
+        }
+
+        if (this.allowOpaqueOrigin) {
+            return 'null';
+        }
+
+        if (this.allowedOrigins.length > 0) {
+            return this.allowedOrigins[0];
+        }
+
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn('[PluginHost] No target origin detected. Falling back to * for development only.');
             return '*';
         }
 
-        return this.targetOrigin;
+        throw new Error('[PluginHost] targetOrigin を特定できません。options.targetOrigin を指定してください。');
+    }
+
+    private abortDuplicateRequest(requestId: string) {
+        const existing = this.pendingRequests.get(requestId);
+        if (!existing) return;
+
+        existing.controller.abort();
+        this.pendingRequests.delete(requestId);
+    }
+
+    private isAbortError(error: unknown): boolean {
+        if (!error) return false;
+
+        if (typeof DOMException !== 'undefined' && error instanceof DOMException) {
+            return error.name === 'AbortError';
+        }
+
+        return error instanceof Error && error.name === 'AbortError';
     }
 }

@@ -8,9 +8,10 @@ interface PluginFrameProps {
     src: string;
     className?: string;
     onReady?: () => void;
+    allowPopups?: boolean;
 }
 
-export function PluginFrame({ pluginId, src, className, onReady }: PluginFrameProps) {
+export function PluginFrame({ pluginId, src, className, onReady, allowPopups = false }: PluginFrameProps) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const hostRef = useRef<PluginHost | null>(null);
 
@@ -33,12 +34,17 @@ export function PluginFrame({ pluginId, src, className, onReady }: PluginFramePr
         };
     }, [pluginId, onReady, src]);
 
+    const sandboxTokens = ['allow-scripts', 'allow-forms', 'allow-modals'];
+    if (allowPopups) {
+        sandboxTokens.push('allow-popups');
+    }
+
     return (
         <iframe
             ref={iframeRef}
             src={src}
             className={`w-full h-full border-none ${className || ''}`}
-            sandbox="allow-scripts allow-forms allow-popups allow-modals"
+            sandbox={sandboxTokens.join(' ')}
             title={`Plugin: ${pluginId}`}
         />
     );

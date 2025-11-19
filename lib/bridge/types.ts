@@ -20,11 +20,14 @@ export interface ApiRequestPayload {
     body?: unknown;
 }
 
+export type BridgeErrorType = 'BUSINESS' | 'DATABASE' | 'NETWORK' | 'TIMEOUT';
+
 export interface ApiResponsePayload {
     requestId: string;
     status: number;
     data?: unknown;
     error?: string;
+    errorType?: BridgeErrorType;
 }
 
 export interface ResizePayload {
@@ -36,4 +39,19 @@ export interface NotificationPayload {
     title: string;
     message: string;
     type: 'info' | 'success' | 'warning' | 'error';
+}
+
+const messageTypes = new Set(Object.values(MessageType));
+
+export function isBridgeMessage(value: unknown): value is BridgeMessage {
+    if (typeof value !== 'object' || value === null) return false;
+
+    const candidate = value as Partial<BridgeMessage>;
+    if (typeof candidate.id !== 'string') return false;
+    if (typeof candidate.source !== 'string') return false;
+    if (candidate.source !== 'plugin' && candidate.source !== 'host') return false;
+    if (typeof candidate.type !== 'string') return false;
+    if (!messageTypes.has(candidate.type as MessageType)) return false;
+
+    return true;
 }

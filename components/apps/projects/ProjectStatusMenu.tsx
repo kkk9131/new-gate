@@ -17,7 +17,6 @@ export function ProjectStatusMenu({ currentStatus, onChange, size = 'md' }: Proj
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
-  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -38,11 +37,6 @@ export function ProjectStatusMenu({ currentStatus, onChange, size = 'md' }: Proj
         return status;
     }
   };
-
-  // クライアントサイドでマウント済みかチェック
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // ボタンクリック時に位置を更新
   const handleToggle = () => {
@@ -88,7 +82,7 @@ export function ProjectStatusMenu({ currentStatus, onChange, size = 'md' }: Proj
       ? 'text-xs px-2 py-1'
       : 'text-xs px-3 py-1';
 
-  const dropdownMenu = isOpen && mounted ? (
+  const dropdownMenu = isOpen ? (
     <div
       ref={menuRef}
       className="fixed w-36 bg-white border-2 border-ink/20 rounded-2xl shadow-floating overflow-hidden z-modal"
@@ -120,7 +114,7 @@ export function ProjectStatusMenu({ currentStatus, onChange, size = 'md' }: Proj
         {getStatusLabel(currentStatus)}
       </button>
 
-      {mounted && typeof document !== 'undefined' && createPortal(dropdownMenu, document.body)}
+      {typeof document !== 'undefined' && dropdownMenu && createPortal(dropdownMenu, document.body)}
     </>
   );
 }

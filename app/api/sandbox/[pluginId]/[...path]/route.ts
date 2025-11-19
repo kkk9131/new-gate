@@ -1,6 +1,21 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
+const SANDBOX_ERROR = {
+    BUSINESS: 'BUSINESS',
+    DATABASE: 'DATABASE',
+} as const;
+
+type SandboxErrorType = (typeof SANDBOX_ERROR)[keyof typeof SANDBOX_ERROR];
+
+const jsonError = (message: string, status: number, errorType: SandboxErrorType) =>
+    NextResponse.json({ error: message, errorType }, { status });
+
+const isDatabaseError = (error: unknown): boolean => {
+    if (typeof error !== 'object' || error === null) return false;
+    return 'code' in error || 'details' in error;
+};
+
 type SandboxRouteParams = { pluginId: string; path: string[] };
 type SandboxRouteContext = { params: Promise<SandboxRouteParams> };
 
@@ -34,7 +49,7 @@ async function handleSandboxRequest(request: Request, context: SandboxRouteConte
         console.error('[SandboxAPI] Auth lookup failed:', authError.message);
     }
     if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return jsonError('Unauthorized', 401, SANDBOX_ERROR.BUSINESS);
     }
 
     // 2. Installation check
@@ -50,7 +65,7 @@ async function handleSandboxRequest(request: Request, context: SandboxRouteConte
     }
 
     if (!installation || !installation.is_active) {
-        return NextResponse.json({ error: 'Plugin not installed or inactive' }, { status: 403 });
+        return jsonError('Plugin not installed or inactive', 403, SANDBOX_ERROR.BUSINESS);
     }
 
     // 3. Permission check (with dev fallback)
@@ -66,7 +81,7 @@ async function handleSandboxRequest(request: Request, context: SandboxRouteConte
 
         if (permissionError && permissionError.code !== 'PGRST116') {
             console.error('[SandboxAPI] Permission lookup error:', permissionError.message);
-            return NextResponse.json({ error: 'Permission lookup failed' }, { status: 500 });
+            return jsonError('Permission lookup failed', 500, SANDBOX_ERROR.DATABASE);
         }
 
         if (!permission || !permission.is_granted) {
@@ -75,7 +90,7 @@ async function handleSandboxRequest(request: Request, context: SandboxRouteConte
                     `[SandboxAPI][DEV] Permission ${requiredPermission} not granted for plugin ${pluginId}. Allowing temporarily.`
                 );
             } else {
-                return NextResponse.json({ error: `Permission denied: ${requiredPermission}` }, { status: 403 });
+                return jsonError(`Permission denied: ${requiredPermission}`, 403, SANDBOX_ERROR.BUSINESS);
             }
         }
     }
@@ -117,9 +132,11 @@ async function proxyInternalEndpoint({
             return NextResponse.json(data);
         }
 
-        return NextResponse.json({ error: 'Endpoint not found or not supported in sandbox' }, { status: 404 });
+        return jsonError('Endpoint not found or not supported in sandbox', 404, SANDBOX_ERROR.BUSINESS);
     } catch (error) {
         console.error('[SandboxAPI] Internal proxy error:', error);
-        return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        const errorType = isDatabaseError(error) ? SANDBOX_ERROR.DATABASE : SANDBOX_ERROR.BUSINESS;
+        return jsonError(message, 500, errorType);
     }
 }
