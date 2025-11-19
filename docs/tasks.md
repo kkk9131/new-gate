@@ -61,16 +61,16 @@
   - [x] `agent_memories` (pgvector導入)
 
 ### 3.2 Router & Worker Logic
-- [ ] **LLM Service Layer**
-  - [ ] `lib/llm/router.ts` (振り分けロジック)
-  - [ ] `lib/llm/workers/gemini.ts` (Writer)
-  - [ ] `lib/llm/workers/openai.ts` (Coder)
-- [ ] **Agent API**
-  - [ ] `api/agent/chat` (チャットエンドポイント)
-  - [ ] `api/agent/tasks` (タスク管理エンドポイント)
-- [ ] **Parallel Execution Logic**
-  - [ ] 複合タスクをサブタスクに分解するプロンプト設計
-  - [ ] 複数のWorkerを並列実行させるオーケストレーター実装
+- [x] **LLM Service Layer**
+  - [x] `lib/llm/router.ts` (振り分けロジック)
+  - [x] `lib/llm/workers/gemini.ts` (Writer)
+  - [x] `lib/llm/workers/openai.ts` (Coder)
+- [x] **Agent API**
+  - [x] `api/agent/chat` (チャットエンドポイント)
+  - [x] `api/agent/tasks` (タスク管理エンドポイント)
+- [x] **Parallel Execution Logic**
+  - [x] 複合タスクをサブタスクに分解するプロンプト設計
+  - [x] 複数のWorkerを並列実行させるオーケストレーター実装
 
 ### 3.3 Agent UI (Right Sidebar Chat) 🔄 Re-defined
 - [ ] **Chat Sidebar Implementation**
