@@ -7,7 +7,7 @@ export interface Message {
     tool_call_id?: string;
 }
 
-export type LLMProvider = 'openai' | 'gemini' | 'anthropic';
+export type LLMProvider = 'openai' | 'gemini' | 'claude';
 
 export interface LLMConfig {
     provider: LLMProvider;

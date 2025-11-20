@@ -7,13 +7,14 @@ export const runtime = 'edge';
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { messages, provider = 'openai', model } = body as {
+        const { messages, provider = 'openai', model, apiKey } = body as {
             messages: Message[],
             provider: LLMProvider,
-            model?: string
+            model?: string,
+            apiKey?: string
         };
 
-        const worker = router.getWorker(provider);
+        const worker = router.getWorker(provider, apiKey);
 
         const stream = worker.stream(messages, undefined, { model });
 

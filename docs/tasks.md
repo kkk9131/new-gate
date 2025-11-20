@@ -73,22 +73,32 @@
   - [x] 複数のWorkerを並列実行させるオーケストレーター実装
 
 ### 3.3 Agent UI (Right Sidebar Chat) 🔄 Re-defined
-- [ ] **Chat Sidebar Implementation**
-  - [ ] `components/desktop/ChatSidebar.tsx` 新規作成
-  - [ ] ChatKit (`@openai/chatkit-react`) の組み込み
-  - [ ] メッセージの送受信処理 (`api/agent/chat` 接続)
-  - [ ] **Always Visible**: 分割モード時も常に最前面/右側に表示されるようZ-indexとレイアウト調整
-- [ ] **Desktop Layout Integration**
-  - [ ] `components/desktop/DesktopLayout.tsx` に右サイドバー領域を追加
-  - [ ] `react-resizable-panels` を使用してリサイズ可能にする
-  - [ ] Agentアイコンクリックでサイドバーの開閉をトグルする処理
+- [x] **Chat Sidebar Implementation**
+  - [x] `components/desktop/ChatSidebar.tsx` 新規作成
+  - [-] ChatKit (`@openai/chatkit-react`) の組み込み (Custom UI implemented)
+  - [x] メッセージの送受信処理 (`api/agent/chat` 接続)
+  - [x] **Always Visible**: 分割モード時も常に最前面/右側に表示されるようZ-indexとレイアウト調整
+- [x] **Desktop Layout Integration**
+  - [x] `components/desktop/DesktopLayout.tsx` に右サイドバー領域を追加
+  - [x] `react-resizable-panels` を使用してリサイズ可能にする
+  - [x] Agentアイコンクリックでサイドバーの開閉をトグルする処理
 
 ---
 
 ## Phase 4: Integration (統合)
-**目標**: アプリとエージェントを有機的に結合する。
+**目標**: アプリとエージェントを有機的に結合し、外部連携機能を追加する。
 
-### 4.1 Tool Registration
+### 4.0 API Key Management (Settings Integration) 🆕
+**依存**: Agent機能の利用にはAPIキー設定が必須
+- [x] **Settings App UI Update**
+  - [x] `components/apps/SettingsApp.tsx` に「AI設定」セクションを追加
+  - [x] APIキー入力フォーム (OpenAI, Gemini等) の実装
+  - [x] 入力されたキーをセキュアに保存 (localStorage または DBのuser_secretsテーブル)
+- [x] **Agent Client Integration**
+  - [x] `useChatStore` または `api/agent/chat` で設定されたAPIキーを読み込む処理の実装
+
+### 4.1 Tool Registration & Execution
+**依存**: 4.0完了後
 - [ ] **Dynamic Tool Loading**
   - [ ] インストール済みプラグインの `ai-tools.json` をDBから取得
   - [ ] エージェントのSystem Promptにツール定義を注入する処理
@@ -96,7 +106,16 @@
   - [ ] `tools/ui_control.ts` 実装 (set_layout, open_app)
   - [ ] エージェントからの指示でZustandストア (`useDesktopStore`) を操作するブリッジ実装
 
-### 4.2 E2E Verification
+### 4.2 External Integrations (Parallel Implementation) 🆕
+**依存**: 4.1と並行して実装可能
+- [ ] **Google Calendar Integration**
+  - [ ] Google OAuth認証フローの実装 (`api/auth/google`)
+  - [ ] Calendar APIラッパーの実装 (`lib/integrations/google-calendar.ts`)
+  - [ ] エージェント用ツール定義 (`tools/google_calendar.ts`)
+    - `list_events`, `create_event`
+  - [ ] 既存のカレンダーアプリとの同期処理
+
+### 4.3 E2E Verification
 - [ ] **Scenario Test**
   - [ ] ユーザーがストアから「売上予測プラグイン」をインストール
   - [ ] チャットで「来月の売上予測して」と依頼
