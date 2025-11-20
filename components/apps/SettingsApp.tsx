@@ -14,6 +14,7 @@ import {
 } from 'react-icons/ri';
 import { IconType } from 'react-icons';
 import { useTranslation } from '@/lib/hooks/useTranslation';
+import { ApiSettingsView } from '@/components/settings/ApiSettingsView';
 
 /**
  * 設定セクションの型定義
@@ -66,6 +67,9 @@ export function SettingsApp() {
     fetchAuthProvider();
   }, []);
 
+  // 内部ナビゲーション用の状態
+  const [currentView, setCurrentView] = useState<'main' | 'api'>('main');
+
   // プロフィールに注意マークを表示すべきか
   const shouldShowProfileAlert = authProvider === 'google' && !hasPassword;
 
@@ -104,7 +108,7 @@ export function SettingsApp() {
       icon: RiKeyLine,
       title: t.settings.api,
       desc: t.settings.apiDesc,
-      onClick: () => router.push('/settings/api')
+      onClick: () => setCurrentView('api')
     },
     {
       icon: RiLinksLine,
@@ -113,6 +117,10 @@ export function SettingsApp() {
       onClick: () => router.push('/settings/integrations')
     },
   ];
+
+  if (currentView === 'api') {
+    return <ApiSettingsView onBack={() => setCurrentView('main')} />;
+  }
 
   return (
     <div className="p-4 md:p-6 h-full overflow-auto bg-mist text-ink">

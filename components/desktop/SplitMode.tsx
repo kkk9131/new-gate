@@ -60,7 +60,7 @@ export function SplitMode() {
   // 2分割レイアウト
   if (splitMode === 2) {
     return (
-      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
+      <div className="absolute inset-0 z-[50] bg-mist flex">
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
@@ -83,7 +83,7 @@ export function SplitMode() {
   // 3分割レイアウト（左50% + 右上25% + 右下25%）
   if (splitMode === 3) {
     return (
-      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist flex">
+      <div className="absolute inset-0 z-[50] bg-mist flex">
         {/* 左画面 */}
         <SplitScreen
           screenId="left"
@@ -117,7 +117,7 @@ export function SplitMode() {
   // 4分割レイアウト（2x2グリッド）
   if (splitMode === 4) {
     return (
-      <div className="fixed top-14 md:top-16 left-0 right-0 bottom-0 z-[50] bg-mist grid grid-cols-2 grid-rows-2">
+      <div className="absolute inset-0 z-[50] bg-mist grid grid-cols-2 grid-rows-2">
         {/* 左上画面 */}
         <SplitScreen
           screenId="topLeft"

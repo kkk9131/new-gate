@@ -31,7 +31,7 @@ export function Dock() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-2 md:pb-4"
+      className="absolute bottom-0 left-0 right-0 z-50 flex justify-center pb-2 md:pb-4 pointer-events-none"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
