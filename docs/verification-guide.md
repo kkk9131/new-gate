@@ -55,6 +55,16 @@ This guide outlines the steps to verify the functionality of the Hybrid Multi-La
     *   **Step 2**: Opens "Projects" app to create the project.
     *   **Note**: Depending on the planner's logic, this might happen sequentially or in parallel if the planner deems them independent enough. Ideally, it should check revenue first.
 
+### Scenario 4: Plugin Tool (サンプル) 利用
+**Goal**: エージェントがプラグイン由来ツールを認識し、実行ログが表示されることを確認。
+
+1. **Prerequisite**: サンプルプラグインツールがロードされている（デフォルトで `tool-loader` がサンプルを返す）。
+2. **Prompt**: "サンプルプラグインのTODOに『牛乳を買う』を追加して"
+3. **Expected Behavior**:
+   * **Layout**: Projects画面が優先スクリーンで開く。
+   * **Logs**: チャット欄に `LOG` メッセージが流れ、ツール実行ステップが見える。
+   * **Check Agent**: 最終レポートに「TODOを追加した」旨が含まれる。
+
 ## Troubleshooting
 
 *   **"Missing credentials" Error**:
@@ -71,10 +81,11 @@ This guide outlines the steps to verify the functionality of the Hybrid Multi-La
 
 ## Running Automated Script
 
-You can also run the CLI-based test script to verify the logic flow (without the actual UI).
+You can also run the CLI-based test scripts to verify the logic flow (without the actual UI).
 
 ```bash
 npx tsx scripts/test-screen-agents.ts
+npx tsx scripts/test-agents-integration.ts
 ```
 
 This script simulates the orchestration process and prints the execution logs.

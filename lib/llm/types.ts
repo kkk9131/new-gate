@@ -73,6 +73,11 @@ export interface ToolDefinition {
     name: string;
     description: string;
     parameters: any;
+    meta?: {
+        appId?: string;
+        preferredScreenId?: number;
+        uiHint?: string;
+    };
 }
 
 export interface Assignment {

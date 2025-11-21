@@ -131,8 +131,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 for (const line of lines) {
                     if (!line.trim()) continue;
 
+                    // function_callなど生JSON配列は無視
+                    if (line.trim().startsWith('[')) {
+                        continue;
+                    }
+
                     try {
                         const data = JSON.parse(line);
+
+                        // type フィールドが無いものは無視
+                        if (!data.type) continue;
 
                         if (data.type === 'action') {
                             const action = data.action;
@@ -167,8 +175,32 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                                     action.payload.status,
                                     action.payload.progress
                                 );
+                                if (action.payload.status === 'error' || action.payload.status === 'retry') {
+                                    const statusMsg: Message = {
+                                        id: crypto.randomUUID(),
+                                        role: 'assistant',
+                                        content: `Screen ${action.payload.screenId}: ${action.payload.status === 'error' ? 'エラー発生' : 'リトライ中'}`,
+                                        createdAt: Date.now()
+                                    };
+                                    addMessage(statusMsg);
+                                }
+                            } else if (action.type === 'LOG') {
+                                // ログをチャット欄に追記（screenId付き）
+                                const logMsg: Message = {
+                                    id: crypto.randomUUID(),
+                                    role: 'assistant',
+                                    content: `Screen ${action.payload.screenId}: ${action.payload.message}`,
+                                    createdAt: Date.now()
+                                };
+                                addMessage(logMsg);
+                            } else if (action.type === 'CLOSE_ALL') {
+                                desktopStore.closeAllWindows();
                             }
                         } else if (data.type === 'message') {
+                            // function_call結果などが文字列で来てもチャットには載せない
+                            if (typeof data.content === 'string' && data.content.trim().startsWith('[')) {
+                                continue;
+                            }
                             if (isFirstChunk) {
                                 // Replace "Thinking..." with actual content
                                 set((state) => {
@@ -183,6 +215,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                         } else if (data.type === 'error') {
                             console.error('Server Error:', data.error);
                             updateLastMessage(`\nError: ${data.error}`);
+                        } else {
+                            // その他のJSONイベントはチャットに出さない
+                            continue;
                         }
                     } catch (e) {
                         console.error('Failed to parse chunk:', line, e);

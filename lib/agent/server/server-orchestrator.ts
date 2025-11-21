@@ -12,7 +12,8 @@ export class ServerHybridOrchestrator {
     async execute(
         userRequest: string,
         apiKeys: Record<string, string>,
-        dispatch: (action: AgentAction) => void
+        dispatch: (action: AgentAction) => void,
+        userId?: string
     ): Promise<string> {
         console.log('[ServerHybridOrchestrator] Starting execution for:', userRequest);
         const uiController = new ServerUIControllerImpl(dispatch);
@@ -37,7 +38,7 @@ export class ServerHybridOrchestrator {
 
         try {
             // 1. Agent Manager Planning
-            const decision: AgentManagerDecision = await agentManager.plan(userRequest, resolvedApiKeys['openai']);
+            const decision: AgentManagerDecision = await agentManager.plan(userRequest, resolvedApiKeys['openai'], userId);
 
             // 2. Apply Layout
             const layoutMap: Record<string, 1 | 2 | 3 | 4> = {
@@ -71,11 +72,14 @@ export class ServerHybridOrchestrator {
             // 4. Execute Strategy
             let results: { screenId: number; appId: string; result: string }[] = [];
 
-            if (decision.strategy === 'parallel') {
-                results = await this.executeParallel(agents, resolvedApiKeys);
+            const strategy = this.resolveStrategy(decision.assignments);
+            if (strategy === 'parallel') {
+                results = await this.executeParallel(agents, resolvedApiKeys, userId);
             } else {
-                results = await this.executeSequential(agents, resolvedApiKeys);
+                results = await this.executeSequential(agents, resolvedApiKeys, userId);
             }
+
+
 
             // 5. Check Agent Verification
             const verification = await checkAgent.verify(userRequest, results, resolvedApiKeys['openai']);
@@ -92,6 +96,9 @@ export class ServerHybridOrchestrator {
                 report += `💡 改善提案:\n${verification.suggestions.map(s => `- ${s}`).join('\n')}`;
             }
 
+            // 全ウィンドウクローズ（完了後の後片付け）
+            uiController.closeAll();
+
             return report;
 
         } catch (error: any) {
@@ -100,11 +107,11 @@ export class ServerHybridOrchestrator {
         }
     }
 
-    private async executeParallel(agents: ServerScreenAgent[], apiKeys: Record<string, string>): Promise<{ screenId: number; appId: string; result: string }[]> {
+    private async executeParallel(agents: ServerScreenAgent[], apiKeys: Record<string, string>, userId?: string): Promise<{ screenId: number; appId: string; result: string }[]> {
         console.log('[ServerHybridOrchestrator] Executing in parallel...');
         const results = await Promise.all(agents.map(async agent => {
             const provider = (agent as any).config.workerProvider;
-            const result = await agent.execute(apiKeys[provider]);
+            const result = await agent.execute(apiKeys[provider], userId);
             return {
                 screenId: (agent as any).config.screenId,
                 appId: (agent as any).config.appId,
@@ -114,12 +121,12 @@ export class ServerHybridOrchestrator {
         return results;
     }
 
-    private async executeSequential(agents: ServerScreenAgent[], apiKeys: Record<string, string>): Promise<{ screenId: number; appId: string; result: string }[]> {
+    private async executeSequential(agents: ServerScreenAgent[], apiKeys: Record<string, string>, userId?: string): Promise<{ screenId: number; appId: string; result: string }[]> {
         console.log('[ServerHybridOrchestrator] Executing sequentially...');
         const results = [];
         for (const agent of agents) {
             const provider = (agent as any).config.workerProvider;
-            const result = await agent.execute(apiKeys[provider]);
+            const result = await agent.execute(apiKeys[provider], userId);
             results.push({
                 screenId: (agent as any).config.screenId,
                 appId: (agent as any).config.appId,
@@ -127,6 +134,15 @@ export class ServerHybridOrchestrator {
             });
         }
         return results;
+    }
+
+    /**
+     * 戦略決定ロジック（Runner側に近い層で実施）
+     * 依存関係がひとつでもあれば順次、それ以外は並列
+     */
+    private resolveStrategy(assignments: AgentManagerDecision['assignments']): 'parallel' | 'sequential' {
+        const hasDependencies = assignments.some(a => a.subtask.dependencies.length > 0);
+        return hasDependencies ? 'sequential' : 'parallel';
     }
 }
 

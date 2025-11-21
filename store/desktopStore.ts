@@ -112,6 +112,7 @@ interface DesktopState {
   setLayout: (layout: 1 | 2 | 3 | 4) => void;
   openAppInScreenForAgent: (appId: string, screenId: number) => void;
   updateScreenStatus: (screenId: number, status: string, progress?: number) => void;
+  closeAllWindows: () => void;
 }
 
 // デフォルトのアプリ一覧
@@ -658,6 +659,18 @@ export const useDesktopStore = create<DesktopState>()(
 
           return { screens };
         }),
+
+      closeAllWindows: () =>
+        set((state) => ({
+          windows: [],
+          splitScreenWindows: createSplitScreenWindows(),
+          screens: Object.fromEntries(
+            Object.entries(state.screens).map(([id]) => [
+              Number(id),
+              { screenId: Number(id), appId: null, status: 'idle', progress: 0 },
+            ])
+          ),
+        })),
 
       updateScreenStatus: (screenId, status, progress) =>
         set((state) => {

@@ -5,11 +5,15 @@ import { useChatStore } from '@/store/useChatStore';
 import { RiSendPlaneFill, RiRobot2Line, RiUser3Line } from 'react-icons/ri';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useState } from 'react';
+import { AppMentionMenu } from '../chat/AppMentionMenu';
 
 export function ChatSidebar() {
     const { messages, input, setInput, sendMessage, isLoading } = useChatStore();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [mentionOpen, setMentionOpen] = useState(false);
+    const [mentionKeyword, setMentionKeyword] = useState('');
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -24,6 +28,47 @@ export function ChatSidebar() {
             e.preventDefault();
             handleSend();
         }
+        if (e.key === '@') {
+            setMentionOpen(true);
+            setMentionKeyword('');
+        }
+        if (e.key === 'Escape') {
+            setMentionOpen(false);
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const val = e.target.value;
+        setInput(val);
+        const cursor = e.target.selectionStart;
+        const atIndex = val.lastIndexOf('@', cursor - 1);
+        if (atIndex !== -1) {
+            const keyword = val.slice(atIndex + 1, cursor);
+            setMentionKeyword(keyword);
+            setMentionOpen(true);
+        } else {
+            setMentionOpen(false);
+        }
+    };
+
+    const handleSelectApp = (appId: string) => {
+        if (!textareaRef.current) return;
+        const val = textareaRef.current.value;
+        const cursor = textareaRef.current.selectionStart;
+        const atIndex = val.lastIndexOf('@', cursor - 1);
+        if (atIndex !== -1) {
+            const before = val.slice(0, atIndex);
+            const after = val.slice(cursor);
+            const newVal = `${before}@${appId} ${after}`;
+            setInput(newVal);
+            // 新しいカーソル位置
+            const newPos = (before + `@${appId} `).length;
+            requestAnimationFrame(() => {
+                textareaRef.current!.focus();
+                textareaRef.current!.selectionStart = textareaRef.current!.selectionEnd = newPos;
+            });
+        }
+        setMentionOpen(false);
     };
 
     const handleSend = () => {
@@ -109,9 +154,9 @@ export function ChatSidebar() {
                     <textarea
                         ref={textareaRef}
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={handleChange}
                         onKeyDown={handleKeyDown}
-                        placeholder="Type a message..."
+                        placeholder="Type a message...（@でアプリ指定）"
                         className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[24px] py-1 px-2 text-sm text-ink placeholder:text-ink/40"
                         rows={1}
                         style={{ height: 'auto', minHeight: '24px' }}
@@ -124,6 +169,12 @@ export function ChatSidebar() {
                         <RiSendPlaneFill className="w-4 h-4" />
                     </button>
                 </div>
+                <AppMentionMenu
+                    anchorRef={textareaRef}
+                    visible={mentionOpen}
+                    keyword={mentionKeyword}
+                    onSelect={handleSelectApp}
+                />
             </div>
         </div>
     );

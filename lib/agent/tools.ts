@@ -13,7 +13,8 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                     status: { type: 'string', enum: ['active', 'archived', 'completed'] }
                 },
                 required: ['title']
-            }
+            },
+            meta: { appId: 'projects', preferredScreenId: 1, uiHint: '左画面でプロジェクト作成' }
         },
         {
             name: 'list_projects',
@@ -23,7 +24,8 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                 properties: {
                     status: { type: 'string', enum: ['active', 'archived', 'completed'] }
                 }
-            }
+            },
+            meta: { appId: 'projects', preferredScreenId: 1, uiHint: '左画面で一覧表示' }
         }
     ],
     calendar: [
@@ -39,7 +41,8 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                     description: { type: 'string', description: '詳細' }
                 },
                 required: ['title', 'start', 'end']
-            }
+            },
+            meta: { appId: 'calendar', preferredScreenId: 2, uiHint: '右画面で日付入力' }
         },
         {
             name: 'list_events',
@@ -50,7 +53,8 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                     start: { type: 'string', description: '範囲開始日時' },
                     end: { type: 'string', description: '範囲終了日時' }
                 }
-            }
+            },
+            meta: { appId: 'calendar', preferredScreenId: 2 }
         }
     ],
     revenue: [
@@ -66,7 +70,8 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                     description: { type: 'string', description: '説明' }
                 },
                 required: ['amount', 'date']
-            }
+            },
+            meta: { appId: 'revenue', preferredScreenId: 3 }
         }
     ],
     settings: [
@@ -80,7 +85,8 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                     value: { type: 'string', description: '設定値' }
                 },
                 required: ['key', 'value']
-            }
+            },
+            meta: { appId: 'settings', preferredScreenId: 4 }
         }
     ]
 };
