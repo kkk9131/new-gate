@@ -19,11 +19,8 @@ interface UseIsMobileResult {
 const RESIZE_DEBOUNCE_MS = 150;
 
 export function useIsMobile(breakpoint = 768): UseIsMobileResult {
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.innerWidth < breakpoint;
-  });
-  const [isReady, setIsReady] = useState(() => typeof window !== 'undefined');
+  const [isMobile, setIsMobile] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     // SSR対応: windowが存在しない場合は早期リターン

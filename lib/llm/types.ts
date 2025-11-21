@@ -56,3 +56,35 @@ export interface LLMWorker {
         config?: Partial<LLMConfig>
     ): AsyncGenerator<LLMStreamResponse, void, unknown>;
 }
+
+// --- Agent Manager Types ---
+
+export type LayoutMode = 'single' | 'split-2' | 'split-3' | 'split-4';
+
+export interface Subtask {
+    id: string;
+    description: string;
+    appId: string;              // 'projects', 'calendar', 'revenue', 'settings'
+    estimatedComplexity: 'low' | 'medium' | 'high';
+    dependencies: string[];     // IDs of tasks this task depends on
+}
+
+export interface ToolDefinition {
+    name: string;
+    description: string;
+    parameters: any;
+}
+
+export interface Assignment {
+    screenId: number;           // 1, 2, 3, 4
+    subtask: Subtask;
+    appId: string;
+    suggestedWorker: LLMProvider;
+    tools: ToolDefinition[];
+}
+
+export interface AgentManagerDecision {
+    layout: LayoutMode;
+    assignments: Assignment[];
+    strategy: 'parallel' | 'sequential';
+}
