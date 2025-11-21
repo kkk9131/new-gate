@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const supabase = await createClient();
-  
+
   // Check authentication
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    
+
     // Validate required fields (basic validation)
     if (!body.plugin_id || !body.name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -72,6 +72,7 @@ export async function POST(request: Request) {
         author_name: user.user_metadata.full_name || user.email, // Fallback
         author_email: user.email,
         is_published: false, // Default to draft
+        tools_definition: body.tools_definition || [],
       })
       .select()
       .single();
