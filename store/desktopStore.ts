@@ -52,6 +52,14 @@ export interface WindowState {
   zIndex: number; // Z-index（前面表示順序）
 }
 
+// スクリーン状態の型定義
+export interface ScreenState {
+  screenId: number;
+  appId: string | null;
+  status: string;
+  progress: number;
+}
+
 // ストアの状態の型定義
 interface DesktopState {
   // アプリ一覧
@@ -98,6 +106,12 @@ interface DesktopState {
   bringToFrontInScreen: (screenId: string, windowId: string) => void;
   updateWindowPositionInScreen: (screenId: string, windowId: string, position: { x: number; y: number }) => void;
   updateWindowSizeInScreen: (screenId: string, windowId: string, size: { width: number; height: number }) => void;
+
+  // Agent用スクリーン管理
+  screens: Record<number, ScreenState>;
+  setLayout: (layout: 1 | 2 | 3 | 4) => void;
+  openAppInScreenForAgent: (appId: string, screenId: number) => void;
+  updateScreenStatus: (screenId: number, status: string, progress?: number) => void;
 }
 
 // デフォルトのアプリ一覧
@@ -125,6 +139,7 @@ const snapToGrid = (position: { x: number; y: number }): { x: number; y: number 
     y: snap(position.y, ICON_Y_OFFSET, ICON_Y_GAP),
   };
 };
+
 
 type BaseAppConfig = Omit<App, 'position'>;
 
@@ -233,7 +248,7 @@ const normalizeZIndexesIfNeeded = (windows: WindowState[], previousWindows?: Win
   return windows.map((w) => ({ ...w, zIndex: orderMap.get(w.id) ?? w.zIndex }));
 };
 
-type DesktopDataSlice = Pick<DesktopState, 'apps' | 'isDarkMode' | 'isDockVisible' | 'windows' | 'splitMode' | 'splitScreenWindows'>;
+type DesktopDataSlice = Pick<DesktopState, 'apps' | 'isDarkMode' | 'isDockVisible' | 'windows' | 'splitMode' | 'splitScreenWindows' | 'screens'>;
 
 const createSplitScreenWindows = (): DesktopDataSlice['splitScreenWindows'] => ({
   left: [],
@@ -254,6 +269,7 @@ const createDesktopData = (): DesktopDataSlice => ({
   windows: [],
   splitMode: 1,
   splitScreenWindows: createSplitScreenWindows(),
+  screens: {},
 });
 
 type MemoryStorage = StateStorage & { clear: () => void };
@@ -283,8 +299,8 @@ export const useDesktopStore = create<DesktopState>()(
       ...createDesktopData(),
 
       // ダークモード切り替え
-  toggleDarkMode: () =>
-    set((state) => ({ isDarkMode: !state.isDarkMode })),
+      toggleDarkMode: () =>
+        set((state) => ({ isDarkMode: !state.isDarkMode })),
 
       // Dock表示切り替え
       setDockVisible: (visible) =>
@@ -305,13 +321,13 @@ export const useDesktopStore = create<DesktopState>()(
           apps: state.apps.map((app) =>
             app.id === appId
               ? {
-                  ...app,
-                  position: nudgePositionIfNeeded(
-                    appId,
-                    snapToGrid(position),
-                    state.apps
-                  ),
-                }
+                ...app,
+                position: nudgePositionIfNeeded(
+                  appId,
+                  snapToGrid(position),
+                  state.apps
+                ),
+              }
               : app
           ),
         })),
@@ -578,6 +594,83 @@ export const useDesktopStore = create<DesktopState>()(
             ),
           },
         })),
+
+      // Agent用スクリーン管理
+      screens: {},
+
+      setLayout: (layout) =>
+        set((state) => {
+          // レイアウト変更
+          const newState = { splitMode: layout };
+
+          // スクリーン状態の初期化
+          const screenCount = layout === 1 ? 1 : layout;
+          const newScreens: Record<number, ScreenState> = {};
+
+          for (let i = 1; i <= screenCount; i++) {
+            newScreens[i] = {
+              screenId: i,
+              appId: null,
+              status: 'idle',
+              progress: 0
+            };
+          }
+
+          return { ...newState, screens: newScreens };
+        }),
+
+      openAppInScreenForAgent: (appId, screenId) =>
+        set((state) => {
+          const screens = { ...state.screens };
+          if (screens[screenId]) {
+            screens[screenId] = {
+              ...screens[screenId],
+              appId,
+              status: 'loading'
+            };
+          }
+
+          // 実際にウィンドウも開く（既存のロジックを再利用）
+          // splitModeに応じたscreenIdのマッピングが必要
+          // ここでは簡易的に 'left', 'right' などをマッピング
+          let targetScreenKey = '';
+          if (state.splitMode === 2) {
+            targetScreenKey = screenId === 1 ? 'left' : 'right';
+          } else if (state.splitMode === 3) {
+            targetScreenKey = screenId === 1 ? 'left' : screenId === 2 ? 'topRight' : 'bottomRight';
+          } else if (state.splitMode === 4) {
+            targetScreenKey = screenId === 1 ? 'topLeft' : screenId === 2 ? 'topRight' : screenId === 3 ? 'bottomLeft' : 'bottomRight';
+          }
+
+          if (targetScreenKey) {
+            // 非同期で呼び出すか、ここでロジックを複製するか。
+            // set内で他のアクションを呼ぶのはアンチパターンになりがちなので、
+            // ここではウィンドウを開くロジックを呼び出すのではなく、
+            // 呼び出し元（Agent）が openWindowInScreen も呼ぶようにするか、
+            // あるいはここで openWindowInScreen のロジックを統合するのが良い。
+            // 今回はAgentがUI操作を行うため、視覚的な反映としてウィンドウも開くべき。
+
+            // 既存のopenWindowInScreenロジックを再利用したいが、setの中でget().openWindowInScreenは呼べない。
+            // よって、state更新のみを行う。
+            // 実際のウィンドウオープンはUI Controller側で openWindowInScreen を呼ぶ設計にするのが綺麗。
+            // ここではScreenStateの更新のみに留める。
+          }
+
+          return { screens };
+        }),
+
+      updateScreenStatus: (screenId, status, progress) =>
+        set((state) => {
+          const screens = { ...state.screens };
+          if (screens[screenId]) {
+            screens[screenId] = {
+              ...screens[screenId],
+              status,
+              progress: progress !== undefined ? progress : screens[screenId].progress
+            };
+          }
+          return { screens };
+        }),
     }),
     {
       name: 'desktop-storage-v2', // localStorageのキー名（バージョンアップで強制初期化）

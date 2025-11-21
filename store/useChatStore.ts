@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useDesktopStore } from './desktopStore';
 
 export type Message = {
     id: string;
@@ -48,7 +49,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         };
     }),
     sendMessage: async (content) => {
-        const { addMessage, updateLastMessage, messages } = get();
+        const { addMessage, updateLastMessage } = get();
 
         if (!content.trim()) return;
 
@@ -60,13 +61,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             createdAt: Date.now()
         };
 
-        // Prepare messages for API (current history + new user message)
-        // We only send role and content to the API
-        const apiMessages = [...messages, userMsg].map(m => ({
-            role: m.role,
-            content: m.content
-        }));
-
         addMessage(userMsg);
         set({ input: '', isLoading: true });
 
@@ -75,60 +69,130 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const assistantMsg: Message = {
                 id: crypto.randomUUID(),
                 role: 'assistant',
-                content: '',
+                content: 'Thinking...',
                 createdAt: Date.now()
             };
             addMessage(assistantMsg);
 
-            // Get provider and key from localStorage
-            const defaultProvider = localStorage.getItem('llm_default_provider') || 'openai';
-            let apiKey = undefined;
-
+            // Get all API keys from localStorage
+            const apiKeys: Record<string, string> = {};
             try {
                 const storedProviders = localStorage.getItem('llm_providers');
                 if (storedProviders) {
                     const providers = JSON.parse(storedProviders);
-                    const providerConfig = providers.find((p: any) => p.id === defaultProvider);
-                    if (providerConfig && providerConfig.key) {
-                        apiKey = providerConfig.key;
+                    providers.forEach((p: any) => {
+                        if (p.key) {
+                            const normalizedId = p.id === 'chatgpt' ? 'openai' : p.id;
+                            apiKeys[normalizedId] = p.key;
+                        }
+                    });
+                }
+
+                if (!apiKeys['openai']) {
+                    const fallbackOpenAI = localStorage.getItem('OPENAI_API_KEY');
+                    if (fallbackOpenAI) {
+                        apiKeys['openai'] = fallbackOpenAI;
                     }
                 }
             } catch (e) {
-                console.error('Failed to load API key', e);
+                console.error('Failed to load API keys', e);
             }
 
+            // Call Server API
             const response = await fetch('/api/agent/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages: apiMessages,
-                    provider: defaultProvider,
-                    apiKey
-                })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: content, apiKeys }),
             });
 
-            if (!response.ok) throw new Error('Failed to send message');
-            if (!response.body) throw new Error('No response body');
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.statusText}`);
+            }
+
+            if (!response.body) {
+                throw new Error('No response body');
+            }
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
+            let buffer = '';
+            let isFirstChunk = true;
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                const text = decoder.decode(value, { stream: true });
-                updateLastMessage(text);
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // Keep incomplete line
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+
+                    try {
+                        const data = JSON.parse(line);
+
+                        if (data.type === 'action') {
+                            const action = data.action;
+                            const desktopStore = useDesktopStore.getState();
+
+                            if (action.type === 'SET_LAYOUT') {
+                                desktopStore.setLayout(action.payload.layout);
+                            } else if (action.type === 'OPEN_APP') {
+                                desktopStore.openAppInScreenForAgent(action.payload.appId, action.payload.screenId);
+                                // Also open the actual window
+                                const splitMode = desktopStore.splitMode;
+                                let targetScreenKey = '';
+                                const screenId = action.payload.screenId;
+
+                                if (splitMode === 1) {
+                                    desktopStore.openWindow(action.payload.appId);
+                                } else {
+                                    if (splitMode === 2) {
+                                        targetScreenKey = screenId === 1 ? 'left' : 'right';
+                                    } else if (splitMode === 3) {
+                                        targetScreenKey = screenId === 1 ? 'left' : screenId === 2 ? 'topRight' : 'bottomRight';
+                                    } else if (splitMode === 4) {
+                                        targetScreenKey = screenId === 1 ? 'topLeft' : screenId === 2 ? 'topRight' : screenId === 3 ? 'bottomLeft' : 'bottomRight';
+                                    }
+                                    if (targetScreenKey) {
+                                        desktopStore.openWindowInScreen(targetScreenKey, action.payload.appId as any);
+                                    }
+                                }
+                            } else if (action.type === 'UPDATE_STATUS') {
+                                desktopStore.updateScreenStatus(
+                                    action.payload.screenId,
+                                    action.payload.status,
+                                    action.payload.progress
+                                );
+                            }
+                        } else if (data.type === 'message') {
+                            if (isFirstChunk) {
+                                // Replace "Thinking..." with actual content
+                                set((state) => {
+                                    const msgs = [...state.messages];
+                                    msgs[msgs.length - 1].content = data.content;
+                                    return { messages: msgs };
+                                });
+                                isFirstChunk = false;
+                            } else {
+                                updateLastMessage(data.content);
+                            }
+                        } else if (data.type === 'error') {
+                            console.error('Server Error:', data.error);
+                            updateLastMessage(`\nError: ${data.error}`);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse chunk:', line, e);
+                    }
+                }
             }
-        } catch (error) {
+
+        } catch (error: any) {
             console.error('Chat error:', error);
-            // Add error message to chat
-            const errorMsg: Message = {
-                id: crypto.randomUUID(),
-                role: 'system',
-                content: 'Error: Failed to send message. Please try again.',
-                createdAt: Date.now()
-            };
-            addMessage(errorMsg);
+            updateLastMessage(`\nError: ${error.message}`);
         } finally {
             set({ isLoading: false });
         }

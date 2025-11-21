@@ -21,6 +21,7 @@ import {
 import { AppIcon } from './AppIcon';
 import { BaseWindow } from './BaseWindow';
 import { appComponents } from './appRegistry';
+import { AgentOverlay } from '../agent/AgentOverlay';
 
 // レスポンシブ対応：モバイルでは最小サイズを小さく
 const SPLIT_WINDOW_MIN_WIDTH = 280;  // モバイル: 280px
@@ -197,8 +198,22 @@ function SplitScreen({ screenId, sensors, handleDragEnd, className = '' }: Split
   const updateWindowPosition = useDesktopStore((state) => state.updateWindowPositionInScreen);
   const updateWindowSize = useDesktopStore((state) => state.updateWindowSizeInScreen);
 
+  // エージェント用: SplitModeと数値ID変換
+  const splitMode = useDesktopStore(state => state.splitMode);
+  const numericScreenId = useMemo(() => {
+    if (splitMode === 2) return screenId === 'left' ? 1 : 2;
+    if (splitMode === 3) return screenId === 'left' ? 1 : screenId === 'topRight' ? 2 : 3;
+    if (splitMode === 4) {
+      const map: Record<string, number> = { topLeft: 1, topRight: 2, bottomLeft: 3, bottomRight: 4 };
+      return map[screenId] || 0;
+    }
+    return 0;
+  }, [screenId, splitMode]);
+
   return (
     <div className={`relative overflow-hidden ${className}`}>
+      <AgentOverlay screenId={numericScreenId} />
+
       {/* デスクトップエリア：アイコングリッド */}
       <div className="h-full overflow-auto p-2 md:p-4">
         <DndContext

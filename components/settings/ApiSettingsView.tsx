@@ -96,18 +96,40 @@ export function ApiSettingsView({ onBack }: ApiSettingsViewProps) {
     useEffect(() => {
         const loadSettings = () => {
             const storedProviders = localStorage.getItem('llm_providers');
+            const fallbackOpenAIKey = localStorage.getItem('OPENAI_API_KEY');
+
             if (storedProviders) {
                 try {
                     const parsed = JSON.parse(storedProviders);
                     setProviders((prev) =>
                         prev.map((p) => {
                             const stored = parsed.find((sp: any) => sp.id === p.id);
-                            return stored ? { ...p, ...stored } : p;
+                            let next = stored
+                                ? {
+                                    ...p,
+                                    ...stored,
+                                    status: stored.status || (stored.key ? 'connected' : 'disconnected'),
+                                }
+                                : p;
+
+                            if (p.id === 'chatgpt' && !next.key && fallbackOpenAIKey) {
+                                next = { ...next, key: fallbackOpenAIKey, status: 'connected' };
+                            }
+
+                            return next;
                         })
                     );
                 } catch (e) {
                     console.error('Failed to parse stored providers', e);
                 }
+            } else if (fallbackOpenAIKey) {
+                setProviders((prev) =>
+                    prev.map((p) =>
+                        p.id === 'chatgpt'
+                            ? { ...p, key: fallbackOpenAIKey, status: 'connected' }
+                            : p
+                    )
+                );
             }
 
             const storedDefault = localStorage.getItem('llm_default_provider');
@@ -147,6 +169,16 @@ export function ApiSettingsView({ onBack }: ApiSettingsViewProps) {
         setProviders((prev) =>
             prev.map((p) => (p.id === id ? { ...p, key: newKey, status: newKey ? 'connected' : 'disconnected' } : p))
         );
+
+        if (typeof window !== 'undefined') {
+            if (id === 'chatgpt') {
+                if (newKey) {
+                    localStorage.setItem('OPENAI_API_KEY', newKey);
+                } else {
+                    localStorage.removeItem('OPENAI_API_KEY');
+                }
+            }
+        }
     };
 
     const toggleShowKey = (id: string) => {

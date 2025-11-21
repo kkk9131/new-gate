@@ -27,6 +27,10 @@ import {
 
 // モバイル時のグリッド設定を定数化してマジックナンバーを回避
 const MOBILE_ICON_GRID_CLASS = 'grid gap-3 pb-20 grid-cols-2 sm:grid-cols-3 min-[560px]:grid-cols-4';
+const PANEL_GROUP_ID = 'desktop-panel-group';
+const MAIN_PANEL_ID = 'desktop-main-panel';
+const CHAT_PANEL_ID = 'desktop-chat-panel';
+const RESIZE_HANDLE_ID = 'desktop-panel-resize';
 
 export function DesktopLayout() {
   const apps = useDesktopStore((state) => state.apps);
@@ -37,12 +41,12 @@ export function DesktopLayout() {
   const toggleDarkMode = useDesktopStore((state) => state.toggleDarkMode);
   const splitMode = useDesktopStore((state) => state.splitMode);
   const toggleSplitMode = useDesktopStore((state) => state.toggleSplitMode);
-
   const isSidebarOpen = useChatStore((state) => state.isSidebarOpen);
   const toggleSidebar = useChatStore((state) => state.toggleSidebar);
 
   // レスポンシブ対応：カスタムフックでモバイル判定
-  const { isMobile } = useIsMobile();
+  const { isMobile, isReady } = useIsMobile();
+  const layoutIsMobile = isReady ? isMobile : false;
 
   // ダークモード初期化（localStorageから復元）
   useEffect(() => {
@@ -57,7 +61,7 @@ export function DesktopLayout() {
     >
       {/* ヘッダー */}
       <header
-        className="h-14 md:h-16 bg-surface/90 backdrop-blur-xl border-b border-white/40 flex items-center justify-between px-3 md:px-6 shadow-panel text-ink relative z-50 flex-shrink-0"
+        className="h-14 md:h-16 bg-gradient-to-br from-mist/90 to-surface-strong/90 dark:from-gray-900/90 dark:to-gray-800/90 backdrop-blur-xl border-b border-white/40 flex items-center justify-between px-3 md:px-6 shadow-panel text-ink relative flex-shrink-0"
         suppressHydrationWarning
       >
         {/* 左側：ロゴ */}
@@ -149,10 +153,11 @@ export function DesktopLayout() {
 
       {/* メインエリア */}
       <div className="flex-1 relative overflow-hidden">
-        <PanelGroup direction="horizontal" className="h-full w-full">
+        <PanelGroup id={PANEL_GROUP_ID} direction="horizontal" className="h-full w-full">
           {/* Main Content Panel */}
-          {(!isMobile || !isSidebarOpen) && (
+          {(!layoutIsMobile || !isSidebarOpen) && (
             <Panel 
+              id={MAIN_PANEL_ID}
               defaultSize={isSidebarOpen ? 75 : 100} 
               minSize={30} 
               className="relative"
@@ -169,10 +174,14 @@ export function DesktopLayout() {
           {/* Chat Sidebar Panel */}
           {isSidebarOpen && (
             <>
-              {!isMobile && (
-                <PanelResizeHandle className="w-1 bg-white/10 hover:bg-accent-sand/50 transition-colors" />
+              {!layoutIsMobile && (
+                <PanelResizeHandle
+                  id={RESIZE_HANDLE_ID}
+                  className="w-1 bg-white/10 hover:bg-accent-sand/50 transition-colors"
+                />
               )}
               <Panel 
+                id={CHAT_PANEL_ID}
                 defaultSize={isMobile ? 100 : 25} 
                 minSize={20} 
                 maxSize={isMobile ? 100 : 40}
