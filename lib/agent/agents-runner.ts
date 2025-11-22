@@ -5,7 +5,8 @@ import {
     tool,
     type RunContext,
     OpenAIConversationsSession,
-    type Session
+    type Session,
+    StopAtTools
 } from '@openai/agents';
 import { AgentAction } from './server/types';
 import { guardrailFinalOutput } from './guardrails';
@@ -155,14 +156,15 @@ async function buildAppAgents(appIds: string[], userId?: string, dispatch?: (act
         }
         const instructions = instructionsLines.join('\n');
 
+        const stopAtTools = appId === 'projects' ? new StopAtTools({ stopAtToolNames: ['create_project'] }) : 'run_llm_again';
+
         agents.push(new Agent<AgentRunContext>({
             name: `${appId}-agent`,
             instructions,
             tools: functionTools,
             model: 'gpt-5-nano',
             modelSettings: { toolChoice: 'required' },
-            // ツール結果をLLMに渡して要約させたいので run_llm_again のまま
-            toolUseBehavior: 'run_llm_again'
+            toolUseBehavior: stopAtTools
         }));
     }
     return agents;
