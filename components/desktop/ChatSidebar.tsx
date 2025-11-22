@@ -77,15 +77,15 @@ export function ChatSidebar() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f5efe6] text-[#4a3b2e] border-l border-[#e3d6c4]">
+        <div className="flex flex-col h-full bg-surface text-ink border-l border-white/20">
             {/* Header */}
-            <div className="flex items-center gap-2 p-4 border-b border-[#e3d6c4] bg-[#f0e7da]">
-                <div className="w-8 h-8 rounded-lg bg-[#e4d7c3] flex items-center justify-center text-[#6a5846]">
+            <div className="flex items-center gap-2 p-4 border-b border-white/10 bg-surface-strong/50 backdrop-blur-sm">
+                <div className="w-8 h-8 rounded-lg bg-accent-sand/20 flex items-center justify-center text-accent-sand">
                     <RiRobot2Line className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">
-                    <h2 className="font-semibold text-sm">AI Workspace</h2>
-                    <p className="text-xs text-[#7a6a59]">会話と進捗のハブ</p>
+                    <h2 className="font-semibold text-sm">Agent</h2>
+                    <p className="text-xs text-ink/60">会話と進捗</p>
                 </div>
             </div>
 
