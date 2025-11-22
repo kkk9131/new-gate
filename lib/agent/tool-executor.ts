@@ -42,9 +42,11 @@ async function executeCoreTool(appId: string, toolName: string, args: any, userI
                     .select()
                     .single();
                 if (pError) throw pError;
-                return { success: true, data: project, message: 'Project created' };
+                const human = `プロジェクト「${project.title ?? project.name ?? '無題'}」を作成しました (ID: ${project.id}, 開始日: ${project.start_date ?? '未設定'})`;
+                return { success: true, data: project, message: human };
             } catch (err: any) {
                 // Fallback: return mock result so UXを塞がない
+                const titleOrName = args?.title ?? args?.name ?? '無題';
                 return {
                     success: true,
                     data: {
@@ -53,7 +55,7 @@ async function executeCoreTool(appId: string, toolName: string, args: any, userI
                         name: args?.name ?? args?.title,
                         start_date: args?.start_date ?? nowIso
                     },
-                    message: 'Project created (mock)',
+                    message: `プロジェクト「${titleOrName}」をモックで作成しました (ID: mock-project, 開始日: ${args?.start_date ?? nowIso})`,
                     warning: undefined
                 };
             }
