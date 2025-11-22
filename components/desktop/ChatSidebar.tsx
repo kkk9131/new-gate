@@ -77,17 +77,17 @@ export function ChatSidebar() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-surface border-l border-white/20">
+        <div className="flex flex-col h-full bg-surface border-l border-white/20 w-full max-w-full sm:max-w-[380px] md:max-w-[420px]">
             {/* Header */}
-            <div className="flex items-center gap-2 p-4 border-b border-white/10 bg-surface-strong/50 backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-2 p-4 border-b border-white/10 bg-surface-strong/50 backdrop-blur-sm">
                 <div className="w-8 h-8 rounded-lg bg-accent-sand/20 flex items-center justify-center text-accent-sand">
                     <RiRobot2Line className="w-5 h-5" />
                 </div>
-                <h2 className="font-semibold text-ink">Agent</h2>
+                <h2 className="font-semibold text-ink text-sm sm:text-base">Agent</h2>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-ink/40 text-sm gap-2">
                         <RiRobot2Line className="w-8 h-8" />
@@ -99,7 +99,7 @@ export function ChatSidebar() {
                     <div
                         key={msg.id}
                         className={twMerge(
-                            "flex gap-3 max-w-[85%]",
+                            "flex gap-3 max-w-full sm:max-w-[85%]",
                             msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
                         )}
                     >
@@ -111,7 +111,7 @@ export function ChatSidebar() {
                         </div>
 
                         <div className={twMerge(
-                            "p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
+                            "p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words",
                             msg.role === 'user'
                                 ? "bg-accent-sand text-ink rounded-tr-none"
                                 : "bg-surface-strong text-ink rounded-tl-none border border-white/10"
@@ -126,12 +126,12 @@ export function ChatSidebar() {
             {/* Input Area */}
             <div className="p-4 border-t border-white/10 bg-surface-strong/30 space-y-3">
                 {/* Controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {/* Model Selector */}
                     <select
                         value={useChatStore(state => state.selectedModel)}
                         onChange={(e) => useChatStore.getState().setSelectedModel(e.target.value)}
-                        className="bg-surface border border-white/20 rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent-sand cursor-pointer"
+                        className="bg-surface border border-white/20 rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent-sand cursor-pointer min-w-[120px]"
                     >
                         <option value="gpt-4o">GPT-4o</option>
                         <option value="gpt-4-turbo">GPT-4 Turbo</option>
@@ -142,7 +142,7 @@ export function ChatSidebar() {
                     <select
                         value={useChatStore(state => state.selectedScreen)}
                         onChange={(e) => useChatStore.getState().setSelectedScreen(e.target.value)}
-                        className="bg-surface border border-white/20 rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent-sand cursor-pointer"
+                        className="bg-surface border border-white/20 rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent-sand cursor-pointer min-w-[120px]"
                     >
                         <option value="auto">Auto Screen</option>
                         <option value="screen-1">Screen 1</option>
