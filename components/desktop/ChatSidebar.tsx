@@ -97,8 +97,7 @@ export function ChatSidebar() {
                     <div
                         key={msg.id}
                         className={twMerge(
-                            "flex gap-3 max-w-[85%]",
-                            msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
+                            "flex gap-3 max-w-[85%]"
                         )}
                     >
                         <div className={twMerge(
@@ -109,9 +108,9 @@ export function ChatSidebar() {
                         </div>
 
                         <div className={twMerge(
-                            "p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
+                            "p-3 text-sm leading-relaxed whitespace-pre-wrap",
                             msg.role === 'user'
-                                ? "bg-accent-sand text-ink rounded-tr-none"
+                                ? "bg-cloud text-ink rounded-xl border border-white/20 shadow-sm"
                                 : "bg-transparent text-ink p-1 rounded-none"
                         )}>
                             {msg.content}
