@@ -94,25 +94,15 @@ export function ChatSidebar() {
                 )}
 
                 {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        className={twMerge(
-                            "flex gap-3 max-w-[85%]"
-                        )}
-                    >
-                        <div className={twMerge(
-                            "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                            msg.role === 'user' ? "bg-accent-sand text-ink" : "bg-surface-strong text-ink"
-                        )}>
-                            {msg.role === 'user' ? <RiUser3Line className="w-4 h-4" /> : <RiRobot2Line className="w-4 h-4" />}
-                        </div>
-
-                        <div className={twMerge(
-                            "p-3 text-sm leading-relaxed whitespace-pre-wrap",
-                            msg.role === 'user'
-                                ? "bg-cloud text-ink rounded-xl border border-white/20 shadow-sm"
-                                : "bg-transparent text-ink p-1 rounded-none"
-                        )}>
+                    <div key={msg.id} className="flex max-w-[85%]">
+                        <div
+                            className={twMerge(
+                                "p-3 text-sm leading-relaxed whitespace-pre-wrap break-words",
+                                msg.role === 'user'
+                                    ? "bg-white text-ink rounded-xl border border-white/10 shadow-sm"
+                                    : "bg-transparent text-ink p-1 rounded-none"
+                            )}
+                        >
                             {msg.content}
                         </div>
                     </div>
