@@ -77,46 +77,43 @@ export function ChatSidebar() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-surface border-l border-white/20">
+        <div className="flex flex-col h-full bg-[#f5efe6] text-[#4a3b2e] border-l border-[#e3d6c4]">
             {/* Header */}
-            <div className="flex items-center gap-2 p-4 border-b border-white/10 bg-surface-strong/50 backdrop-blur-sm">
-                <div className="w-8 h-8 rounded-lg bg-accent-sand/20 flex items-center justify-center text-accent-sand">
+            <div className="flex items-center gap-2 p-4 border-b border-[#e3d6c4] bg-[#f0e7da]">
+                <div className="w-8 h-8 rounded-lg bg-[#e4d7c3] flex items-center justify-center text-[#6a5846]">
                     <RiRobot2Line className="w-5 h-5" />
                 </div>
-                <h2 className="font-semibold text-ink">Agent</h2>
+                <div className="flex flex-col">
+                    <h2 className="font-semibold text-sm">AI Workspace</h2>
+                    <p className="text-xs text-[#7a6a59]">会話と進捗のハブ</p>
+                </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {messages.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-ink/40 text-sm gap-2">
+                    <div className="flex flex-col items-center justify-center h-full text-[#7a6a59]/70 text-sm gap-2">
                         <RiRobot2Line className="w-8 h-8" />
                         <p>How can I help you today?</p>
                     </div>
                 )}
 
                 {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        className={twMerge(
-                            "flex gap-3 max-w-full sm:max-w-[85%]",
-                            msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
-                        )}
-                    >
-                        <div className={twMerge(
-                            "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                            msg.role === 'user' ? "bg-accent-sand text-ink" : "bg-surface-strong text-ink"
-                        )}>
-                            {msg.role === 'user' ? <RiUser3Line className="w-4 h-4" /> : <RiRobot2Line className="w-4 h-4" />}
-                        </div>
-
-                        <div className={twMerge(
-                            "p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words",
-                            msg.role === 'user'
-                                ? "bg-accent-sand text-ink rounded-tr-none"
-                                : "bg-surface-strong text-ink rounded-tl-none border border-white/10"
-                        )}>
-                            {msg.content}
+                    <div key={msg.id} className="flex justify-center">
+                        <div className="w-full max-w-2xl space-y-1">
+                            <div className="text-xs text-ink/50">
+                                {msg.role === 'user' ? 'You' : 'Agent'}
+                            </div>
+                            <div
+                                className={twMerge(
+                                    "w-full p-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap break-words border shadow-sm",
+                                    msg.role === 'user'
+                                        ? "bg-accent-sand text-ink border-white/20"
+                                        : "bg-surface-strong text-ink border-white/10"
+                                )}
+                            >
+                                {msg.content}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -124,14 +121,14 @@ export function ChatSidebar() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-white/10 bg-surface-strong/30 space-y-3">
+            <div className="p-4 border-t border-[#e3d6c4] bg-[#f0e7da] space-y-3">
                 {/* Controls */}
                 <div className="flex items-center gap-2">
                     {/* Model Selector */}
                     <select
                         value={useChatStore(state => state.selectedModel)}
                         onChange={(e) => useChatStore.getState().setSelectedModel(e.target.value)}
-                        className="bg-surface border border-white/20 rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent-sand cursor-pointer"
+                        className="bg-white/80 border border-[#d8c9b3] rounded-lg px-2 py-1 text-xs text-[#4a3b2e] focus:outline-none focus:border-[#b89f7a] cursor-pointer"
                     >
                         <option value="gpt-4o">GPT-4o</option>
                         <option value="gpt-4-turbo">GPT-4 Turbo</option>
@@ -142,7 +139,7 @@ export function ChatSidebar() {
                     <select
                         value={useChatStore(state => state.selectedScreen)}
                         onChange={(e) => useChatStore.getState().setSelectedScreen(e.target.value)}
-                        className="bg-surface border border-white/20 rounded-lg px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent-sand cursor-pointer"
+                        className="bg-white/80 border border-[#d8c9b3] rounded-lg px-2 py-1 text-xs text-[#4a3b2e] focus:outline-none focus:border-[#b89f7a] cursor-pointer"
                     >
                         <option value="auto">Auto Screen</option>
                         <option value="screen-1">Screen 1</option>
@@ -150,21 +147,21 @@ export function ChatSidebar() {
                     </select>
                 </div>
 
-                <div className="relative flex items-end gap-2 bg-surface border border-white/20 rounded-xl p-2 focus-within:border-accent-sand/50 transition-colors">
+                <div className="relative flex items-end gap-2 bg-white/90 border border-[#d8c9b3] rounded-xl p-2 focus-within:border-[#b89f7a] transition-colors">
                     <textarea
                         ref={textareaRef}
                         value={input}
                         onChange={handleChange}
                         onKeyDown={handleKeyDown}
                         placeholder="Type a message...（@でアプリ指定）"
-                        className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[24px] py-1 px-2 text-sm text-ink placeholder:text-ink/40"
+                        className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[24px] py-1 px-2 text-sm text-[#4a3b2e] placeholder:text-[#7a6a59]"
                         rows={1}
                         style={{ height: 'auto', minHeight: '24px' }}
                     />
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || isLoading}
-                        className="p-2 rounded-lg bg-accent-sand text-ink hover:bg-accent-sand/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="p-2 rounded-lg bg-[#c8b08b] text-white hover:bg-[#b89f7a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <RiSendPlaneFill className="w-4 h-4" />
                     </button>
