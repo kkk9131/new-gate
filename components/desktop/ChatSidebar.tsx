@@ -2,8 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import { useChatStore } from '@/store/useChatStore';
-import { RiSendPlaneFill, RiRobot2Line, RiUser3Line } from 'react-icons/ri';
-import { clsx } from 'clsx';
+import { RiSendPlaneFill, RiRobot2Line } from 'react-icons/ri';
 import { twMerge } from 'tailwind-merge';
 
 export function ChatSidebar() {
@@ -51,7 +50,7 @@ export function ChatSidebar() {
                 )}
 
                 {messages.map((msg) => (
-                    <div key={msg.id} className="flex max-w-[85%]">
+                    <div key={msg.id} className="flex max-w-[85%]" aria-label={msg.role === 'user' ? 'User message' : 'Agent message'}>
                         <div
                             className={twMerge(
                                 "p-3 text-sm leading-relaxed whitespace-pre-wrap break-words",
@@ -100,7 +99,6 @@ export function ChatSidebar() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-<<<<<<< HEAD
                         placeholder=""
                         className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[24px] py-1 px-2 text-sm text-ink placeholder:text-ink/40"
                         rows={1}
