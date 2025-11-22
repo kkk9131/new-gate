@@ -85,15 +85,12 @@ export class ServerHybridOrchestrator {
             const verification = await checkAgent.verify(userRequest, results, resolvedApiKeys['openai']);
 
             // 6. Final Report
-            let report = `タスクが完了しました。\n\n`;
-            report += `【実行結果】\n${verification.report}\n\n`;
-
-            if (!verification.success) {
-                report += `⚠️ 以下の問題が検出されました:\n${verification.issues.map(i => `- ${i}`).join('\n')}\n\n`;
+            let report = verification.report || '';
+            if (!verification.success && verification.issues.length > 0) {
+                report += `\n⚠️ 問題:\n${verification.issues.map(i => `- ${i}`).join('\n')}`;
             }
-
             if (verification.suggestions.length > 0) {
-                report += `💡 改善提案:\n${verification.suggestions.map(s => `- ${s}`).join('\n')}`;
+                report += `\n💡 改善提案:\n${verification.suggestions.map(s => `- ${s}`).join('\n')}`;
             }
 
             // 全ウィンドウクローズ（完了後の後片付け）

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { type AppId } from '@/components/desktop/appRegistry';
+import { type AppId, appComponents } from '@/components/desktop/appRegistry';
 
 // ===========================
 // 定数定義（マジックナンバー回避）
@@ -149,9 +149,6 @@ const baseDefaultApps: BaseAppConfig[] = [
   { id: 'settings', name: 'Settings', icon: 'RiSettings', color: 'text-ink' },
   { id: 'revenue', name: 'Revenue', icon: 'RiMoneyDollar', color: 'text-ink' },
   { id: 'store', name: 'Store', icon: 'RiStore', color: 'text-ink' },
-  { id: 'agent', name: 'Agent', icon: 'RiRobot', color: 'text-ink' },
-  { id: 'dashboard', name: 'Dashboard', icon: 'RiDashboard', color: 'text-ink' },
-  { id: 'analytics', name: 'Analytics', icon: 'RiBarChart', color: 'text-ink' },
   { id: 'calendar', name: 'Calendar', icon: 'RiCalendar', color: 'text-ink' },
 ];
 
@@ -170,6 +167,36 @@ const ensureAppsHavePositions = (apps: App[]): App[] =>
 
 const normalizeApps = (apps?: App[]): App[] =>
   ensureAppsHavePositions(apps && apps.length ? apps : cloneDefaultApps());
+
+const validAppIds = new Set(Object.keys(appComponents));
+
+const purgeInvalidEntries = (state: any) => {
+  const cleanApps = (state?.apps ?? []).filter((app: any) => validAppIds.has(app.id));
+
+  const cleanWindows = (state?.windows ?? []).filter((w: any) => validAppIds.has(w.appId));
+
+  const cleanSplitScreenWindows = Object.fromEntries(
+    Object.entries(state?.splitScreenWindows ?? createSplitScreenWindows()).map(([key, windows]: any) => [
+      key,
+      (windows ?? []).filter((w: any) => validAppIds.has(w.appId)),
+    ])
+  );
+
+  const cleanScreens = Object.fromEntries(
+    Object.entries(state?.screens ?? createScreens()).map(([id, screen]: any) => [
+      Number(id),
+      validAppIds.has(screen?.appId) ? screen : { ...screen, appId: null },
+    ])
+  );
+
+  return {
+    ...state,
+    apps: cleanApps,
+    windows: cleanWindows,
+    splitScreenWindows: cleanSplitScreenWindows,
+    screens: cleanScreens,
+  };
+};
 
 const nudgePositionIfNeeded = (
   appId: AppId,
@@ -686,8 +713,8 @@ export const useDesktopStore = create<DesktopState>()(
         }),
     }),
     {
-      name: 'desktop-storage-v2', // localStorageのキー名（バージョンアップで強制初期化）
-      version: 2, // 現在のストレージバージョン
+      name: 'desktop-storage-v3', // localStorageのキー名（バージョンアップで強制初期化）
+      version: 3, // 現在のストレージバージョン
       storage: createJSONStorage(() => (typeof window !== 'undefined' && window.localStorage ? window.localStorage : memoryStorage)),
       /**
        * マイグレーション処理（古いバージョンのデータを新しい形式に変換）
@@ -707,15 +734,15 @@ export const useDesktopStore = create<DesktopState>()(
 
         // v0またはv1から来た場合、splitScreenWindowsを追加
         if (persistedVersion < 2) {
-          return withApps({
+          return withApps(purgeInvalidEntries({
             ...persistedState,
             // 既存のsplitScreenWindowsがあればそれを使い、なければ初期化
             splitScreenWindows: persistedState?.splitScreenWindows || createSplitScreenWindows(),
-          });
+          }));
         }
 
         // v2以降はapp座標のみ補正
-        return withApps(persistedState);
+        return withApps(purgeInvalidEntries(persistedState));
       },
       onRehydrateStorage: () => (state, error) => {
         if (error) {

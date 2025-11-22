@@ -95,8 +95,7 @@ export class AgentManager {
         const worker = router.getWorker(this.plannerProvider, apiKey);
 
         const prompt = `
-あなたはタスク分解の専門家です。
-ユーザーリクエストを実行可能なサブタスクに分解してください。可能な限り少なくまとめ、同一アプリで完結する場合は1タスクにしてください。
+あなたは「Router/Planner」役です。ユーザー依頼を最小数のサブタスクに分解し、各タスクを単一アプリで完結させてください。以下の原則に従います。
 
 【利用可能なアプリ】
 - projects: プロジェクト管理
@@ -104,16 +103,22 @@ export class AgentManager {
 - revenue: 売上管理
 ${preferredApp ? `\n【優先アプリ】\n- ${preferredApp}\n` : ''}
 
+【指示のベストプラクティス】
+- 既存リソース活用: 依頼に関連しそうな既存プロジェクト/予定/売上を優先利用し、無ければ新規作成か確認手順を明示。
+- タスク細分化: 不要な分割は避けつつ、必要なら依存関係を明示して分割（最小ステップで完了させる）。
+- 明確なアクション: 各サブタスクは「何を・どのアプリで・どの操作で」行うかを一文で示す。
+- エッジケース: 情報不足が予想される場合、description に仮置き値や確認手順を書く（例: 日付未指定→今日、数値不明→0 など）。
+
 【ユーザーリクエスト】
 "${request}"
 
 【出力形式】
-JSON形式で回答してください:
+JSON だけで返してください:
 {
   "subtasks": [
     {
       "id": "1",
-      "description": "タスクの説明",
+      "description": "タスクの説明（明確なアクションと前提を含む）",
       "appId": "projects",
       "estimatedComplexity": "low",
       "dependencies": []
@@ -121,10 +126,11 @@ JSON形式で回答してください:
   ]
 }
 
-【注意事項】
-- 各タスクは単一のアプリで完結すること
-- 依存関係がある場合はdependenciesに先行タスクのIDを指定
-- 複雑度は low/medium/high で評価
+【制約】
+- 各サブタスクは単一アプリで完結すること。
+- dependencies には先行タスクの id のみを列挙する。
+- estimatedComplexity は low/medium/high のいずれか。
+- 依頼全体が単一アプリで済む場合は subtasks を 1 件にする。
 `;
 
         const messages: Message[] = [
@@ -168,16 +174,8 @@ JSON形式で回答してください:
      * Worker選択ロジック
      */
     private selectWorker(task: Subtask): LLMProvider {
-        // 複雑度に応じてWorkerを選択
-        switch (task.estimatedComplexity) {
-            case 'high':
-                return 'openai'; // GPT-4o (Coder)
-            case 'medium':
-                return 'claude'; // Claude (Analyst)
-            case 'low':
-            default:
-                return 'gemini'; // Gemini Flash (Clerk)
-        }
+        // ツール実行互換性と安定性を優先して OpenAI に固定
+        return 'openai';
     }
 
     /**

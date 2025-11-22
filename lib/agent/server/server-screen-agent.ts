@@ -24,6 +24,9 @@ export class ServerScreenAgent {
         const { screenId, subtask, appId, workerProvider, tools } = this.config;
 
         console.log(`[ServerScreenAgent-${screenId}] Starting execution for task: ${subtask.description}`);
+        const toolMap = new Map<string, ToolDefinition>(tools.map((t) => [t.name, t]));
+        let hadError = false;
+        const errorMessages: string[] = [];
 
         // 1. UI Initialization
         this.uiController.updateStatus(screenId, 'initializing', 0);
@@ -64,6 +67,28 @@ IMPORTANT: Always respond in Japanese.
 
                 for (const call of response.toolCalls) {
                     this.uiController.log(screenId, `ツール実行: ${call.name}`);
+
+                    // 入力必須チェック
+                    const def = toolMap.get(call.name);
+                    const required = def?.meta?.requiredInputs ?? (def as any)?.parameters?.required ?? [];
+                    const missing = (required as string[]).filter((key) => {
+                        const v = (call.arguments || {})[key];
+                        return v === undefined || v === null || v === '';
+                    });
+                    if (missing.length > 0) {
+                        const message = { error: `required inputs missing: ${missing.join(', ')}` };
+                        hadError = true;
+                        errorMessages.push(message.error);
+                        this.history.push({
+                            role: 'tool',
+                            tool_call_id: call.id,
+                            name: call.name,
+                            content: JSON.stringify(message)
+                        });
+                        this.uiController.log(screenId, `入力不足: ${missing.join(', ')}`, 'warn');
+                        continue;
+                    }
+
                     try {
                         if (!userId) throw new Error('User ID is required for tool execution');
 
@@ -77,7 +102,17 @@ IMPORTANT: Always respond in Japanese.
                             name: call.name,
                             content: JSON.stringify(result)
                         });
+
+                        // ツール実行結果が失敗を示す場合はエラー扱い
+                        if (result && result.success === false) {
+                            hadError = true;
+                            const msg = result.message || `tool ${call.name} failed`;
+                            errorMessages.push(msg);
+                            this.uiController.log(screenId, `エラー: ${msg}`, 'error');
+                        }
                     } catch (e: any) {
+                        hadError = true;
+                        errorMessages.push(e.message);
                         this.history.push({
                             role: 'tool',
                             tool_call_id: call.id,
@@ -101,8 +136,20 @@ IMPORTANT: Always respond in Japanese.
                 this.uiController.log(screenId, `応答: ${content.substring(0, 120)}...`);
             }
 
-            this.uiController.updateStatus(screenId, 'completed', 100);
-            this.uiController.log(screenId, '完了', 'info');
+            if (hadError) {
+                const summary = errorMessages.join('; ');
+                this.uiController.updateStatus(screenId, 'error');
+                this.uiController.log(screenId, `未完了: ${summary}`, 'error');
+                return JSON.stringify({
+                    success: false,
+                    message: 'タスクは完了していません。入力不足またはツールエラーが発生しました。',
+                    errors: errorMessages,
+                    partial: content
+                });
+            }
+
+            // 完了表示は出さず、idle に戻す
+            this.uiController.updateStatus(screenId, 'idle', 0);
             return content;
 
         } catch (error: any) {

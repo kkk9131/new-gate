@@ -37,12 +37,12 @@ export function guardrailFinalOutput(output: any): string {
 }
 
 function formatReport(data: z.infer<typeof FinalReportSchema>): string {
-  let report = `タスクが完了しました。\n\n【実行結果】\n${data.report}\n\n`;
+  let report = data.report || '';
   if (!data.success && data.issues.length > 0) {
-    report += `⚠️ 問題:\n${data.issues.map((i) => `- ${i}`).join('\n')}\n\n`;
+    report += `\n⚠️ 問題:\n${data.issues.map((i) => `- ${i}`).join('\n')}\n`;
   }
   if (data.suggestions.length > 0) {
-    report += `💡 改善提案:\n${data.suggestions.map((s) => `- ${s}`).join('\n')}`;
+    report += `\n💡 改善提案:\n${data.suggestions.map((s) => `- ${s}`).join('\n')}`;
   }
-  return report;
+  return report.trim();
 }

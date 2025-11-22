@@ -136,3 +136,12 @@ CREATE TABLE agent_memories (
 *   `ui_highlight_element(selector: string)`
 
 これにより、ユーザーは「エージェントが自分の代わりに画面を操作して仕事をしている」様子を目の当たりにできる。
+
+## 7. スキル化に向けた軽量追加改修（方針メモ）
+ユーザー自作アプリを API → スキル化して自動選択させる将来像に備え、現行アーキテクチャを崩さず段階的に入れるタスクを整理する。
+
+1. **スキルメタデータ強化**: `tool-loader.ts` 登録時に `appId`, `required_inputs`, `side_effects`, `risk_level` を必須化し、Router/Screen がフィルタしやすくする。  
+2. **Routerの選択基準にスキル情報を混ぜる**: `selectWorker` を複雑度だけでなく「appIdごとの推奨モデル」「skill.risk_level」を参照するよう拡張（ロジックは緩めで可）。  
+3. **フェイルセーフ追加**: ScreenAgent 実行前に `required_inputs` 充足をチェックし、不足があればユーザー質問またはデフォルト値を明示してから実行。  
+4. **ロギング/計測フック**: Router が選んだスキルと却下理由をログ化し、誤選択パターンを分析できるようにする。  
+5. **Check Agentのスキル別検証**: `appId` と `skillId` を渡し、最低限の成否判定（例: レコード作成可否、日付妥当性）を分岐させる。  

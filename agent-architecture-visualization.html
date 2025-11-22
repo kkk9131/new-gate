@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 エージェントシステム構成図 - インタラクティブ可視化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        /* レイヤーコンテナ */
+        .layer {
+            margin-bottom: 30px;
+            border-radius: 15px;
+            padding: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .layer:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        /* レイヤー別カラー */
+        .layer-ui {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .layer-sdk {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .layer-router {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .layer-hybrid {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: #333;
+        }
+
+        .layer-tools {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #333;
+        }
+
+        .layer-database {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            color: white;
+        }
+
+        .layer-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .layer-description {
+            font-size: 1em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        /* Workerカード */
+        .workers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .worker-card {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s ease, background 0.3s ease;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .worker-card:hover {
+            transform: scale(1.05);
+            background: rgba(255,255,255,0.3);
+        }
+
+        .worker-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .worker-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .worker-model {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .worker-tasks {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        /* Hybrid Orchestrator 3層 */
+        .hybrid-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .hybrid-layer {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .hybrid-layer-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hybrid-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .feature-item {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        /* Screen subAgents */
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .screen-card {
+            background: rgba(255,255,255,0.25);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.4);
+        }
+
+        .screen-icon {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+        }
+
+        .screen-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        /* データベーステーブル */
+        .db-tables {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .db-table {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .db-table-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .db-fields {
+            font-size: 0.9em;
+            opacity: 0.9;
+            line-height: 1.8;
+        }
+
+        /* 実行フロー */
+        .flow-container {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .flow-title {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .flow-step {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .flow-step:hover {
+            transform: translateX(10px);
+        }
+
+        .step-number {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .step-content {
+            display: inline-block;
+            vertical-align: top;
+            width: calc(100% - 60px);
+        }
+
+        .step-title {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .step-description {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* 矢印アニメーション */
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #667eea;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* ステータスバッジ */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status-completed {
+            background: #43e97b;
+            color: white;
+        }
+
+        .status-progress {
+            background: #feca57;
+            color: white;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .workers-grid,
+            .hybrid-features,
+            .screens-grid,
+            .db-tables {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ツールチップ */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 エージェントシステム構成図</h1>
+        <p class="subtitle">new-gate プラットフォーム - Multi-LLM Router-Worker Architecture</p>
+
+        <!-- Layer 1: UI -->
+        <div class="layer layer-ui">
+            <div class="layer-title">
+                👤 ユーザーインターフェース
+                <span class="status-badge status-completed">✅ 完了</span>
+            </div>
+            <div class="layer-description">
+                右側固定のチャットサイドバーからすべてのエージェント機能にアクセス
+            </div>
+            <div class="worker-card" style="max-width: 400px; margin: 0 auto;">
+                <div class="worker-icon">💬</div>
+                <div class="worker-name">ChatSidebar</div>
+                <div class="worker-model">リサイズ可能な固定サイドバー</div>
+                <div class="worker-tasks">常時表示・リアルタイム対話</div>
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Layer 2: Agents SDK -->
+        <div class="layer layer-sdk">
+            <div class="layer-title">
+                🎯 Agents SDK Wrapper
+                <span class="status-badge status-completed">✅ 完了</span>
+            </div>
+            <div class="layer-description">
+                OpenAI Agents SDKとの統合層（agents-runner.ts）
+            </div>
+            <div class="hybrid-features">
+                <div class="feature-item">📦 Runner実装</div>
+                <div class="feature-item">🔧 ツール統合</div>
+                <div class="feature-item">🛡️ ガードレール検証</div>
+                <div class="feature-item">🔄 コンテキスト管理</div>
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Layer 3: Router-Worker -->
+        <div class="layer layer-router">
+            <div class="layer-title">
+                🎭 Multi-LLM Router-Worker System
+                <span class="status-badge status-completed">✅ 完了</span>
+            </div>
+            <div class="layer-description">
+                司令塔（Router）と専門家（Workers）によるチーム実行システム
+            </div>
+
+            <!-- Router -->
+            <div class="worker-card" style="max-width: 500px; margin: 20px auto;">
+                <div class="worker-icon">🧭</div>
+                <div class="worker-name">Router Agent (司令塔)</div>
+                <div class="worker-model">GPT-4o-mini / Gemini Flash</div>
+                <div class="worker-tasks">タスク振り分け・意図理解・Worker選択</div>
+            </div>
+
+            <!-- Workers -->
+            <div class="workers-grid">
+                <div class="worker-card">
+                    <div class="worker-icon">📝</div>
+                    <div class="worker-name">Writer</div>
+                    <div class="worker-model">Gemini 1.5 Pro</div>
+                    <div class="worker-tasks">ドキュメント作成<br>長文要約</div>
+                </div>
+                <div class="worker-card">
+                    <div class="worker-icon">💻</div>
+                    <div class="worker-name">Coder</div>
+                    <div class="worker-model">GPT-4o / Claude 3.5</div>
+                    <div class="worker-tasks">コード生成<br>デバッグ</div>
+                </div>
+                <div class="worker-card">
+                    <div class="worker-icon">📊</div>
+                    <div class="worker-name">Analyst</div>
+                    <div class="worker-model">GPT-4o Code Int.</div>
+                    <div class="worker-tasks">データ分析<br>グラフ作成</div>
+                </div>
+                <div class="worker-card">
+                    <div class="worker-icon">📋</div>
+                    <div class="worker-name">Clerk</div>
+                    <div class="worker-model">Gemini Flash</div>
+                    <div class="worker-tasks">定型業務<br>データ入力</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Layer 4: Hybrid Orchestrator -->
+        <div class="layer layer-hybrid">
+            <div class="layer-title">
+                🔄 Hybrid Orchestrator (3層アーキテクチャ)
+                <span class="status-badge status-completed">✅ 完了</span>
+            </div>
+            <div class="layer-description">
+                画面操作と検証を統合したハイブリッド実行システム
+            </div>
+
+            <div class="hybrid-layers">
+                <!-- Layer 1: Agent Manager -->
+                <div class="hybrid-layer">
+                    <div class="hybrid-layer-title">🧠 Layer 1: Agent Manager</div>
+                    <div class="hybrid-features">
+                        <div class="feature-item">📋 タスク分解 (decomposeTask)</div>
+                        <div class="feature-item">🖥️ レイアウト決定 (determineLayout)</div>
+                        <div class="feature-item">🎯 Worker選択 (selectWorker)</div>
+                        <div class="feature-item">⚙️ 実行戦略決定 (determineStrategy)</div>
+                    </div>
+                </div>
+
+                <!-- Layer 2: Screen subAgents -->
+                <div class="hybrid-layer">
+                    <div class="hybrid-layer-title">🖥️ Layer 2: Screen subAgents</div>
+                    <div class="screens-grid">
+                        <div class="screen-card">
+                            <div class="screen-icon">📁</div>
+                            <div class="screen-name">Screen 1<br>Projects</div>
+                        </div>
+                        <div class="screen-card">
+                            <div class="screen-icon">📅</div>
+                            <div class="screen-name">Screen 2<br>Calendar</div>
+                        </div>
+                        <div class="screen-card">
+                            <div class="screen-icon">💰</div>
+                            <div class="screen-name">Screen 3<br>Revenue</div>
+                        </div>
+                        <div class="screen-card">
+                            <div class="screen-icon">⚙️</div>
+                            <div class="screen-name">Screen 4<br>Settings</div>
+                        </div>
+                    </div>
+                    <div class="hybrid-features" style="margin-top: 15px;">
+                        <div class="feature-item">🎮 UI制御 (openApp, setLayout)</div>
+                        <div class="feature-item">🔧 ツール実行 (create_*, list_*)</div>
+                        <div class="feature-item">📊 状態報告 (Thinking → Executing)</div>
+                        <div class="feature-item">⚡ 並列実行対応</div>
+                    </div>
+                </div>
+
+                <!-- Layer 3: Check Agent -->
+                <div class="hybrid-layer">
+                    <div class="hybrid-layer-title">✅ Layer 3: Check Agent</div>
+                    <div class="hybrid-features">
+                        <div class="feature-item">🔍 ユーザー要求と実行結果の照合</div>
+                        <div class="feature-item">📝 検証プロンプト実行</div>
+                        <div class="feature-item">📋 最終レポート生成</div>
+                        <div class="feature-item">✨ 品質保証</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Layer 5: Tools -->
+        <div class="layer layer-tools">
+            <div class="layer-title">
+                🛠️ ツールレイヤー
+                <span class="status-badge status-completed">✅ Core Tools完了</span>
+                <span class="status-badge status-progress">🔄 Plugin Tools実装中</span>
+            </div>
+            <div class="layer-description">
+                エージェントが使用する実行ツール群
+            </div>
+            <div class="hybrid-features">
+                <div class="feature-item">📁 create_project, list_projects</div>
+                <div class="feature-item">📅 create_event, list_events</div>
+                <div class="feature-item">💰 create_revenue</div>
+                <div class="feature-item">🎮 setLayout, openApp, updateStatus</div>
+                <div class="feature-item">🔌 Plugin Tools (Phase 5)</div>
+                <div class="feature-item">📦 Dynamic Tool Loading</div>
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <!-- Layer 6: Database -->
+        <div class="layer layer-database">
+            <div class="layer-title">
+                💾 データベース (Supabase + PostgreSQL)
+                <span class="status-badge status-completed">✅ 完了</span>
+            </div>
+            <div class="layer-description">
+                エージェント設定とメモリを管理するデータベース層
+            </div>
+
+            <div class="db-tables">
+                <div class="db-table">
+                    <div class="db-table-name">🔐 llm_providers</div>
+                    <div class="db-fields">
+                        ├─ provider_name<br>
+                        ├─ api_key_hash (暗号化)<br>
+                        └─ is_active
+                    </div>
+                </div>
+                <div class="db-table">
+                    <div class="db-table-name">🤖 agent_profiles</div>
+                    <div class="db-fields">
+                        ├─ name (Writer, Coder)<br>
+                        ├─ model_id<br>
+                        └─ system_prompt
+                    </div>
+                </div>
+                <div class="db-table">
+                    <div class="db-table-name">🎯 agent_routing_rules</div>
+                    <div class="db-fields">
+                        ├─ condition_json<br>
+                        ├─ priority<br>
+                        └─ target_agent_id
+                    </div>
+                </div>
+                <div class="db-table">
+                    <div class="db-table-name">🧠 agent_memories</div>
+                    <div class="db-fields">
+                        ├─ content<br>
+                        ├─ embedding (pgvector)<br>
+                        └─ metadata
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 実行フロー例 -->
+        <div class="flow-container">
+            <div class="flow-title">🔄 実行フロー例</div>
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <span class="step-number">1</span>
+                    <div class="step-content">
+                        <div class="step-title">👤 ユーザー入力</div>
+                        <div class="step-description">
+                            「新プロジェクト『サイトリニューアル』を作成して、来週月曜に打ち合わせを登録」
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <span class="step-number">2</span>
+                    <div class="step-content">
+                        <div class="step-title">🧭 Router Agent (振り分け)</div>
+                        <div class="step-description">
+                            タスク分析 → 「プロジェクト作成」+「カレンダー登録」の2つに分解<br>
+                            Worker選択 → Clerk (定型業務に最適)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <span class="step-number">3</span>
+                    <div class="step-content">
+                        <div class="step-title">🧠 Agent Manager (タスク分解)</div>
+                        <div class="step-description">
+                            • Subtask 1: create_project("サイトリニューアル")<br>
+                            • Subtask 2: create_event("打ち合わせ", next_monday)<br>
+                            • Layout: split-2 (2画面分割)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <span class="step-number">4</span>
+                    <div class="step-content">
+                        <div class="step-title">🖥️ Screen subAgents (並列実行)</div>
+                        <div class="step-description">
+                            Screen 1 (📁 Projects): create_project() → Status: Completed<br>
+                            Screen 2 (📅 Calendar): create_event() → Status: Completed<br>
+                            ※ 2つのタスクを並行実行
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <span class="step-number">5</span>
+                    <div class="step-content">
+                        <div class="step-title">✅ Check Agent (検証)</div>
+                        <div class="step-description">
+                            ユーザー要求と実行結果を照合<br>
+                            プロジェクト作成 ✅ | カレンダー登録 ✅<br>
+                            → 検証OK
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <span class="step-number">6</span>
+                    <div class="step-content">
+                        <div class="step-title">📋 最終レポート生成</div>
+                        <div class="step-description">
+                            「✅ タスク完了: プロジェクト『サイトリニューアル』を作成し、来週月曜の打ち合わせを登録しました。」
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; color: #999;">
+            <p>🎨 new-gate プラットフォーム | Multi-LLM Router-Worker Architecture</p>
+            <p style="margin-top: 10px;">Phase 4 完了 ✅ | Phase 5 進行中 🔄</p>
+        </div>
+    </div>
+
+    <script>
+        // 簡単なインタラクション
+        document.querySelectorAll('.worker-card, .screen-card, .db-table').forEach(card => {
+            card.addEventListener('click', function() {
+                this.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 300);
+            });
+        });
+
+        // スムーススクロール
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        console.log('🤖 エージェントシステム構成図が読み込まれました！');
+        console.log('💡 カードをクリックするとアニメーションが見れます');
+    </script>
+</body>
+</html>

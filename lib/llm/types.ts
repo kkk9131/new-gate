@@ -77,6 +77,9 @@ export interface ToolDefinition {
         appId?: string;
         preferredScreenId?: number;
         uiHint?: string;
+        requiredInputs?: string[];
+        sideEffects?: string[];
+        riskLevel?: 'low' | 'medium' | 'high';
     };
 }
 
