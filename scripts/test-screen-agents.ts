@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
-import { serverHybridOrchestrator } from '../lib/agent/server/server-orchestrator';
+import { runWithAgentsSDK } from '../lib/agent/agents-runner';
 import { AgentAction } from '../lib/agent/server/types';
 
 async function testServerAgent() {
@@ -24,7 +24,7 @@ async function testServerAgent() {
     };
 
     try {
-        const result = await serverHybridOrchestrator.execute(testCase, apiKeys, dispatch);
+        const result = await runWithAgentsSDK(testCase, apiKeys, dispatch, undefined, undefined);
         console.log('\n✅ Execution Result:');
         console.log(result);
     } catch (e: any) {

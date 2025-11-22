@@ -27,4 +27,18 @@ export class ServerUIControllerImpl implements ServerUIController {
             payload: { screenId, status, progress }
         });
     }
+
+    log(screenId: number, message: string, level: 'info' | 'warn' | 'error' = 'info'): void {
+        this.dispatch({
+            type: 'LOG',
+            payload: { screenId, message, level }
+        });
+    }
+
+    closeAll(): void {
+        this.dispatch({
+            type: 'CLOSE_ALL',
+            payload: {}
+        });
+    }
 }

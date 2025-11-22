@@ -1,5 +1,17 @@
 import OpenAI from 'openai';
-import { LLMWorker, LLMConfig, LLMResponse, LLMStreamResponse, Message } from '../types';
+import { LLMWorker, LLMConfig, LLMResponse, LLMStreamResponse, Message, ToolDefinition } from '../types';
+
+function toChatTools(tools?: ToolDefinition[]) {
+    if (!tools || tools.length === 0) return undefined;
+    return tools.map((t) => ({
+        type: 'function' as const,
+        function: {
+            name: t.name,
+            description: t.description,
+            parameters: t.parameters,
+        },
+    }));
+}
 
 export class OpenAIWorker implements LLMWorker {
     provider = 'openai' as const;
@@ -29,23 +41,37 @@ export class OpenAIWorker implements LLMWorker {
 
     async generate(
         messages: Message[],
-        tools?: any,
+        tools?: ToolDefinition[],
         config?: Partial<LLMConfig>
     ): Promise<LLMResponse> {
         const model = config?.model || 'gpt-4o';
+
+        const chatTools = toChatTools(tools);
 
         const response = await this.client.chat.completions.create({
             model,
             messages: this.convertMessages(messages),
             temperature: config?.temperature,
             max_tokens: config?.maxTokens,
-            // tools: tools, // TODO: Implement tool conversion if needed
+            tools: chatTools,
+            tool_choice: chatTools ? 'auto' : undefined,
         });
 
         const choice = response.choices[0];
 
         return {
             content: choice.message.content || '',
+            toolCalls: choice.message.tool_calls?.map((call) => ({
+                id: call.id,
+                name: call.function.name,
+                arguments: (() => {
+                    try {
+                        return JSON.parse(call.function.arguments || '{}');
+                    } catch {
+                        return {};
+                    }
+                })(),
+            })),
             usage: response.usage ? {
                 promptTokens: response.usage.prompt_tokens,
                 completionTokens: response.usage.completion_tokens,

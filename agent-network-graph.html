@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕸️ エージェントネットワーク - 依存関係グラフ</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #aaa;
+            font-size: 1.1em;
+        }
+
+        #network-container {
+            width: 100%;
+            height: calc(100vh - 200px);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .controls {
+            position: fixed;
+            top: 120px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.1);
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        .control-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.1);
+            max-width: 350px;
+        }
+
+        .legend-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.1);
+            max-width: 350px;
+            display: none;
+        }
+
+        .info-panel.active {
+            display: block;
+        }
+
+        .info-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .info-description {
+            font-size: 0.9em;
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .info-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .info-tag {
+            background: rgba(102, 126, 234, 0.3);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+        }
+
+        .stats {
+            position: fixed;
+            top: 120px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .stat-label {
+            color: #aaa;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🕸️ エージェントネットワーク依存関係グラフ</h1>
+        <p class="subtitle">ノードをクリックして詳細表示 | ドラッグで移動 | マウスホイールでズーム</p>
+    </div>
+
+    <div id="network-container"></div>
+
+    <div class="controls">
+        <div class="control-title">🎮 コントロール</div>
+        <button onclick="fitNetwork()">🔍 全体表示</button>
+        <button onclick="togglePhysics()">⚡ 物理演算 ON/OFF</button>
+        <button onclick="highlightPath()">🛤️ 実行パスをハイライト</button>
+        <button onclick="showCriticalNodes()">⭐ 重要ノードを表示</button>
+        <button onclick="resetView()">🔄 リセット</button>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item">
+            <span class="stat-label">総ノード数:</span>
+            <span class="stat-value" id="node-count">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">総エッジ数:</span>
+            <span class="stat-value" id="edge-count">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">レイヤー数:</span>
+            <span class="stat-value">6</span>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-title">📊 ノード凡例</div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #667eea;"></div>
+            <span>UI / ユーザーインターフェース</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f093fb;"></div>
+            <span>SDK / Agents SDK Wrapper</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #4facfe;"></div>
+            <span>Router / 司令塔</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #00f2fe;"></div>
+            <span>Worker / 専門家エージェント</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #43e97b;"></div>
+            <span>Orchestrator / オーケストレータ</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #38f9d7;"></div>
+            <span>SubAgent / サブエージェント</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #fa709a;"></div>
+            <span>Tools / ツール</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #30cfd0;"></div>
+            <span>Database / データベース</span>
+        </div>
+    </div>
+
+    <div class="info-panel" id="info-panel">
+        <div class="info-title" id="info-node-title">ノードを選択してください</div>
+        <div class="info-description" id="info-node-description">グラフ上のノードをクリックすると詳細が表示されます</div>
+        <div class="info-tags" id="info-node-tags"></div>
+    </div>
+
+    <script>
+        // ノードデータ定義
+        const nodes = new vis.DataSet([
+            // Layer 1: UI
+            { id: 1, label: '👤 User\nInterface', group: 'ui', level: 0,
+              description: '右側固定のチャットサイドバー。すべてのエージェント機能へのエントリーポイント。',
+              tags: ['UI', 'Chat', 'Entry Point'] },
+
+            // Layer 2: SDK
+            { id: 2, label: '🎯 Agents SDK\nWrapper', group: 'sdk', level: 1,
+              description: 'OpenAI Agents SDKとの統合層。Runner実装とツール統合を提供。',
+              tags: ['SDK', 'Integration', 'Guardrails'] },
+
+            // Layer 3: Router-Worker
+            { id: 3, label: '🧭 Router\nAgent', group: 'router', level: 2,
+              description: '司令塔エージェント。タスクの振り分けと意図理解を担当。GPT-4o-mini / Gemini Flash',
+              tags: ['Router', 'Task Distribution', 'Intent Understanding'] },
+
+            { id: 4, label: '📝 Writer\nWorker', group: 'worker', level: 3,
+              description: 'ドキュメント作成と長文要約の専門家。Gemini 1.5 Pro',
+              tags: ['Worker', 'Writing', 'Gemini'] },
+
+            { id: 5, label: '💻 Coder\nWorker', group: 'worker', level: 3,
+              description: 'コード生成とデバッグの専門家。GPT-4o / Claude 3.5 Sonnet',
+              tags: ['Worker', 'Coding', 'GPT-4o'] },
+
+            { id: 6, label: '📊 Analyst\nWorker', group: 'worker', level: 3,
+              description: 'データ分析とグラフ作成の専門家。GPT-4o Code Interpreter',
+              tags: ['Worker', 'Analysis', 'Data'] },
+
+            { id: 7, label: '📋 Clerk\nWorker', group: 'worker', level: 3,
+              description: '定型業務とデータ入力の専門家。Gemini Flash / GPT-4o-mini',
+              tags: ['Worker', 'Routine', 'Fast'] },
+
+            // Layer 4: Hybrid Orchestrator
+            { id: 8, label: '🧠 Agent\nManager', group: 'orchestrator', level: 4,
+              description: 'タスク分解、レイアウト決定、Worker選択、実行戦略決定を担当。',
+              tags: ['Orchestrator', 'Layer 1', 'Strategy'] },
+
+            { id: 9, label: '🖥️ Screen\nsubAgent 1', group: 'subagent', level: 5,
+              description: 'Screen 1 (Projects App) を操作するサブエージェント。',
+              tags: ['SubAgent', 'Projects', 'Screen 1'] },
+
+            { id: 10, label: '🖥️ Screen\nsubAgent 2', group: 'subagent', level: 5,
+              description: 'Screen 2 (Calendar App) を操作するサブエージェント。',
+              tags: ['SubAgent', 'Calendar', 'Screen 2'] },
+
+            { id: 11, label: '🖥️ Screen\nsubAgent 3', group: 'subagent', level: 5,
+              description: 'Screen 3 (Revenue App) を操作するサブエージェント。',
+              tags: ['SubAgent', 'Revenue', 'Screen 3'] },
+
+            { id: 12, label: '🖥️ Screen\nsubAgent 4', group: 'subagent', level: 5,
+              description: 'Screen 4 (Settings App) を操作するサブエージェント。',
+              tags: ['SubAgent', 'Settings', 'Screen 4'] },
+
+            { id: 13, label: '✅ Check\nAgent', group: 'orchestrator', level: 6,
+              description: 'ユーザー要求と実行結果を照合し、検証レポートを生成。',
+              tags: ['Check', 'Layer 3', 'Validation'] },
+
+            // Layer 5: Tools
+            { id: 14, label: '🔧 Core\nTools', group: 'tools', level: 7,
+              description: 'create_project, list_projects, create_event, create_revenue等のコアツール。',
+              tags: ['Tools', 'Core', 'CRUD'] },
+
+            { id: 15, label: '🎮 UI\nController', group: 'tools', level: 7,
+              description: 'setLayout, openApp, updateStatusなどのUI操作ツール。',
+              tags: ['Tools', 'UI Control', 'Layout'] },
+
+            { id: 16, label: '🔌 Plugin\nTools', group: 'tools', level: 7,
+              description: '動的に読み込まれるプラグインツール。Phase 5で実装予定。',
+              tags: ['Tools', 'Plugin', 'Dynamic'] },
+
+            // Layer 6: Database
+            { id: 17, label: '🔐 llm_\nproviders', group: 'database', level: 8,
+              description: 'LLMプロバイダーとAPIキーを暗号化して管理。',
+              tags: ['Database', 'Security', 'API Keys'] },
+
+            { id: 18, label: '🤖 agent_\nprofiles', group: 'database', level: 8,
+              description: 'Worker Agentの設定定義（name, model_id, system_prompt）',
+              tags: ['Database', 'Config', 'Agents'] },
+
+            { id: 19, label: '🎯 routing_\nrules', group: 'database', level: 8,
+              description: 'タスク振り分けルールをJSON形式で保存。',
+              tags: ['Database', 'Rules', 'Routing'] },
+
+            { id: 20, label: '🧠 agent_\nmemories', group: 'database', level: 8,
+              description: '過去の実行結果と埋め込みベクトルを保存（pgvector）',
+              tags: ['Database', 'Memory', 'Vector'] },
+        ]);
+
+        // エッジ（依存関係）定義
+        const edges = new vis.DataSet([
+            // User -> SDK
+            { from: 1, to: 2, arrows: 'to', label: 'リクエスト送信', color: {color: '#667eea', highlight: '#FFD700'}, width: 3 },
+
+            // SDK -> Router
+            { from: 2, to: 3, arrows: 'to', label: 'タスク委譲', color: {color: '#f093fb', highlight: '#FFD700'}, width: 3 },
+
+            // Router -> Workers
+            { from: 3, to: 4, arrows: 'to', label: 'Writing Tasks', color: {color: '#4facfe', highlight: '#FFD700'}, width: 2, dashes: true },
+            { from: 3, to: 5, arrows: 'to', label: 'Coding Tasks', color: {color: '#4facfe', highlight: '#FFD700'}, width: 2, dashes: true },
+            { from: 3, to: 6, arrows: 'to', label: 'Analysis Tasks', color: {color: '#4facfe', highlight: '#FFD700'}, width: 2, dashes: true },
+            { from: 3, to: 7, arrows: 'to', label: 'Routine Tasks', color: {color: '#4facfe', highlight: '#FFD700'}, width: 2, dashes: true },
+
+            // Workers -> Agent Manager
+            { from: 4, to: 8, arrows: 'to', label: '', color: {color: '#00f2fe', highlight: '#FFD700'}, width: 2 },
+            { from: 5, to: 8, arrows: 'to', label: '', color: {color: '#00f2fe', highlight: '#FFD700'}, width: 2 },
+            { from: 6, to: 8, arrows: 'to', label: '', color: {color: '#00f2fe', highlight: '#FFD700'}, width: 2 },
+            { from: 7, to: 8, arrows: 'to', label: '', color: {color: '#00f2fe', highlight: '#FFD700'}, width: 2 },
+
+            // Agent Manager -> Screen subAgents
+            { from: 8, to: 9, arrows: 'to', label: 'Subtask 1', color: {color: '#43e97b', highlight: '#FFD700'}, width: 3 },
+            { from: 8, to: 10, arrows: 'to', label: 'Subtask 2', color: {color: '#43e97b', highlight: '#FFD700'}, width: 3 },
+            { from: 8, to: 11, arrows: 'to', label: 'Subtask 3', color: {color: '#43e97b', highlight: '#FFD700'}, width: 3 },
+            { from: 8, to: 12, arrows: 'to', label: 'Subtask 4', color: {color: '#43e97b', highlight: '#FFD700'}, width: 3 },
+
+            // Screen subAgents -> Tools (並列)
+            { from: 9, to: 14, arrows: 'to', label: 'Projects API', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 9, to: 15, arrows: 'to', label: 'UI Control', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 10, to: 14, arrows: 'to', label: 'Calendar API', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 10, to: 15, arrows: 'to', label: 'UI Control', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 11, to: 14, arrows: 'to', label: 'Revenue API', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 11, to: 15, arrows: 'to', label: 'UI Control', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 12, to: 14, arrows: 'to', label: 'Settings API', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+
+            // Screen subAgents -> Check Agent
+            { from: 9, to: 13, arrows: 'to', label: '結果報告', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 10, to: 13, arrows: 'to', label: '結果報告', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 11, to: 13, arrows: 'to', label: '結果報告', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+            { from: 12, to: 13, arrows: 'to', label: '結果報告', color: {color: '#38f9d7', highlight: '#FFD700'}, width: 2 },
+
+            // Tools -> Database
+            { from: 14, to: 17, arrows: 'to', label: 'API認証', color: {color: '#fa709a', highlight: '#FFD700'}, width: 1, dashes: true },
+            { from: 14, to: 18, arrows: 'to', label: 'Agent設定読込', color: {color: '#fa709a', highlight: '#FFD700'}, width: 1, dashes: true },
+            { from: 14, to: 20, arrows: 'to', label: 'Memory参照', color: {color: '#fa709a', highlight: '#FFD700'}, width: 1, dashes: true },
+
+            // Agent Manager -> Database (ルーティングルール)
+            { from: 8, to: 19, arrows: 'to', label: 'ルール参照', color: {color: '#43e97b', highlight: '#FFD700'}, width: 1, dashes: true },
+
+            // Plugin Tools connection
+            { from: 16, to: 14, arrows: 'to', label: '統合', color: {color: '#fa709a', highlight: '#FFD700'}, width: 2, dashes: [5, 5] },
+
+            // Check Agent -> User (feedback loop)
+            { from: 13, to: 1, arrows: 'to', label: '最終レポート', color: {color: '#43e97b', highlight: '#FFD700'}, width: 3, dashes: [10, 5] },
+        ]);
+
+        // ネットワーク設定
+        const container = document.getElementById('network-container');
+        const data = { nodes: nodes, edges: edges };
+        const options = {
+            groups: {
+                ui: { color: { background: '#667eea', border: '#5568d3' }, font: { color: 'white' } },
+                sdk: { color: { background: '#f093fb', border: '#d87ee2' }, font: { color: 'white' } },
+                router: { color: { background: '#4facfe', border: '#3b8ce5' }, font: { color: 'white' } },
+                worker: { color: { background: '#00f2fe', border: '#00d9e5' }, font: { color: 'white' } },
+                orchestrator: { color: { background: '#43e97b', border: '#3ad062' }, font: { color: 'white' } },
+                subagent: { color: { background: '#38f9d7', border: '#2fe0be' }, font: { color: 'white' } },
+                tools: { color: { background: '#fa709a', border: '#e15781' }, font: { color: 'white' } },
+                database: { color: { background: '#30cfd0', border: '#2bb6b7' }, font: { color: 'white' } }
+            },
+            nodes: {
+                shape: 'box',
+                size: 25,
+                font: {
+                    size: 14,
+                    face: 'Segoe UI',
+                    bold: { mod: 'bold' }
+                },
+                borderWidth: 2,
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0,0,0,0.5)',
+                    size: 10,
+                    x: 5,
+                    y: 5
+                },
+                margin: 10
+            },
+            edges: {
+                smooth: {
+                    type: 'cubicBezier',
+                    forceDirection: 'vertical',
+                    roundness: 0.4
+                },
+                font: {
+                    size: 11,
+                    align: 'middle',
+                    color: '#ffffff',
+                    background: 'rgba(0,0,0,0.6)'
+                },
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0,0,0,0.3)',
+                    size: 5
+                }
+            },
+            layout: {
+                hierarchical: {
+                    direction: 'UD',
+                    sortMethod: 'directed',
+                    nodeSpacing: 150,
+                    levelSeparation: 150,
+                    treeSpacing: 200
+                }
+            },
+            physics: {
+                enabled: true,
+                hierarchicalRepulsion: {
+                    nodeDistance: 150,
+                    centralGravity: 0.0,
+                    springLength: 150,
+                    springConstant: 0.01,
+                    damping: 0.09
+                }
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 100,
+                zoomView: true,
+                dragView: true
+            }
+        };
+
+        const network = new vis.Network(container, data, options);
+
+        // 統計更新
+        document.getElementById('node-count').textContent = nodes.length;
+        document.getElementById('edge-count').textContent = edges.length;
+
+        // ノードクリックイベント
+        network.on('click', function(params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const node = nodes.get(nodeId);
+                showNodeInfo(node);
+            }
+        });
+
+        // ノード情報表示
+        function showNodeInfo(node) {
+            const infoPanel = document.getElementById('info-panel');
+            const title = document.getElementById('info-node-title');
+            const description = document.getElementById('info-node-description');
+            const tagsContainer = document.getElementById('info-node-tags');
+
+            title.textContent = node.label.replace(/\n/g, ' ');
+            description.textContent = node.description || '説明なし';
+
+            tagsContainer.innerHTML = '';
+            if (node.tags) {
+                node.tags.forEach(tag => {
+                    const tagElement = document.createElement('span');
+                    tagElement.className = 'info-tag';
+                    tagElement.textContent = tag;
+                    tagsContainer.appendChild(tagElement);
+                });
+            }
+
+            infoPanel.classList.add('active');
+        }
+
+        // コントロール関数
+        function fitNetwork() {
+            network.fit({
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+        }
+
+        let physicsEnabled = true;
+        function togglePhysics() {
+            physicsEnabled = !physicsEnabled;
+            network.setOptions({ physics: { enabled: physicsEnabled } });
+        }
+
+        function highlightPath() {
+            // 実行パス: User -> SDK -> Router -> Clerk -> Manager -> Screen1 -> Tools -> Check -> User
+            const pathNodes = [1, 2, 3, 7, 8, 9, 14, 13, 1];
+            const pathEdges = [];
+
+            for (let i = 0; i < pathNodes.length - 1; i++) {
+                const edgeId = edges.get({
+                    filter: function(edge) {
+                        return edge.from === pathNodes[i] && edge.to === pathNodes[i + 1];
+                    }
+                });
+                if (edgeId.length > 0) {
+                    pathEdges.push(edgeId[0].id);
+                }
+            }
+
+            network.selectNodes(pathNodes);
+            network.selectEdges(pathEdges);
+        }
+
+        function showCriticalNodes() {
+            // 重要ノード: Router, Agent Manager, Check Agent
+            network.selectNodes([3, 8, 13]);
+        }
+
+        function resetView() {
+            network.unselectAll();
+            fitNetwork();
+            document.getElementById('info-panel').classList.remove('active');
+        }
+
+        // 初期表示
+        setTimeout(() => {
+            fitNetwork();
+        }, 100);
+
+        console.log('🕸️ エージェントネットワークグラフが読み込まれました！');
+        console.log('💡 ノードをクリックで詳細表示、ドラッグで移動、マウスホイールでズーム');
+    </script>
+</body>
+</html>

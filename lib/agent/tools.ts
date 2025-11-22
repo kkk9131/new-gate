@@ -8,11 +8,18 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
             parameters: {
                 type: 'object',
                 properties: {
-                    title: { type: 'string', description: 'プロジェクト名' },
-                    description: { type: 'string', description: 'プロジェクトの説明' },
-                    status: { type: 'string', enum: ['active', 'archived', 'completed'] }
+                    title: { type: 'string', description: 'プロジェクト名' }
                 },
-                required: ['title']
+                required: ['title'],
+                additionalProperties: false
+            },
+            meta: {
+                appId: 'projects',
+                preferredScreenId: 1,
+                uiHint: '左画面でプロジェクト作成',
+                requiredInputs: ['title'],
+                sideEffects: ['creates_project'],
+                riskLevel: 'low'
             }
         },
         {
@@ -20,9 +27,15 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
             description: 'プロジェクト一覧を取得する',
             parameters: {
                 type: 'object',
-                properties: {
-                    status: { type: 'string', enum: ['active', 'archived', 'completed'] }
-                }
+                properties: {},
+                required: [],
+                additionalProperties: false
+            },
+            meta: {
+                appId: 'projects',
+                preferredScreenId: 1,
+                uiHint: '左画面で一覧表示',
+                riskLevel: 'low'
             }
         }
     ],
@@ -35,10 +48,18 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                 properties: {
                     title: { type: 'string', description: 'イベント名' },
                     start: { type: 'string', description: '開始日時 (ISO string)' },
-                    end: { type: 'string', description: '終了日時 (ISO string)' },
-                    description: { type: 'string', description: '詳細' }
+                    end: { type: 'string', description: '終了日時 (ISO string)' }
                 },
-                required: ['title', 'start', 'end']
+                required: ['title', 'start', 'end'],
+                additionalProperties: false
+            },
+            meta: {
+                appId: 'calendar',
+                preferredScreenId: 2,
+                uiHint: '右画面で日付入力',
+                requiredInputs: ['title', 'start', 'end'],
+                sideEffects: ['creates_event'],
+                riskLevel: 'medium'
             }
         },
         {
@@ -46,10 +67,14 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
             description: 'イベント一覧を取得する',
             parameters: {
                 type: 'object',
-                properties: {
-                    start: { type: 'string', description: '範囲開始日時' },
-                    end: { type: 'string', description: '範囲終了日時' }
-                }
+                properties: {},
+                required: [],
+                additionalProperties: false
+            },
+            meta: {
+                appId: 'calendar',
+                preferredScreenId: 2,
+                riskLevel: 'low'
             }
         }
     ],
@@ -61,11 +86,17 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                 type: 'object',
                 properties: {
                     amount: { type: 'number', description: '金額' },
-                    date: { type: 'string', description: '日付 (ISO string)' },
-                    category: { type: 'string', description: 'カテゴリ' },
-                    description: { type: 'string', description: '説明' }
+                    date: { type: 'string', description: '日付 (ISO string)' }
                 },
-                required: ['amount', 'date']
+                required: ['amount', 'date'],
+                additionalProperties: false
+            },
+            meta: {
+                appId: 'revenue',
+                preferredScreenId: 3,
+                requiredInputs: ['amount', 'date'],
+                sideEffects: ['creates_revenue_entry'],
+                riskLevel: 'medium'
             }
         }
     ],
@@ -79,7 +110,15 @@ export const TOOLS: Record<string, ToolDefinition[]> = {
                     key: { type: 'string', description: '設定キー' },
                     value: { type: 'string', description: '設定値' }
                 },
-                required: ['key', 'value']
+                required: ['key', 'value'],
+                additionalProperties: false
+            },
+            meta: {
+                appId: 'settings',
+                preferredScreenId: 4,
+                requiredInputs: ['key', 'value'],
+                sideEffects: ['updates_setting'],
+                riskLevel: 'medium'
             }
         }
     ]

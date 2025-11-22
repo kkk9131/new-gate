@@ -50,6 +50,8 @@ JSON形式で回答してください:
   "suggestions": ["改善提案1", "改善提案2"],
   "report": "検証レポートの要約"
 }
+
+IMPORTANT: Always respond in Japanese.
 `;
 
         const messages: Message[] = [

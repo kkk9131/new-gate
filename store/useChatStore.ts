@@ -99,7 +99,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             }
 
             // Call Server API
-            const response = await fetch('/api/agent/chat', {
+            const response = await fetch('/api/agent/chat?stream=true', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -131,10 +131,31 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 for (const line of lines) {
                     if (!line.trim()) continue;
 
+                    // function_callなど生JSON配列は無視
+                    if (line.trim().startsWith('[')) {
+                        continue;
+                    }
+
                     try {
                         const data = JSON.parse(line);
 
-                        if (data.type === 'action') {
+                        // type フィールドが無いものは無視
+                        if (!data.type) continue;
+
+                        if (data.type === 'token') {
+                            // ストリーミング中の部分トークンを逐次反映
+                            const delta = typeof data.content === 'string' ? data.content : '';
+                            if (!delta) continue;
+                            set((state) => {
+                                const msgs = [...state.messages];
+                                const last = msgs[msgs.length - 1];
+                                if (!last) return { messages: msgs };
+                                last.content = (last.content || '') + delta;
+                                return { messages: msgs };
+                            });
+                            isFirstChunk = false;
+                            continue;
+                        } else if (data.type === 'action') {
                             const action = data.action;
                             const desktopStore = useDesktopStore.getState();
 
@@ -167,22 +188,46 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                                     action.payload.status,
                                     action.payload.progress
                                 );
+                                if (action.payload.status === 'error' || action.payload.status === 'retry') {
+                                    const statusMsg: Message = {
+                                        id: crypto.randomUUID(),
+                                        role: 'assistant',
+                                        content: `Screen ${action.payload.screenId}: ${action.payload.status === 'error' ? 'エラー発生' : 'リトライ中'}`,
+                                        createdAt: Date.now()
+                                    };
+                                    addMessage(statusMsg);
+                                }
+                            } else if (action.type === 'LOG') {
+                                // ログをチャット欄に追記（screenId付き）
+                                const logMsg: Message = {
+                                    id: crypto.randomUUID(),
+                                    role: 'assistant',
+                                    content: `Screen ${action.payload.screenId}: ${action.payload.message}`,
+                                    createdAt: Date.now()
+                                };
+                                addMessage(logMsg);
+                            } else if (action.type === 'CLOSE_ALL') {
+                                desktopStore.closeAllWindows();
                             }
                         } else if (data.type === 'message') {
-                            if (isFirstChunk) {
-                                // Replace "Thinking..." with actual content
-                                set((state) => {
-                                    const msgs = [...state.messages];
-                                    msgs[msgs.length - 1].content = data.content;
-                                    return { messages: msgs };
-                                });
-                                isFirstChunk = false;
-                            } else {
-                                updateLastMessage(data.content);
+                            // function_call結果などが文字列で来てもチャットには載せない
+                            if (typeof data.content === 'string' && data.content.trim().startsWith('[')) {
+                                continue;
                             }
+                            // Final contentで上書き（重複防止）
+                            set((state) => {
+                                const msgs = [...state.messages];
+                                if (msgs.length === 0) return state;
+                                msgs[msgs.length - 1].content = data.content;
+                                return { messages: msgs };
+                            });
+                            isFirstChunk = false;
                         } else if (data.type === 'error') {
                             console.error('Server Error:', data.error);
                             updateLastMessage(`\nError: ${data.error}`);
+                        } else {
+                            // その他のJSONイベントはチャットに出さない
+                            continue;
                         }
                     } catch (e) {
                         console.error('Failed to parse chunk:', line, e);

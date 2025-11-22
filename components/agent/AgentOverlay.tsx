@@ -30,9 +30,6 @@ export function AgentOverlay({ screenId }: AgentOverlayProps) {
                     {screenState.status === 'executing' && (
                         <RiRobot2Line className="w-8 h-8 text-blue-400 animate-pulse" />
                     )}
-                    {screenState.status === 'completed' && (
-                        <RiCheckLine className="w-8 h-8 text-green-400" />
-                    )}
                     {screenState.status === 'error' && (
                         <RiErrorWarningLine className="w-8 h-8 text-red-400" />
                     )}
