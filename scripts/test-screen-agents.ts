@@ -24,7 +24,7 @@ async function testServerAgent() {
     };
 
     try {
-        const result = await runWithAgentsSDK(testCase, apiKeys, dispatch);
+        const result = await runWithAgentsSDK(testCase, apiKeys, dispatch, undefined, undefined);
         console.log('\n✅ Execution Result:');
         console.log(result);
     } catch (e: any) {

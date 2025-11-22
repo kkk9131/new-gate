@@ -16,7 +16,7 @@ const dispatch = (action: AgentAction) => {
 
 async function runScenario(name: string, prompt: string) {
   console.log(`\n=== ${name} ===`);
-  const result = await runWithAgentsSDK(prompt, apiKeys, dispatch);
+  const result = await runWithAgentsSDK(prompt, apiKeys, dispatch, undefined, undefined);
   console.log(result);
 }
 
