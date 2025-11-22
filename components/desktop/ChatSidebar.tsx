@@ -112,7 +112,7 @@ export function ChatSidebar() {
                             "p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
                             msg.role === 'user'
                                 ? "bg-accent-sand text-ink rounded-tr-none"
-                                : "bg-surface-strong text-ink rounded-tl-none border border-white/10"
+                                : "bg-transparent text-ink p-1 rounded-none"
                         )}>
                             {msg.content}
                         </div>
