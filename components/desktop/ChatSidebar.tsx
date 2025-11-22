@@ -2,8 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import { useChatStore } from '@/store/useChatStore';
-import { RiSendPlaneFill, RiRobot2Line, RiUser3Line } from 'react-icons/ri';
-import { clsx } from 'clsx';
+import { RiSendPlaneFill, RiRobot2Line } from 'react-icons/ri';
 import { twMerge } from 'tailwind-merge';
 
 export function ChatSidebar() {
@@ -51,26 +50,15 @@ export function ChatSidebar() {
                 )}
 
                 {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        className={twMerge(
-                            "flex gap-3 max-w-[85%]",
-                            msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
-                        )}
-                    >
-                        <div className={twMerge(
-                            "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                            msg.role === 'user' ? "bg-accent-sand text-ink" : "bg-surface-strong text-ink"
-                        )}>
-                            {msg.role === 'user' ? <RiUser3Line className="w-4 h-4" /> : <RiRobot2Line className="w-4 h-4" />}
-                        </div>
-
-                        <div className={twMerge(
-                            "p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap",
-                            msg.role === 'user'
-                                ? "bg-accent-sand text-ink rounded-tr-none"
-                                : "bg-surface-strong text-ink rounded-tl-none border border-white/10"
-                        )}>
+                    <div key={msg.id} className="flex max-w-[85%]" aria-label={msg.role === 'user' ? 'User message' : 'Agent message'}>
+                        <div
+                            className={twMerge(
+                                "p-3 text-sm leading-relaxed whitespace-pre-wrap break-words",
+                                msg.role === 'user'
+                                    ? "bg-accent-sand/30 text-ink rounded-xl border border-accent-sand/40 shadow-sm backdrop-blur-[1px]"
+                                    : "bg-transparent text-ink p-1 rounded-none"
+                            )}
+                        >
                             {msg.content}
                         </div>
                     </div>
@@ -111,7 +99,7 @@ export function ChatSidebar() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Type a message..."
+                        placeholder=""
                         className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[24px] py-1 px-2 text-sm text-ink placeholder:text-ink/40"
                         rows={1}
                         style={{ height: 'auto', minHeight: '24px' }}
