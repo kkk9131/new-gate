@@ -47,6 +47,7 @@ async function executeCoreTool(appId: string, toolName: string, args: any, userI
             } catch (err: any) {
                 // Fallback: return mock result so UXを塞がない
                 const titleOrName = args?.title ?? args?.name ?? '無題';
+                const nowIso = new Date().toISOString();
                 return {
                     success: true,
                     data: {
