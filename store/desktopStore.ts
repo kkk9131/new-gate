@@ -774,14 +774,3 @@ export const resetDesktopStore = () => {
   useDesktopStore.persist?.clearStorage();
   memoryStorage.clear();
 };
-// 数値screenIdをsplitModeに対応したキーへ変換
-const mapScreenIdToKey = (mode: 1 | 2 | 3 | 4, screenId: number): string => {
-  if (mode === 1) return 'left';
-  if (mode === 2) return screenId === 1 ? 'left' : 'right';
-  if (mode === 3) return screenId === 1 ? 'left' : screenId === 2 ? 'topRight' : 'bottomRight';
-  if (mode === 4) {
-    const map: Record<number, string> = { 1: 'topLeft', 2: 'topRight', 3: 'bottomLeft', 4: 'bottomRight' };
-    return map[screenId] || '';
-  }
-  return '';
-};
