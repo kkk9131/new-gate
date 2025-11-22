@@ -8,11 +8,17 @@ interface AgentOverlayProps {
 export function AgentOverlay({ screenId }: AgentOverlayProps) {
     const screenState = useDesktopStore(state => state.screens[screenId]);
 
-    if (!screenState || screenState.status === 'idle') return null;
+    if (!screenState) return null;
+
+    const isActive = screenState.status !== 'idle';
 
     return (
-        <div className="absolute inset-0 z-[100] pointer-events-none flex flex-col items-center justify-center bg-black/10 backdrop-blur-[1px] transition-all duration-300">
-            <div className="bg-surface-strong/95 border border-white/20 rounded-xl p-4 shadow-xl flex flex-col items-center gap-3 max-w-[200px] animate-in fade-in zoom-in duration-200">
+        <div className="absolute inset-0 z-[100] pointer-events-none flex flex-col items-center justify-center transition-all duration-300">
+            {isActive && (
+                <div className="absolute inset-1 rounded-xl ring-2 ring-emerald-400/80 shadow-[0_0_25px_rgba(16,185,129,0.4)] animate-[pulse_1.6s_ease-in-out_infinite]" />
+            )}
+            {screenState.status !== 'idle' && (
+            <div className="bg-surface-strong/95 border border-white/20 rounded-xl p-4 shadow-xl flex flex-col items-center gap-3 max-w-[200px] animate-in fade-in zoom-in duration-200 backdrop-blur-[1px]">
                 {/* Status Icon */}
                 <div className="relative">
                     {screenState.status === 'initializing' && (
@@ -47,6 +53,7 @@ export function AgentOverlay({ screenId }: AgentOverlayProps) {
                     </div>
                 )}
             </div>
+            )}
         </div>
     );
 }

@@ -99,7 +99,7 @@ export function ChatSidebar() {
                             className={twMerge(
                                 "p-3 text-sm leading-relaxed whitespace-pre-wrap break-words",
                                 msg.role === 'user'
-                                    ? "bg-white text-ink rounded-xl border border-white/10 shadow-sm"
+                                    ? "bg-accent-sand/30 text-ink rounded-xl border border-accent-sand/40 shadow-sm backdrop-blur-[1px]"
                                     : "bg-transparent text-ink p-1 rounded-none"
                             )}
                         >
@@ -143,7 +143,7 @@ export function ChatSidebar() {
                         value={input}
                         onChange={handleChange}
                         onKeyDown={handleKeyDown}
-                        placeholder="Type a message...（@でアプリ指定）"
+                        placeholder=""
                         className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[24px] py-1 px-2 text-sm text-ink placeholder:text-ink/40"
                         rows={1}
                         style={{ height: 'auto', minHeight: '24px' }}

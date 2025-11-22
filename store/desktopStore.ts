@@ -702,6 +702,7 @@ export const useDesktopStore = create<DesktopState>()(
       updateScreenStatus: (screenId, status, progress) =>
         set((state) => {
           const screens = { ...state.screens };
+          const splitScreenWindows = { ...state.splitScreenWindows };
           if (screens[screenId]) {
             screens[screenId] = {
               ...screens[screenId],
@@ -709,7 +710,15 @@ export const useDesktopStore = create<DesktopState>()(
               progress: progress !== undefined ? progress : screens[screenId].progress
             };
           }
-          return { screens };
+          // エージェント操作中は対象スクリーンのウィンドウを左上に寄せる
+          const key = mapScreenIdToKey(state.splitMode, screenId);
+          if (key && status !== 'idle' && splitScreenWindows[key]?.length) {
+            splitScreenWindows[key] = splitScreenWindows[key].map((w) => ({
+              ...w,
+              position: { x: 12, y: 12 }
+            }));
+          }
+          return { screens, splitScreenWindows };
         }),
     }),
     {
@@ -761,4 +770,15 @@ export const resetDesktopStore = () => {
   }));
   useDesktopStore.persist?.clearStorage();
   memoryStorage.clear();
+};
+// 数値screenIdをsplitModeに対応したキーへ変換
+const mapScreenIdToKey = (mode: 1 | 2 | 3 | 4, screenId: number): string => {
+  if (mode === 1) return 'left';
+  if (mode === 2) return screenId === 1 ? 'left' : 'right';
+  if (mode === 3) return screenId === 1 ? 'left' : screenId === 2 ? 'topRight' : 'bottomRight';
+  if (mode === 4) {
+    const map: Record<number, string> = { 1: 'topLeft', 2: 'topRight', 3: 'bottomLeft', 4: 'bottomRight' };
+    return map[screenId] || '';
+  }
+  return '';
 };
